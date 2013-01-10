@@ -1,0 +1,81 @@
+<script type="text/javascript">
+    $(function(){
+	var {{ name }}_uploader = new plupload.Uploader({{ plupload_settings }});
+	{{ name }}_uploader.settings['multipart_params'] = {
+	    'csrfmiddlewaretoken': $("input[name='csrfmiddlewaretoken']").val()
+	};
+	{{ name }}_uploader.bind('FilesAdded', function(up, files) {
+	    for(var i in {{ name }}_uploader.files){
+		{{ name }}_uploader.removeFile({{ name }}_uploader.files[i]);
+	    }
+	    for (var i in files) {
+		var file = files[i];
+		var progress_bar = '<div style="height:20px;width:100px;text-align:center;" class="progress" id="' + file.id + '_progress_bar_container"><div id="' + file.id + '_progress_bar" class="bar" style=""><span id="' + file.id + '_progress_bar_percent"></span></div></div>';
+		$('#{{ name }}_container').append(
+		    '<div id="' + file.id + '">' + file.name + ' (' + 
+			plupload.formatSize(file.size) + ') <span id="' + file.id
+			+ '_upload_progress"><a id="' + file.id + 
+			'_remove_btn" href="" data-file-id="' + file.id + 
+			'">x</a></span>' + progress_bar + '</div>');
+		$("#" + file.id + "_progress_bar_container").hide();
+		$("#" + file.id + "_remove_btn").click(function(){
+		    var file_id = $(this).data('fileId');
+		    {{ name }}_uploader.removeFile(
+			{{ name }}_uploader.getFile(file_id));
+		    return false;
+		});
+	    }
+	    $('#{{ name }}_upload_btn').show();
+	});
+	
+	{{ name }}_uploader.bind('FilesRemoved', function(up, files) {
+	    for(i in files){
+		$("#" + files[i].id).remove();
+	    }
+	    $('#{{ name }}_upload_btn').hide();
+	});
+
+	{{ name }}_uploader.bind('BeforeUpload', function(up, file) {
+	    $("#" + file.id + "_progress_bar_container").show();
+	});
+	{{ name }}_uploader.bind('UploadProgress', function(up, file) {
+	    $("#" + file.id + "_upload_progress").html(
+		"<b>" + file.percent + "%</b>");
+	    $("#" + file.id + "_progress_bar").css('width', file.percent + "%");
+	    $("#" + file.id + "_progress_bar_percent").html(file.percent + "%");
+	});
+
+	//$.get({{ name }}_uploader.settings['url'], function(data){
+
+	{{ name }}_uploader.bind('FileUploaded', function(up, file, response) {
+	    if(response.status == '200'){
+		var data = $.parseJSON(response.response);
+		if(data.task == 'uploading'){
+		    if(data.result == 'complete'){
+			{{ name }}_uploader.removeFile(file);
+			$("#{{ name }}_initial").html(data.rendered_result);
+		    } else if(data.result == 'failed'){
+			var errors_container = $("<div>",{'class': "errorlist"});
+			for(i in data.errors){
+			    errors_container.append(
+				"<div class='errorText alert alert-error'>"
+				    + data.errors[i] + "</div>"
+			    );
+			}
+			$("#" + file.id).append(errors_container);
+		    }
+		} else {
+		    alert("There has been an error. Please try again later.");
+		}
+	    }
+	});
+	$('#{{ name }}_upload_btn').hide().click(function() {
+	    $(this).hide();
+	    {{ name }}_uploader.settings['url'] = $("#plupload_{{ name }}_url")
+		.data("url");
+	    {{ name }}_uploader.start();
+	    return false;
+	});
+	{{ name }}_uploader.init();
+    });
+</script>
