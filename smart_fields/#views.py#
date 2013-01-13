@@ -45,6 +45,7 @@ class FileUploadView(View):
             raise Http404
         return json_response({
                 'task': 'uploading',
+                'task_name': "Uploading",
                 'status': 'complete',
                 'rendered_result': field.widget.render_initial(
                     form.add_prefix(self.field_name), value)
@@ -55,6 +56,7 @@ class FileUploadView(View):
         if status and status['status'] != 'complete':
             return json_response({
                     'task': 'uploading',
+                    'task_name': "Uploading",
                     'status': 'busy',
                     'reason': status}, status=409)
         UploadMeta = new.classobj("UploadMeta", (), { 
@@ -72,6 +74,7 @@ class FileUploadView(View):
         errors = form.errors.get(form.add_prefix(self.field_name))
         return json_response({
                 'task': 'uploading',
+                'task_name': "Uploading",
                 'status': 'failed',
                 'errors': errors})
 
