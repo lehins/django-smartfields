@@ -2,8 +2,7 @@
     $(function(){
 	var freq = 1000;
 	var file_elem = null;
-	var progress_bar = $('<div>').progressbar({value: 0})
-	    .css({'width': '200px', 'height': '20px'});
+	var progress_bar = null;
 	var progress_text = $('<strong>');
 	var {{ name }}_uploader = new plupload.Uploader({{ plupload_settings }});
 
@@ -16,7 +15,6 @@
 		    progress_text.html(data.task_name +": " + progress + "%");
 		} else if(data && data.task == 'uploading' && 
 			  data.status == 'complete'){
-		    progress_bar.hide();
 		    file_elem.remove();
 		    $('#{{ name }}_browse_btn').show();
 		    $("#{{ name }}_initial").html(data.rendered_result);
@@ -34,9 +32,11 @@
 		var file = files[i];
 		file_elem = $('<div id="' + file.id + '">' + file.name + ' (' + 
 			      plupload.formatSize(file.size) + ') </div>');
-		var file_rem_btn = $('<a class="icon-remove" href="" data-file-id="' + file.id + 
-				     '"></a>');
+		var file_rem_btn = $('<a class="icon-remove" href="" data-file-id="'
+				     + file.id + '"></a>');
 		progress_text.html(file_rem_btn);
+		progress_bar = $('<div>').progressbar({value: 0})
+		    .css({'width': '200px', 'height': '20px'});
 		file_elem.append(progress_text).append(progress_bar);
 		$('#{{ name }}_container').append(file_elem);
 		progress_bar.hide();

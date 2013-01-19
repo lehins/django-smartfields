@@ -1,50 +1,7 @@
-from django.core.files.base import ContentFile
-from django.conf import settings
 
-import re, os, subprocess, datetime, time, threading, Queue, logging, string
+from smart_fields import settings
 
-from xml.dom.minidom import parse, parseString
-
-DEFAULT_PROFILES = getattr(settings, 'SMARTFIELDS_DEFAULT_VIDEO_PROFILES', {
-    'mp4': {
-        'format': 'mp4',
-        'cmd': "%(converter)s -i %(input)s -y -codec:v %(vcodec)s " \
-            "-vprofile %(vprofile)s -preset %(preset)s -b:v %(vbitrate)s " \
-            "-maxrate %(maxrate)s -bufsize %(bufsize)s " \
-            "-vf scale=%(width)s:%(height)s " \
-            "-threads %(threads)s -codec:a %(acodec)s -b:a %(abitrate)s %(output)s",
-        'converter': 'avconv',
-        'vcodec': 'libx264',
-        'vprofile': 'main',
-        'preset': 'medium',
-        'vbitrate': '300k',
-        'maxrate': '300k',
-        'bufsize': '600k',
-        'width': -1,
-        'height': 360,
-        'threads': 0,
-        'acodec': 'libvo_aacenc',
-        'abitrate': '96k'
-        },
-    'webm': {
-        'format': 'webm',
-        'cmd': "%(converter)s -i %(input)s -y -codec:v %(vcodec)s " \
-            "-b:v %(vbitrate)s -qmin 10 -qmax 42 " \
-            "-maxrate %(maxrate)s -bufsize %(bufsize)s " \
-            "-vf scale=%(width)s:%(height)s " \
-            "-threads %(threads)s -codec:a %(acodec)s -b:a %(abitrate)s %(output)s",
-        'converter': 'avconv',
-        'vcodec': 'libvpx',
-        'vbitrate': '300k',
-        'maxrate': '300k',
-        'bufsize': '600k',
-        'width': -1,
-        'height': 360,
-        'threads': 4,
-        'acodec': 'libvorbis',
-        'abitrate': '96k'
-        }
-    })
+import re, subprocess, time, threading, Queue
 
 
 def resize_image(data, width, height, format='PNG'):
@@ -86,7 +43,7 @@ def resize_image(data, width, height, format='PNG'):
     if format == 'PNG' and not (image.mode != 'P' or image.mode != 'RGB'):
         image = image.convert('RGB')
     image.save(string, format=format)
-    return ContentFile(string.getvalue())
+    return string.getvalue()
 
  
 class AsynchronousFileReader(threading.Thread):
@@ -145,6 +102,7 @@ class VideoConverter(threading.Thread):
         single = 100.00/self.total
         current_progress = (current-1)*single
         current_progress+= progress*single
+        current_progress = current_progress if current_progress < 100 else 99.99
         self.progress_setter(self.progress_key, current_progress)
 
 
@@ -152,7 +110,8 @@ class VideoConverter(threading.Thread):
         profile = {'input': self.file_in, 'output': file_out}
         default_profile_name = custom_profile.get('default_profile', None)
         if default_profile_name:
-            profile.update(DEFAULT_PROFILES.get(default_profile_name, {}))
+            profile.update(
+                settings.DEFAULT_VIDEO_PROFILES.get(default_profile_name, {}))
         profile.update(custom_profile)
         cmd = profile['cmd']
         converter = profile.get('converter', None)

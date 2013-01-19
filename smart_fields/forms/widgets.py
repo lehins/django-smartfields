@@ -1,40 +1,18 @@
 from django import forms
 from django.template.loader import render_to_string
-from django.templatetags.static import static
 from django.utils.safestring import mark_safe
 from django.utils.html import conditional_escape, format_html
 from django.utils.translation import ugettext_lazy
 from django.utils.encoding import force_text
 from django.forms.util import flatatt
-from django.contrib.sites.models import Site
-from django.conf import settings
+
+from smart_fields import settings
 
 import os, json
 
-__all__ = (
-    "ButtonInput", "PluploadFileInput", "PluploadImageInput", "PluploadVideoInput",
-)
-
-PLUPLOAD_SETTINGS = getattr(settings, 'SMARTFIELDS_PLUPLOAD_SETTINGS', {})
-
-PLUPLOAD_JS = getattr(settings, 'SMARTFIELDS_PLUPLOAD_JS', 
-                      tuple([os.path.join('js/plupload/', x) for x in [
-                'plupload.js', 'plupload.gears.js', 'plupload.silverlight.js', 
-                'plupload.flash.js', 'plupload.browserplus.js', 'plupload.html4.js', 
-                'plupload.html5.js']]))
-
-PLUPLOAD_FLASH = getattr(settings, 'SMARTFIELDS_PLUPLOAD_FLASH', 
-                         static("js/plupload/plupload.flash.swf"))
-PLUPLOAD_SILVERLIGHT = getattr(settings, 'SMARTFIELDS_PLUPLOAD_SILVERLIGHT', 
-                               static("js/plupload/plupload.silverlight.xap"))
-
-USE_SSL = getattr(settings, 'SMARTFIELDS_VIDEOFIELD_USE_SSL', False)
-
-DOMAIN = getattr(settings, 'SMARTFIELDS_DOMAIN', None)
-
-INSTALLED_APPS = getattr(settings, 'INSTALLED_APPS')
-
-VIDEO_TAG = getattr(settings, 'SMARTFIELDS_VIDEO_FORM_TAG', '<video id="video_%(name)s" class="video-js vjs-default-skin" controls="controls" preload="auto" width="320" height="240" data-setup="{}">%(sources)s</video>')
+#__all__ = (
+#    "ButtonInput", "PluploadFileInput", "PluploadImageInput", "PluploadVideoInput",
+#)
 
 class ButtonInput(forms.widgets.Input):
     input_type = 'submit'
@@ -51,35 +29,18 @@ class PluploadFileInput(forms.ClearableFileInput):
     container_template = '<div %(attrs)s><div id="%(name)s_initial">%(initial)s</div> %(file_container)s <p>%(browse)s %(upload)s</p></div>%(script)s'
     initial_template = '%(clear)s<p><a href="%(url)s" target="_blank">%(initial_content)s</a></p>'
     clear_template = '<label for="%(clear_checkbox_id)s">%(clear_checkbox)s %(clear_checkbox_label)s</label>'
+    plupload_filters = []
 
-    plupload_settings = {
-        'runtimes': 'gears,html5,flash,silverlight,browserplus',
-        'multi_selection': False,
-        'max_file_size': "20mb",
-        'flash_swf_url': PLUPLOAD_FLASH,
-        'silverlight_xap_url': PLUPLOAD_SILVERLIGHT
-        }
-    plupload_filters = {
-        'file': [],
-        'image': [{'title': "Image files", 'extensions': "jpg,gif,png"},],
-        'audio': [],
-        'video': [],
-        }
-
-    def get_plupload_settings(self, name, value):
-        plupload_settings = {}
-        if PLUPLOAD_SETTINGS:
-            plupload_settings.update(PLUPLOAD_SETTINGS)
-        if self.plupload_settings:
-            plupload_settings.update(self.plupload_settings)
-        filters = self.plupload_filters.get(value.field.media_type, None)
-        if filters:
-            plupload_settings.update({'filters': filters})
+    def _get_plupload_settings(self, name, value):
+        plupload_settings = {'filters': self.plupload_filters}
+        if settings.PLUPLOAD_SETTINGS:
+            plupload_settings.update(settings.PLUPLOAD_SETTINGS)
+        field_settings = value.instance.smart_fields_settings.get(value.field.name)
+        plupload_settings.update(field_settings.get('plupload_settings', {}))
         plupload_settings.update({
 	    'browse_button': "%s_browse_btn" % name,
 	    'container': "%s_container" % name,
 	    'file_data_name': name,
-            'rename': True,
             'url': value.field.upload_url(value.instance)
             })
         return plupload_settings
@@ -111,7 +72,7 @@ class PluploadFileInput(forms.ClearableFileInput):
         return mark_safe(self.initial_template % substitutions)
     
     def render_script(self, name, value):
-        plupload_settings = self.get_plupload_settings(name, value)
+        plupload_settings = self._get_plupload_settings(name, value)
         context = {
             'name': name,
             'no_initial_text': self.no_initial_text,
@@ -142,7 +103,7 @@ class PluploadFileInput(forms.ClearableFileInput):
         return mark_safe(self.container_template % substitutions)
         
     class Media:
-        js = PLUPLOAD_JS
+        js = settings.PLUPLOAD_JS
 
 
 class PluploadImageInput(PluploadFileInput):
@@ -159,18 +120,19 @@ class PluploadVideoInput(PluploadFileInput):
     initial_template = '%(clear)s<p>%(initial_content)s</p>'
 
     def _get_full_url(self, url, use_ssl=None):
-        if DOMAIN is None and 'django.contrib.sites' not in INSTALLED_APPS:
+        if settings.VIDEO_TAG_DOMAIN is None:
             return url
-        domain = DOMAIN or Site.objects.get_current().domain
         if use_ssl is None:
-            use_ssl = USE_SSL
+            use_ssl = settings.VIDEO_TAG_USE_SSL
         protocol = 'https://' if use_ssl else 'http://'
-        return protocol + domain + url
+        return protocol + settings.VIDEO_TAG_DOMAIN + url
 
     def render_initial_content(self, value, video_tag=None):
         content_template = video_tag
         if content_template is None:
-            content_template = VIDEO_TAG
+            content_template = settings.VIDEO_TAG.get('form_template', None)
+            if content_template is None:
+                return super(PluploadVideoInput, self).render_initial_content(value)
         source_template = '<source type="%(media_type)s/%(format)s" src="%(full_url)s"/>'
         fields = value.instance.smart_fields[value.field.name]
         profile = value.instance.smart_fields_settings[value.field.name]['profile']
@@ -187,5 +149,5 @@ class PluploadVideoInput(PluploadFileInput):
                 'sources': ' '.join(sources)})
 
     class Media:
-        css = {'all': ("https://vjs.zencdn.net/c/video-js.css",)}
-        js = ("https://vjs.zencdn.net/c/video.js",)
+        css = settings.VIDEO_TAG.get('css', {})
+        js = settings.VIDEO_TAG.get('js', ())

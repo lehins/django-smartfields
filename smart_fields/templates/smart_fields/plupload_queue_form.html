@@ -1,0 +1,113 @@
+<div id="{{ form_name }}_plupload"></div>
+<script type="text/javascript">
+    $(function(){
+	var plupload_settings = {{ plupload_settings }};
+	var csrf_token =  $("input[name='csrfmiddlewaretoken']").val();
+	var initial_files = {{ initial_file_elems }};
+	plupload_settings['multipart_params'] = {
+	    'csrfmiddlewaretoken': csrf_token
+	};
+	function initDjangoPlupload(){
+	$("#{{ form_name }}_plupload").pluploadQueue(plupload_settings);
+	$("#{{ form_name }}_plupload_container").attr('title', "");
+	var uploader = $("#{{ form_name }}_plupload").pluploadQueue();
+	var uploaded_files = [];
+	function addToList(){
+	    var filelist_container = $("#{{ form_name }}_plupload_filelist");
+	    filelist_container.children().each(function(){
+		filelist_container.prepend($(this));
+	    });
+	    for(var i in initial_files){
+		var file_elem_id = initial_files[i][0];
+		var file_size = plupload.formatSize(initial_files[i][1]);
+		var file_elem = initial_files[i][2];
+		filelist_container.append(file_elem);
+		$("#" + file_elem_id + " > div.plupload_file_size")
+		    .html(file_size);
+		$("#" + file_elem_id + " > div.plupload_file_action > a").click(
+		    function(){
+			var conf = confirm(
+			    "Are you sure you want to remove '" +
+				$("#" + file_elem_id + 
+				  " > div.plupload_file_name > span")
+				.text() + "' ?");
+			if(conf){
+			    var pk = $(this).data('pk');
+			    $.post(
+				uploader.settings.url, 
+				{
+				    'task': "delete", 
+				    'pk': pk,
+				    'csrfmiddlewaretoken': csrf_token
+				},
+				function(data){
+				    if(data && data.task == 'delete'){
+					if(data.status =='complete'){
+					    for(var j in initial_files){
+						if(initial_files[j][0] == 
+						   data.file_elem_id){
+						    initial_files.splice(j, 1);
+						    break;
+						}
+					    }
+					    $("#" + data.file_elem_id).remove();
+					}
+				    }
+				});
+			}
+			return false;
+		    });
+	    }
+	    $(".plupload_file_link").click(function(){
+		window.open($(this).data('href'));
+	    });
+	}
+	uploader.bind('FileUploaded', function(up, file, response){
+	    if(response.status == '200'){
+		var data = $.parseJSON(response.response);
+		if(data.task == 'uploading'){
+		    if(data.status == 'complete'){
+			uploaded_files.unshift(data.rendered_result);
+		    } else if(data.status == 'failed'){
+			// TODO implement errors
+			alert(data.errors);
+		    }
+		}
+	    } else {
+	    }
+	});
+	uploader.bind('QueueChanged', addToList);
+	uploader.bind('UploadComplete', function(up, files){
+	    addToList();
+	    $("#{{ form_name }}_plupload").find("span.plupload_upload_status")
+		.prepend(
+		    $('<a href="" class="plupload_button">Upload more...</a>')
+			.click(function(){
+			    $.each(uploaded_files, function(i, file){
+				initial_files.unshift(uploaded_files.pop());
+				$("#{{ form_name }}_plupload")
+				    .find("div.plupload_buttons").show();
+			    });
+			    $("#{{ form_name }}_plupload")
+				.find("span.plupload_upload_status").hide();
+			    delete uploader;
+			    //addToList();
+			    initDjangoPlupload();
+			    return false;
+			})
+		);
+	});
+	uploader.bind("Error", function(up, err) {
+	    var file = err.file;
+	    alert(err.message);
+	    //alert(file.error_message);
+	    //alert(JSON.stringify(err));
+	});
+	if(initial_files.length){
+	    $("#{{ form_name }}_plupload_filelist").html('');
+	    addToList();
+	} 
+	}
+	initDjangoPlupload();
+   });
+</script>

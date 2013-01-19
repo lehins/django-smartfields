@@ -13,12 +13,16 @@ class SmartFieldsBaseModel(models.Model, SmartFieldsHandler):
         self.smart_fields_init()
 
     def save(self, *args, **kwargs):
+        old = None
         try:
             old = self.__class__.objects.get(pk=self.pk)
-        except self.__class__.DoesNotExist:
-            old = None
-        super(self.__class__, self).save(*args, **kwargs);
+        except self.__class__.DoesNotExist: pass
+        super(self.__class__, self).save(*args, **kwargs)
         self.smart_fields_save(old)
-    
+
+    def delete(self, *args, **kwargs):
+        self.smart_fields_delete()
+        super(self.__class__, self).delete(*args, **kwargs)
+
     class Meta:
         abstract = True

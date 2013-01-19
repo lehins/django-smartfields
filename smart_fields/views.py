@@ -83,3 +83,67 @@ class FileUploadView(View):
         if status:
             return json_response(status)
         return self.complete(request, obj=obj)
+
+
+class FileQueueUploadView(View):
+    model_form = None
+
+    @method_decorator(login_required)
+    @method_decorator(csrf_protect)
+    def dispatch(self, *args, **kwargs):
+        return super(FileQueueUploadView, self).dispatch(*args, **kwargs)
+
+    def pre_valid(request, plupload_form, *args, **kwargs):
+        return None
+
+    def pre_save(request, obj, *args, **kwargs):
+        return None
+
+    def delete(request, obj, *args, **kwargs):
+        return None
+
+    def post(self, request, *args, **kwargs):
+        task = request.POST.get('task', 'uploading')
+        context = {'task': task, 'task_name': task.title()}
+        errors = []
+        plupload_form = self.model_form(data=request.POST, files=request.FILES)
+        if task == "delete":
+            pk = request.POST.get('pk', None)
+            custom_errors = []
+            try:
+                obj = get_object_or_404(self.model_form._meta.model, pk=pk)
+                custom_errors = self.delete(request, obj, *args, **kwargs)
+            except Http404, e:
+                custom_errors.append(e.message)
+            if custom_errors:
+                errors.extend(custom_errors)
+            else:
+                context.update({'status': 'complete',
+                                 'file_elem_id': plupload_form.get_file_elem_id(
+                            plupload_form.file_field_name, pk)
+                                 })
+                return json_response(context)
+        if errors:
+            context.update({'status': 'failed',
+                            'errors': errors})
+            return json_response(context)
+        custom_errors = self.pre_valid(request, plupload_form, *args, **kwargs)
+        if custom_errors:
+            errors.extend(custom_errors)
+        if not errors and plupload_form.is_valid():
+            obj = plupload_form.save(commit=False)
+            custom_errors = self.pre_save(request, obj, *args, **kwargs)
+            if custom_errors:
+                errors.extend(custom_errors)
+            else:
+                obj.save()
+                context.update({
+                        'status': 'complete',
+                        'file_elem_id': plupload_form.get_file_elem_id(
+                            plupload_form.file_field_name, obj.pk),
+                        'rendered_result': plupload_form.get_file_elem_rendered(obj)})
+                return json_response(context)
+        for key, e in plupload_form.errors.iteritems():
+            errors.extend(e)
+        context.update({'status': 'failed', 'errors': errors})
+        return json_response(context)

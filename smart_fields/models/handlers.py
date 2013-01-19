@@ -74,7 +74,8 @@ class SmartFieldsHandler(object):
             new_name = self._smart_field_new_name(
                 image.name, key, ext=image_profile[key].get('format', None))
             new_image.save(
-                new_name, resize_image(image, x, y, format=format), save=False)
+                new_name, ContentFile(resize_image(image, x, y, format=format)),
+                save=False)
             new_image.close()
             image.seek(0)
         image.close()
@@ -116,39 +117,40 @@ class SmartFieldsHandler(object):
         for field_name, field_settings in self.smart_fields_settings.iteritems():
             field_profile = field_settings.get('profile', {})
             field_file = self._smart_field(field_name)
-            is_new = False
-            if field_file:
-                if not (old and old._smart_field(field_name)):
+            if issubclass(type(field_file), FieldFile):
+                is_new = False
+                if field_file:
+                    if not (old and old._smart_field(field_name)):
+                        self._smart_field_init(field_name, field_settings)
+                        is_new = True
+                    elif old._smart_field(field_name) != field_file:
+                        is_new = True
+                if old and old._smart_field(field_name):
+                    if not is_new:
+                        self._smart_field_init(field_name, field_settings)
+                    elif not field_file.field.keep_orphans:
+                        self.smart_fields_cleanup(old, field_name)
+                if is_new and field_profile:
+                    media_type = getattr(field_file.field, 'media_type', 'file')
                     self._smart_field_init(field_name, field_settings)
-                    is_new = True
-                elif old._smart_field(field_name) != field_file:
-                    is_new = True
-            if old and old._smart_field(field_name):
-                if not is_new:
-                    self._smart_field_init(field_name, field_settings)
-                elif not field_file.field.keep_orphans:
-                    self.smart_fields_cleanup(old, field_name)
-            if is_new and field_profile:
-                type = field_file.field.media_type
-                self._smart_field_init(field_name, field_settings)
-                if type == 'image':
-                    self._smart_fields_image_save(field_file, field_profile)
-                elif type == 'video':
-                    self._smart_fields_video_save(
-                        field_file, self.smart_fields[field_name], field_profile)
+                    if media_type == 'image':
+                        self._smart_fields_image_save(field_file, field_profile)
+                    elif media_type == 'video':
+                        self._smart_fields_video_save(
+                            field_file, self.smart_fields[field_name], field_profile)
+
+    def smart_fields_delete(self):
+        for field_name in self.smart_fields_settings:
+            self.smart_fields_cleanup(self, field_name)
 
     def smart_fields_cleanup(self, instance, field_name):
-        field_settings = instance.smart_fields_settings.get(field_name, {})
-        field_profile = field_settings.get('profile', {})
         field_file = instance._smart_field(field_name)
-        if field_file and not field_file.field.keep_orphans:
-            test = instance.smart_fields[field_name]
+        if field_file and issubclass(type(field_file), FieldFile) and \
+                not field_file.field.keep_orphans:
             # best attempt to clean up orphans
-            for key in field_profile:
+            for key, f in instance.smart_fields.get(field_name, {}).iteritems():
                 try: 
-                    f = instance.smart_fields[field_name].get(key, None)
-                    if f:
-                        f.delete(save=False)
+                    if f: f.delete(save=False)
                 except OSError: pass
             try: field_file.delete(save=False)
             except OSError: pass

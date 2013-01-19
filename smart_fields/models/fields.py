@@ -1,18 +1,12 @@
-from django.conf import settings
 from django.db.models.fields.files import FileField, ImageField, FieldFile
 
 from smart_fields.forms.widgets import PluploadVideoInput
+from smart_fields.settings import KEEP_ORPHANS, VIDEO_TAG
 
 __all__ = (
     "SmartFileField", "SmartImageField", "SmartAudioField", "SmartVideoField",
     "SmartPdfField",
 )
-
-KEEP_ORPHANS = getattr(settings, 'SMART_FIELDS_KEEP_ORPHANS', False)
-
-VIDEO_FORM_TAG = getattr(settings, 'SMARTFIELDS_VIDEO_FORM_TAG', None)
-
-VIDEO_DISPLAY_TAG = getattr(settings, 'SMARTFIELDS_VIDEO_DISPLAY_TAG', '<video id="video_%(name)s" class="video-js vjs-default-skin" controls="controls" preload="auto" width="640" height="480" data-setup="{}">%(sources)s</video>')
 
 
 class SmartField(object):
@@ -27,7 +21,7 @@ class SmartField(object):
         if not data and not data is None and not self.keep_orphans:
             instance.smart_fields_cleanup(instance, self.name)
 
-    def upload_url(instance):
+    def upload_url(self, instance):
         raise NotImplementedError(
             "'upload_url' needs to be defined in order to use Plupload.")
 
@@ -66,7 +60,7 @@ class SmartAudioField(SmartFileField):
 class VideoFieldFile(FieldFile):
     @property
     def html5_tag(self):
-        video_tag = VIDEO_DISPLAY_TAG or VIDEO_FORM_TAG
+        video_tag = VIDEO_TAG.get('instance_template', None)
         return PluploadVideoInput().render_initial_content(self, video_tag=video_tag)
 
 class SmartVideoField(SmartFileField):
