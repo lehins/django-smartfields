@@ -1,49 +1,116 @@
-
 from smart_fields import settings
 
 import re, subprocess, time, threading, Queue
 
+try:
+    import Image
+except ImportError:
+    from PIL import Image
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from StringIO import StringIO
 
-def resize_image(data, width, height, format='PNG'):
-    """
-    Resize image to fit it into (width, height) box.
-    """
-    try:
-        import Image
-    except ImportError:
-        from PIL import Image
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO
-    string = StringIO(data.read())
-    image = Image.open(string)
-    old_dim = image.size
-    max_dim = (width, height)
-    
-    requested_ratio = float(max_dim[0])/float(max_dim[1])
-    old_ratio = float(old_dim[0])/float(old_dim[1])
-    if old_ratio > requested_ratio:
-        new_dimensions =  (max_dim[0], int(round(max_dim[0]*(1/old_ratio))))
-    elif old_ratio < requested_ratio:
-        new_dimensions = (int(round(max_dim[1]*old_ratio)), max_dim[1])
-    else:
-        new_dimensions = max_dim
-    
-    if old_dim[0] <= max_dim[0] and old_dim[1] <= max_dim[1]:
-        new_dimensions = old_dim
-        import imghdr, decimal
-        if imghdr.what(string) == format.lower():
+__all__ = (
+    "ImageConverter", "VideoConverter",
+)
+# syntax
+# FORMAT: ([extensions], [read_modes], [write_modes])
+SUPPORTED_IMAGE_FORMATS = {
+    "BMP": (['bmp', 'dib'], ['1', 'L', 'P', 'RGB'], ['1', 'L', 'P', 'RGB']),
+    #"DCX": (['dcx'], ['1', 'L', 'P', 'RGB'], None), - Intel fax format
+    #"EPS": (['eps', 'ps'], None, ['L', 'RGB']), - No read support
+    "GIF": (['gif'], ['P'], ['P']),	 
+    "IM": (['im'], [], []),
+    "JPEG": (['jpg', 'jpe', 'jpeg'], ['L', 'RGB', 'CMYK'], ['L', 'RGB', 'CMYK']),
+    "PCD": (['pcd'], ['RGB'], None),
+    "PCX": (['pcx'], ['1', 'L', 'P', 'RGB'], ['1', 'L', 'P', 'RGB']),
+    # "PDF": (['pdf'], None, ['1', 'RGB']), - No read support
+    "PNG": (
+        ['png'], ['1', 'L', 'P', 'RGB', 'RGBA'], ['1', 'L', 'P', 'RGB', 'RGBA']),
+    "PPM": (['pbm', 'pgm', 'ppm'], ['1', 'L', 'RGB'], ['1', 'L', 'RGB']),	 
+    "PSD": (['psd'], ['P'], None),
+    "TIFF": (
+        ['tif', 'tiff'], ['1', 'L', 'RGB', 'CMYK'], ['1', 'L', 'RGB', 'CMYK']),
+    "XBM": (['xbm'], ['1'], ['1']),
+    "XPM": (['xpm'], ['P'], None),
+    "SGI": (['sgi'], ['L', 'RGB'], None),
+    "TGA": (['tga', 'tpic'], ['RGB', 'RGBA'], None)
+}
+
+class ImageConverter(object):
+    preference_mode_list = ['RGBA', 'RGB', 'P', 'CMYK', 'L', '1']
+    browser_format_support = ['JPEG', 'GIF', 'PNG']
+
+    def __init__(self, data):
+        self.data = data
+
+    @classmethod
+    def browser_exts(cls):
+        supported = []
+        for format in cls.browser_format_support:
+            supported.extend(SUPPORTED_IMAGE_FORMATS.get(format)[0])
+        return supported
+
+    @classmethod
+    def input_exts(cls):
+        supported = []
+        for format, support in SUPPORTED_IMAGE_FORMATS.iteritems():
+            supported.extend(support[0])
+        return supported
+            
+
+    def convert(self, max_dim=None, format=None, mode=None):
+        """
+        Resize image to fit it into (width, height) box.
+        """
+        cur_pos = self.data.tell()
+        self.data.seek(0)
+        string = StringIO(self.data.read())
+        self.data.seek(cur_pos)
+        if not (max_dim or format or mode):
+            # nothing to do, just return copy of the data
             return string.getvalue()
-    image = image.resize(new_dimensions, resample=Image.ANTIALIAS)
-    
-    string = StringIO()
-    if format == 'JPEG' and image.mode != 'RGB':
-        image = image.convert('RGB')
-    if format == 'PNG' and not (image.mode != 'P' or image.mode != 'RGB'):
-        image = image.convert('RGB')
-    image.save(string, format=format)
-    return string.getvalue()
+        image = Image.open(string)
+        format = format or image.format
+
+        support = SUPPORTED_IMAGE_FORMATS.get(format, None)
+        if support is None or support[2] is None:
+            raise TypeError("Unsupported output format: '%s'" % format)
+        supported_modes = support[2]
+        if mode and mode not in supported_modes:
+            raise TypeError("Unsupported output mode: '%s' for format: '%s'" % (
+                    mode, format))
+        if mode:
+            image = image.convert(mode)
+        elif not image.mode in supported_modes:
+            if not supported_modes:
+                image = image.convert(PREFERENCE_MODES_LIST[0])
+            else:
+                for mode in self.preference_mode_list:
+                    if mode in supported_modes:
+                        image = image.convert(mode)
+                    break;
+
+        old_dim = image.size
+        if not max_dim is None:
+            requested_ratio = float(max_dim[0])/float(max_dim[1])
+            old_ratio = float(old_dim[0])/float(old_dim[1])
+            if old_ratio > requested_ratio:
+                new_dimensions = (max_dim[0], int(round(max_dim[0]*(1/old_ratio))))
+            elif old_ratio < requested_ratio:
+                new_dimensions = (int(round(max_dim[1]*old_ratio)), max_dim[1])
+            else:
+                new_dimensions = max_dim
+
+            if old_dim[0] <= max_dim[0] and old_dim[1] <= max_dim[1]:
+                new_dimensions = old_dim
+                if image.format == format and image.mode == mode:
+                    return string.getvalue()
+            image = image.resize(new_dimensions, resample=Image.ANTIALIAS)
+        string = StringIO()
+        image.save(string, format=format)
+        return string.getvalue()
 
  
 class AsynchronousFileReader(threading.Thread):

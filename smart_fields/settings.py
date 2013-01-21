@@ -1,5 +1,4 @@
 from django.templatetags.static import static
-from django.contrib.sites.models import Site
 from django.conf import settings
 
 import os
@@ -30,7 +29,7 @@ PLUPLOAD_QUEUE_CSS = getattr(settings, 'SMARTFIELDS_PLUPLOAD_QUEUE_CSS', {
 
 VIDEO_TAG = getattr(settings, 'SMARTFIELDS_VIDEO_TAG', {
         'form_template': '<video id="video_%(name)s" class="video-js vjs-default-skin" controls="controls" preload="auto" width="320" height="240" data-setup="{}">%(sources)s</video>',
-        'instance_template': '<video id="video_%(name)s" class="video-js vjs-default-skin" controls="controls" preload="auto" width="640" height="480" data-setup="{}">%(sources)s</video>',
+        'instance_template': '<video id="video_%(name)s" class="video-js vjs-default-skin" controls="controls" preload="auto" width="700" height="400" data-setup="{}">%(sources)s</video>',
         'js': ("https://vjs.zencdn.net/c/video.js",),
         'css': {'all': ("https://vjs.zencdn.net/c/video-js.css",)},
         })
@@ -38,9 +37,6 @@ VIDEO_TAG = getattr(settings, 'SMARTFIELDS_VIDEO_TAG', {
 VIDEO_TAG_USE_SSL = getattr(settings, 'SMARTFIELDS_VIDEO_TAG_USE_SSL', False)
 
 VIDEO_TAG_DOMAIN = getattr(settings, 'SMARTFIELDS_VIDEO_TAG_DOMAIN', None)
-
-#if VIDEO_TAG_DOMAIN is None and 'django.contrib.sites' in settings.INSTALLED_APPS:
-#    VIDEO_TAG_DOMAIN = Site.objects.get_current().domain
 
 DEFAULT_VIDEO_PROFILES = getattr(settings, 'SMARTFIELDS_DEFAULT_VIDEO_PROFILES', {
     'mp4': {
@@ -82,3 +78,5 @@ DEFAULT_VIDEO_PROFILES = getattr(settings, 'SMARTFIELDS_DEFAULT_VIDEO_PROFILES',
         'abitrate': '96k'
         }
     })
+
+INSTALLED_APPS = getattr(settings, 'INSTALLED_APPS', ())

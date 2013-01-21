@@ -5,7 +5,7 @@ from django.core.files.base import ContentFile
 from django.db.models.fields.files import FieldFile, FileField, ImageFieldFile, \
     ImageField
 
-from smart_fields.utils import resize_image, VideoConverter
+from smart_fields.utils import ImageConverter, VideoConverter
 import os
 
 class SmartFieldsHandler(object):
@@ -18,7 +18,9 @@ class SmartFieldsHandler(object):
         name, old_ext = os.path.splitext(filename)
         if ext is None:
             ext = old_ext
-        return "%s_%s.%s" % (name, key, ext.lower())
+        else:
+            ext = ".%s" % ext
+        return "%s_%s%s" % (name, key, ext.lower())
 
     def _smart_field_init(self, field_name, field_settings):
         field_profile = field_settings.get('profile', {})
@@ -31,13 +33,16 @@ class SmartFieldsHandler(object):
             else:
                 storage = FileSystemStorage(
                     location=settings.STATIC_ROOT, base_url=settings.STATIC_URL)
-            for key in field_profile:
+            for key, profile in field_profile.iteritems():
                 new_field_name = "%s_%s" % (field_name, key)
                 new_name = None
-                if field_file:
+                max_dim = profile.get('dimensions', None)
+                format = profile.get('format', None)
+                mode = profile.get('mode', None)
+                if field_file and (max_dim or format or mode):
                     new_name = self._smart_field_new_name(
                         field_file.name, key,
-                        ext=field_profile[key].get('format', None))
+                        ext=format)
                 else:
                     new_name = field_profile[key].get('default', None)
                 if not new_name is None:
@@ -66,18 +71,19 @@ class SmartFieldsHandler(object):
 
     def _smart_fields_image_save(self, image, image_profile):
         image.open()
-        for key in image_profile:
-            x, y = image_profile[key].get(
-                'dimensions', image._get_image_dimensions())
-            format = image_profile[key].get('format', 'PNG')
-            new_image = self.smart_fields[image.field.name][key]
-            new_name = self._smart_field_new_name(
-                image.name, key, ext=image_profile[key].get('format', None))
-            new_image.save(
-                new_name, ContentFile(resize_image(image, x, y, format=format)),
-                save=False)
-            new_image.close()
-            image.seek(0)
+        converter = ImageConverter(image)
+        for key, profile in image_profile.iteritems():
+            max_dim = profile.get('dimensions', None)
+            format = profile.get('format', None)
+            mode = profile.get('mode', None)
+            if max_dim or format or mode:
+                new_image = self.smart_fields[image.field.name][key]
+                new_name = self._smart_field_new_name(
+                    image.name, key, ext=image_profile[key].get('format', None))
+                new_image.save(new_name, ContentFile(
+                        converter.convert(max_dim, format=format, mode=mode)),
+                               save=False)
+                new_image.close()
         image.close()
 
     def _smart_fields_video_save(self, file_in, files_out, video_profile):

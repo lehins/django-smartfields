@@ -12,7 +12,8 @@ __all__ = (
 )
 
 class PluploadModelForm(forms.ModelForm):
-    form_template = 'smart_fields/plupload_queue_form.html'
+    form_template = '<div id="%(form_name)s_plupload"></div><script type="text/javascript">$(function(){var %(form_name)s_plupload_settings=%(plupload_settings)s;var csrf_token=$("input[name=\'csrfmiddlewaretoken\']").val();var %(form_name)s_initial_files=%(initial_file_elems)s;%(form_name)s_plupload_settings[\'multipart_params\']={\'csrfmiddlewaretoken\': csrf_token};var %(form_name)s_uploader=new smartfields.DjangoQueue("%(form_name)s_plupload",%(form_name)s_plupload_settings,%(form_name)s_initial_files);});</script>'
+
     file_elem_template = '<li id="%(file_id)s" class="plupload_delete"><div class="plupload_file_name"><span data-href="%(url)s" class="plupload_file_link" style="cursor:pointer;">%(filename)s</a></div><div class="plupload_file_action"><a style="display:block;" data-pk=%(pk)s title="Remove File" href="#"></a></div><div class="plupload_file_status">Uploaded</div><div class="plupload_file_size">%(filesize)s</div><div class="plupload_clearer">&nbsp;</div></li>'
 
     def __init__(self, queryset=None, upload_url=None, *args, **kwargs):
@@ -56,7 +57,8 @@ class PluploadModelForm(forms.ModelForm):
 	    'container': "%s_plupload" % form_name,
 	    'file_data_name': self.file_field_name,
             'rename': len(self._meta.fields) == 2,
-            'url': upload_url
+            'url': upload_url,
+            'multi_selection': True
             })
         return mark_safe(json.dumps(plupload_settings))
 
@@ -93,10 +95,10 @@ class PluploadModelForm(forms.ModelForm):
             'plupload_settings': self._get_plupload_settings(),
             'initial_file_elems': mark_safe(json.dumps(initial_file_elems))
             }
-        return mark_safe(
-            render_to_string(self.form_template, context))
+        return mark_safe(self.form_template % context)
 
     class Media:
         css = settings.PLUPLOAD_QUEUE_CSS
-        js = settings.PLUPLOAD_JS + settings.PLUPLOAD_QUEUE_JS
+        js = settings.PLUPLOAD_JS + settings.PLUPLOAD_QUEUE_JS + \
+            ("js/smartfields.js",)
 

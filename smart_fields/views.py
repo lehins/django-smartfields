@@ -9,13 +9,13 @@ from django.forms import ModelForm
 
 import json, new
 
+__all__ = (
+    "FileUploadView", "FileQueueUploadView",
+)
+
 def json_response(context, status=200):
     return HttpResponse(json.dumps(context), mimetype="application/json", 
                         status=status)
-
-__all__ = (
-    "FileUploadView",
-)
 
 class FileUploadView(View):
     model_form = None

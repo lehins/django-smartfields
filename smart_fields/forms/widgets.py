@@ -5,6 +5,7 @@ from django.utils.html import conditional_escape, format_html
 from django.utils.translation import ugettext_lazy
 from django.utils.encoding import force_text
 from django.forms.util import flatatt
+from django.contrib.sites.models import Site
 
 from smart_fields import settings
 
@@ -22,13 +23,13 @@ class PluploadFileInput(forms.ClearableFileInput):
     browse_input_text = ugettext_lazy('Browse')
     upload_input = ButtonInput()
     upload_input_text = ugettext_lazy('Upload')
-    clear_input = forms.CheckboxInput()
-    clear_checkbox_label = ugettext_lazy('Delete')
-    no_initial_text = ugettext_lazy('No file has been uploaded')
-    script_template = "smart_fields/plupload_script.html"
-    container_template = '<div %(attrs)s><div id="%(name)s_initial">%(initial)s</div> %(file_container)s <p>%(browse)s %(upload)s</p></div>%(script)s'
-    initial_template = '%(clear)s<p><a href="%(url)s" target="_blank">%(initial_content)s</a></p>'
-    clear_template = '<label for="%(clear_checkbox_id)s">%(clear_checkbox)s %(clear_checkbox_label)s</label>'
+    clear_input = ButtonInput()
+    clear_input_text = ugettext_lazy('Delete')
+    no_initial_text = u"No file has been uploaded"
+    script_template = '$(function(){var name="%(name)s";var remove_btn_id="%(remove_btn_id)s";var settings=%(plupload_settings)s;settings[\'multipart_params\']={\'csrfmiddlewaretoken\': $("input[name=\'csrfmiddlewaretoken\']").val()};var uploader=new smartfields.DjangoUploader(name, remove_btn_id, settings);});'
+
+    container_template = '<div %(attrs)s><div id="%(name)s_initial">%(initial)s</div> %(file_container)s <p>%(browse)s %(upload)s %(clear)s</p></div><script type="text/javascript">%(script)s</script>'
+    initial_template = '<p><a href="%(url)s" target="_blank">%(initial_content)s</a></p>'
     plupload_filters = []
 
     def _get_plupload_settings(self, name, value):
@@ -45,19 +46,6 @@ class PluploadFileInput(forms.ClearableFileInput):
             })
         return plupload_settings
     
-    def render_clear(self, name, value):
-        if not value:
-            return ''
-        checkbox_name = conditional_escape(self.clear_checkbox_name(name))
-        checkbox_id = conditional_escape(self.clear_checkbox_id(checkbox_name))
-        substitutions = {
-            'clear_checkbox': self.clear_input.render(
-                checkbox_name, False, attrs={'id': checkbox_id}),
-            'clear_checkbox_id': checkbox_id,
-            'clear_checkbox_label': self.clear_checkbox_label
-            }
-        return self.clear_template % substitutions
-
     def render_initial_content(self, value):
         return force_text(os.path.basename(value.url))
 
@@ -67,18 +55,18 @@ class PluploadFileInput(forms.ClearableFileInput):
         substitutions = {
             'url': value.url,
             'initial_content': self.render_initial_content(value),
-            'clear': self.render_clear(name, value)
             }
         return mark_safe(self.initial_template % substitutions)
     
-    def render_script(self, name, value):
+    def render_script(self, name, value, clear_id):
         plupload_settings = self._get_plupload_settings(name, value)
         context = {
             'name': name,
             'no_initial_text': self.no_initial_text,
-            'plupload_settings': mark_safe(json.dumps(plupload_settings))
+            'plupload_settings': mark_safe(json.dumps(plupload_settings)),
+            'remove_btn_id': clear_id
             }
-        return mark_safe(render_to_string(self.script_template, context))
+        return mark_safe(self.script_template % context)
                    
     def render_browse_btn(self, name):
         return self.browse_input.render(
@@ -90,20 +78,27 @@ class PluploadFileInput(forms.ClearableFileInput):
             "%s_upload_btn" % name, self.upload_input_text, attrs={
                 'id': "%s_upload_btn" % name})
 
+    def render_clear_btn(self, clear_name, clear_id):
+        return self.clear_input.render(
+            clear_name, self.clear_input_text, attrs={'id': clear_id})
+
     def render(self, name, value, attrs=None):
+        clear_name = conditional_escape(self.clear_checkbox_name(name))
+        clear_id = conditional_escape(self.clear_checkbox_id(clear_name))
         substitutions = {
             'attrs': flatatt(self.build_attrs(attrs)),
             'initial': conditional_escape(self.render_initial(name, value)),
             'file_container': '<div id="%s_container"></div>' % name,
             'browse': self.render_browse_btn(name),
             'upload': self.render_upload_btn(name),
-            'script': self.render_script(name, value),
+            'clear': self.render_clear_btn(clear_name, clear_id),
+            'script': self.render_script(name, value, clear_id),
             'name': name
             }
         return mark_safe(self.container_template % substitutions)
         
     class Media:
-        js = settings.PLUPLOAD_JS
+        js = settings.PLUPLOAD_JS  + ("js/smartfields.js",)
 
 
 class PluploadImageInput(PluploadFileInput):
@@ -117,15 +112,20 @@ class PluploadImageInput(PluploadFileInput):
             '<img src="{0}" style="max-width:320px;max-height:200px;"/>', value.url)
 
 class PluploadVideoInput(PluploadFileInput):
-    initial_template = '%(clear)s<p>%(initial_content)s</p>'
+    initial_template = '<p>%(initial_content)s</p>'
 
-    def _get_full_url(self, url, use_ssl=None):
-        if settings.VIDEO_TAG_DOMAIN is None:
-            return url
+    @classmethod
+    def _get_full_url(cls, url, use_ssl=None):
+        domain = settings.VIDEO_TAG_DOMAIN
+        if domain is None:
+            if 'django.contrib.sites' in settings.INSTALLED_APPS:
+                domain = Site.objects.get_current().domain
+            else:
+                return url
         if use_ssl is None:
             use_ssl = settings.VIDEO_TAG_USE_SSL
         protocol = 'https://' if use_ssl else 'http://'
-        return protocol + settings.VIDEO_TAG_DOMAIN + url
+        return protocol + domain + url
 
     def render_initial_content(self, value, video_tag=None):
         content_template = video_tag
