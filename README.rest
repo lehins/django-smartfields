@@ -23,11 +23,12 @@ Features
 
 Dependancies
 ------------
-* `Django <https://docs.djangoproject.com/en/dev/>`_ (currently works with development 1.6 version and possibly with 1.5 RC, couple methods used for widget rendering needs to be ported from development verision for it to work in earlier version <= 1.4) 
+* `Django <https://docs.djangoproject.com/en/dev/>`_ (currently works with development 1.6 version and possibly with 1.5 RC, couple methods used for widget rendering need to be ported from development verision for app to work in earlier version <= 1.4) 
     * If anyone is willing to make it work with django 1.4 or less, will be much appreciated, since it would be a hassle for me due to the project I am working on. Send me a message if assistance needed with that task.
 * `Python PIL <http://pypi.python.org/pypi/PIL>`_ used for image conversion/resizing
-* `avconv <http://libav.org/avconv.html>`_ for video conversion (should also work with ffmpeg, will require settings modifications though. has not been tested with ffmpeg yet)
+* `avconv <http://libav.org/avconv.html>`_ for video conversion (should also work with ffmpeg, will require settings modifications though. Has not been tested with ffmpeg yet)
 * `Plupload <http://www.plupload.com/>`_ for using smartfields in forms (free for development, license for production is ~$14. Totally worth it.)
+* `VideoJS <http://videojs.com/>`_ for rendering HTML5 video tags.
 
 How to use it
 -------------
