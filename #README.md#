@@ -1,0 +1,155 @@
+
+django-smart-fields
+===================
+
+Django Model Fields that are smart. Currently only file fields.
+
+Features
+--------
+
+* Cleanup of orphan files after the entry in database was deleted or if file was replaced with a different one
+* Image files conversion and/or resizing (requires PIL)
+* Video files conversion (requires avconv or ffmpeg)
+* Automatic addition of the converted FileFields to the model. (For instance if a particular ImageField defined in the model with a name 'image', using custom settings for that field named 'png' each instance of that model will be initialized with an addidional field 'image_png'.)
+* Custom file upload form fields that feature:
+    * displaying of initial value (displaying currently saved image or video)
+    * upload progress (requires plupload, works in all browsers)
+    * file size display and limit before uploading (requires plupload)
+    * queueing of multiple files to be uploaded (requires plupload)
+
+Dependancies
+------------
+* `Django <https://docs.djangoproject.com/en/dev/>`_ (currently works with development 1.6 version and possibly with 1.5 RC, couple methods used for widget rendering needs to be ported from development verision for it to work in earlier version <= 1.4)
+* `Python PIL <http://pypi.python.org/pypi/PIL>`_ used for image conversion/resizing
+* `avconv <http://libav.org/avconv.html>`_ for video conversion (should also work with ffmpeg, will require settings modifications though. has not been tested with ffmpeg yet)
+* `Plupload <http://www.plupload.com/>`_ for using smartfields in forms (free for development, license for production is ~$14. Totally worth it.)
+
+How to use it
+-------------
+
+For any of the features to work yuo have to extend the base abstract model ``smart_fields.models.SmartFieldsBaseModel``. If for some reason it is not feasible (lets say you are using GeoDjango or something) you can extend ``smart_fields.models.SmartFieldsHandler`` and add required methods. Here is an example:
+
+    class SmartFieldsModel(models.Model, smart_fields.models.SmartFieldsHandler):
+        ... 
+	fields
+	...
+
+        def __init__(self, *args, **kwargs):
+            super(SmartFieldsModel, self).__init__(*args, **kwargs)
+            self.smart_fields_init() ## !important. after the super call
+
+        def save(self, old=None, *args, **kwargs):
+            super(SmartFieldsModel, self).save(*args, **kwargs)
+            self.smart_fields_save()  ## !important. after the super call
+
+        def delete(self, *args, **kwargs):
+            self.smart_fields_delete()  ## !important. before the super call
+            super(SmartFieldsModel, self).delete(*args, **kwargs)
+
+Now we need to specify what settings needs to be applied and to which fields. Here is an example:
+
+
+    class Project(smart_fields.models.SmartFieldsBaseModel):
+        def image_upload_url(instance):
+            return reverse("projects:upload:thumbnail", kwargs={'pk': instance.pk})
+        user = models.ForeignKey(User, editable=False)
+        image = models.CrowdSmartImageField(upload_to="place/for/images/", upload_url=image_upload_url, keep_orphans=True)
+            upload_to=models.CrowdSmartFieldsModel.image_upload_path, 
+            help_text=u"Upload an image for your Project.")
+        video = models.CrowdSmartVideoField(
+            verbose_name=u"Video pitch.", blank=True, upload_url=video_upload_url,
+            upload_to=models.CrowdSmartFieldsModel.video_upload_path, 
+            help_text=u"Upload the video pitch.")
+        brief_descr = models.TextField(
+            verbose_name=u'Brief description', validators=[MaxLengthValidator(300)],
+            help_text=u"Briefly describe the primary purpose of your project for "
+            "potential contributors.", blank=True)
+        full_descr = models.TextField(
+            verbose_name=u'Make your best pitch:', blank=True,
+            help_text=u"Describe your Project in as much detail as possible.")
+        full_descr_no_html = models.TextField(blank=True, editable=False)
+        project_type = models.CharField(
+            verbose_name=u"Project type:",
+            max_length=15, choices=PROJECT_TYPE_CHOICES, default="rewards")
+        amount = models.MoneyField(
+            verbose_name=u"Funding goal:", null=True,
+            help_text=u"Enter a minimum amount of $500 for your funding goal.")
+        deadline = models.DateField(
+            verbose_name="Deadline:", null=True,
+            help_text="Choose the expected deadline for the Project.")
+        created_on = models.DateTimeField(auto_now_add=True, editable=False)
+        categories = models.ManyToManyField(
+            models.Category, verbose_name=u"Categories (up to 3):", 
+            limit_choices_to={'for_projects': True})
+        identities = models.ManyToManyField(
+            models.Identity, verbose_name=u"Identities:", null=True)
+        status = models.CharField(max_length=15, choices=PROJECT_STATUS_CHOICES, 
+                                  default="incomplete", editable=False)
+        status_changed_on = models.DateTimeField(auto_now_add=True, editable=False)
+        wp_account = models.ForeignKey(WPAccount, null=True)
+        finish_task_result_id = models.CharField(max_length=64, blank=True)
+        finish_status = models.CharField(max_length=15, default='not_finished')
+        discussions = generic.GenericRelation(Discussion)
+        geo_address = models.ForeignKey(models.GeoAddress, null=True)
+        viewport = models.ForeignKey(Viewport, null=True)
+        followers = models.ManyToManyField(
+            User, editable=False, related_name='projects_following')
+
+        objects = ProjectManager()
+
+        def __str__(self):
+            return self.title
+
+        def __init__(self, *args, **kwargs):
+            self.preapprovals = None
+            self.checkouts = None
+            super(Project, self).__init__(*args, **kwargs)
+
+        @property
+        def discussion(self):
+            if not self.discussions.all():
+                return Discussion.objects.get(slug='generic-discussion')
+            return self.discussions.all()[0]
+
+        @property
+        def smart_fields_settings(self):
+            return {
+                'image': {
+                    'instance': self.image,
+                    'profile': {
+                        'big': {
+                            'dimensions': (320, 200),
+                            'format': 'PNG',
+                            'default': "default/images/projects/320_200.png"
+                            },
+                        'small': {
+                            'dimensions': (160, 100),
+                            'format': 'PNG',
+                            'default': "default/images/projects/160_100.png"
+                            },
+                        'tiny': {
+                            'dimensions': (75, 75),
+                            'format': 'PNG',
+                            'default': "default/images/projects/75_75.png"
+                            },
+                        },
+                    'plupload_settings': {
+                        'resize' : {'width': 1024, 'height': 768, 'quality': 90},
+                        'filters': [{'title': "Image Files",
+                                     'extensions': ','.join(ImageConverter.input_exts())}]
+                        }
+                    },
+                'video': {
+                    'instance': self.video,
+                    'profile': {
+                        'mp4': {
+                            'format': 'mp4',
+                            'default_profile': 'mp4'
+                            },
+                        'webm': {
+                            'format': 'webm',
+                            'default_profile': 'webm'
+                            },
+                        },
+                    },
+                }
