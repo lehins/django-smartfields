@@ -39,11 +39,11 @@ For any of the features to work you have to extend the base abstract model ``sma
         ... 
 	fields
 	...
-
-        def __init__(self, *args, **kwargs):
-            super(SmartFieldsModel, self).__init__(*args, **kwargs)
+	
+	def __init__(self, *args, **kwargs):
+	    super(SmartFieldsModel, self).__init__(*args, **kwargs)
             self.smart_fields_init() ## !important. after the super call
-
+        
         def save(self, old=None, *args, **kwargs):
             super(SmartFieldsModel, self).save(*args, **kwargs)
             self.smart_fields_save()  ## !important. after the super call
