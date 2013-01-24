@@ -36,18 +36,15 @@ The best way to demonstrate features is through examples.
 For any of the features to work you have to extend the base abstract model ``smart_fields.models.SmartFieldsBaseModel``. If for some reason it is not feasible (lets say you are using GeoDjango or something) you can extend ``smart_fields.models.SmartFieldsHandler`` and add required methods. Here is an example:
 
     class SmartFieldsModel(models.Model, smart_fields.models.SmartFieldsHandler):
-        ... 
+        
 	fields
-	...
 	
 	def __init__(self, *args, **kwargs):
 	    super(SmartFieldsModel, self).__init__(*args, **kwargs)
             self.smart_fields_init() ## !important. after the super call
-        
         def save(self, old=None, *args, **kwargs):
             super(SmartFieldsModel, self).save(*args, **kwargs)
             self.smart_fields_save()  ## !important. after the super call
-
         def delete(self, *args, **kwargs):
             self.smart_fields_delete()  ## !important. before the super call
             super(SmartFieldsModel, self).delete(*args, **kwargs)
