@@ -1,11 +1,17 @@
 from django import forms
 from django.template.loader import render_to_string
 from django.utils.safestring import mark_safe
-from django.utils.html import conditional_escape, format_html
+from django.utils.html import conditional_escape
 from django.utils.translation import ugettext_lazy
 from django.utils.encoding import force_text
 from django.forms.util import flatatt
 from django.contrib.sites.models import Site
+
+
+try:
+    from django.utils.html import format_html
+except ImportError:
+    from smart_fields.backward import format_html
 
 from smart_fields import settings
 
