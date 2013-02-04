@@ -11,9 +11,9 @@ from smart_fields import settings
 
 import os, json
 
-#__all__ = (
-#    "ButtonInput", "PluploadFileInput", "PluploadImageInput", "PluploadVideoInput",
-#)
+__all__ = (
+    "ButtonInput", "PluploadFileInput", "PluploadImageInput", "PluploadVideoInput",
+)
 
 class ButtonInput(forms.widgets.Input):
     input_type = 'submit'
@@ -28,7 +28,7 @@ class PluploadFileInput(forms.ClearableFileInput):
     no_initial_text = u"No file has been uploaded"
     script_template = '$(function(){var name="%(name)s";var remove_btn_id="%(remove_btn_id)s";var settings=%(plupload_settings)s;settings[\'multipart_params\']={\'csrfmiddlewaretoken\': $("input[name=\'csrfmiddlewaretoken\']").val()};var uploader=new smartfields.DjangoUploader(name, remove_btn_id, settings);});'
 
-    container_template = '<div %(attrs)s><div id="%(name)s_initial">%(initial)s</div> %(file_container)s <p>%(browse)s %(upload)s %(clear)s</p></div><script type="text/javascript">%(script)s</script>'
+    container_template = '<div%(attrs)s><div id="%(name)s_initial">%(initial)s</div> %(file_container)s <p>%(browse)s %(upload)s %(clear)s</p></div><script type="text/javascript">%(script)s</script>'
     initial_template = '<p><a href="%(url)s" target="_blank">%(initial_content)s</a></p>'
     plupload_filters = []
 
@@ -40,7 +40,7 @@ class PluploadFileInput(forms.ClearableFileInput):
         plupload_settings.update(field_settings.get('plupload_settings', {}))
         plupload_settings.update({
 	    'browse_button': "%s_browse_btn" % name,
-	    'container': "%s_container" % name,
+	    #'container': "%s_container" % name,
 	    'file_data_name': name,
             'url': value.field.upload_url(value.instance)
             })
