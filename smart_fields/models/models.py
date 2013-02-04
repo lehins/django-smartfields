@@ -12,8 +12,7 @@ class SmartFieldsBaseModel(models.Model, SmartFieldsHandler):
         super(self.__class__, self).__init__(*args, **kwargs)
         self.smart_fields_init()
 
-    def save(self, *args, **kwargs):
-        old = None
+    def save(self, old=None, *args, **kwargs):
         try:
             old = self.__class__.objects.get(pk=self.pk)
         except self.__class__.DoesNotExist: pass
