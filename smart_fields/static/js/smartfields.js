@@ -190,6 +190,8 @@ var smartfields = {
 				}
 			    }
 			    $("#" + data.file_elem_id).remove();
+			} else if(data.status == 'failed' && data.errors){
+			    alert(data.errors.join('\n'));
 			}
 		    }
 		});
