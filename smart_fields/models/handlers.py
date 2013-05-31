@@ -1,11 +1,13 @@
 from django.conf import settings
 from django.core.cache import cache
 from django.core.files.storage import FileSystemStorage
-from django.core.files.base import ContentFile
+from django.core.files.base import ContentFile, File
+from django.core.exceptions import ImproperlyConfigured
 from django.db.models.fields.files import FieldFile, FileField, ImageFieldFile, \
     ImageField
 
-from smart_fields.utils import ImageConverter, VideoConverter
+from smart_fields.utils import ImageConverter, VideoConverter, KMLConverter
+from smart_fields.models.fields import SmartKMLFileField
 import os
 
 class SmartFieldsHandler(object):
@@ -24,8 +26,11 @@ class SmartFieldsHandler(object):
 
     def _smart_field_init(self, field_name, field_settings):
         field_profile = field_settings.get('profile', {})
+        field_file = self._smart_field(field_name)
+        if field_file.field.media_type == 'kml' and not 'geometry' in field_settings:
+            raise ImproperlyConfigured(
+                u"Geometry field is required for KMLFileField to work.")
         if field_profile:
-            field_file = self._smart_field(field_name)
             smart_fields = {}
             storage = None
             if field_file:
@@ -79,7 +84,7 @@ class SmartFieldsHandler(object):
             if max_dim or format or mode:
                 new_image = self.smart_fields[image.field.name][key]
                 new_name = self._smart_field_new_name(
-                    image.name, key, ext=image_profile[key].get('format', None))
+                    image.name, key, ext=image_profile[key].get('format', ''))
                 new_image.save(new_name, ContentFile(
                         converter.convert(max_dim, format=format, mode=mode)),
                                save=False)
@@ -95,6 +100,27 @@ class SmartFieldsHandler(object):
             f_in, fs_out, progress_setter=self._smart_fields_progress_setter,
             progress_key=key)
         converter.start()
+
+    def _smart_fields_kml_save(
+            self, field_file, field_name, field_settings):
+        geometry = field_settings['geometry']
+        if callable(geometry):
+            geometry = geometry(self)
+        if geometry:
+            converter = KMLConverter(geometry)
+            file_name = field_file.field.generate_filename(self, self.pk)
+            file_path = field_file.field.storage.path(file_name)
+            field_file.name = file_name
+            field_file.file = File(
+                converter.convert(file_path, properties=field_settings))
+            self.save(self)
+            self._smart_field_init(field_name, field_settings)
+            if 'profile' in field_settings:
+                for key, properties in field_settings['profile'].iteritems():
+                    new_name = self._smart_field_new_name(
+                        file_path, key, ext=properties.get('format', 'kml'))
+                    self._smart_fields[field_name][key].file = File(
+                        converter.convert(new_name, properties=properties))
 
     @property
     def smart_fields_settings(self):
@@ -123,8 +149,27 @@ class SmartFieldsHandler(object):
         for field_name, field_settings in self.smart_fields_settings.iteritems():
             field_profile = field_settings.get('profile', {})
             field_file = self._smart_field(field_name)
-            if issubclass(type(field_file), FieldFile):
+            if issubclass(type(field_file.field), SmartKMLFileField):
                 is_new = False
+                geometry = field_settings['geometry']
+                if callable(geometry):
+                    geometry = geometry(self)
+                if not field_file and geometry:
+                    is_new = True
+                if old:
+                    old_geometry = old.smart_fields_settings[field_name]['geometry']
+                    if callable(old_geometry):
+                        old_geometry = old_geometry(old)
+                    if old_geometry != geometry:
+                        is_new = True
+                        if not field_file.field.keep_orphans:
+                            self.smart_fields_cleanup(old, field_name)
+                if is_new:
+                    self._smart_fields_kml_save(
+                        field_file, field_name, field_settings)
+            elif issubclass(type(field_file), FieldFile):
+                is_new = False
+                media_type = getattr(field_file.field, 'media_type', 'file')
                 if field_file:
                     if not (old and old._smart_field(field_name)):
                         self._smart_field_init(field_name, field_settings)
@@ -137,7 +182,6 @@ class SmartFieldsHandler(object):
                     elif not field_file.field.keep_orphans:
                         self.smart_fields_cleanup(old, field_name)
                 if is_new and field_profile:
-                    media_type = getattr(field_file.field, 'media_type', 'file')
                     self._smart_field_init(field_name, field_settings)
                     if media_type == 'image':
                         self._smart_fields_image_save(field_file, field_profile)

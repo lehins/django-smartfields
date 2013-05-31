@@ -45,8 +45,12 @@ For any of the features to work you have to extend the base abstract model ``sma
             self.smart_fields_init() ## !important. after the super call
 
         def save(self, old=None, *args, **kwargs):
-            super(SmartFieldsModel, self).save(*args, **kwargs)
-            self.smart_fields_save()  ## !important. after the super call
+	    if old is None:
+	        try:
+		    old = self.__class__.objects.get(pk=self.pk)
+		except self.__class__.DoesNotExist: pass
+	    super(SmartFieldsModel, self).save(*args, **kwargs)
+	    self.smart_fields_save(old)  ## !important. after the super call
 
         def delete(self, *args, **kwargs):
             self.smart_fields_delete()  ## !important. before the super call

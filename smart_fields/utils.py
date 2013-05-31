@@ -1,6 +1,8 @@
+from django.contrib.gis.geos import Point, LineString, LinearRing, Polygon, \
+    GeometryCollection
 from smart_fields import settings
 
-import re, subprocess, time, threading, Queue
+import os, errno, re, subprocess, time, threading, Queue, simplekml
 
 try:
     import Image
@@ -247,3 +249,78 @@ class VideoConverter(threading.Thread):
         process.stdout.close()
         process.stderr.close()
 
+
+class KMLEncoder(object):
+    def __init__(self, geometry, geo_processor=None):
+        self.geometry = geometry
+        self._kml = simplekml.Kml()
+        if callable(geo_processor):
+            self._processor = geo_processor
+        
+    def _processor(self, obj):
+        return obj
+
+    def _encode(self, kml, g):
+        obj = None
+        if isinstance(g, Point):
+            obj = kml.newpoint()
+            obj.coords = [g.get_coords]
+        elif isinstance(g, LineString):
+            obj = kml.newlinestring()
+            obj.coords = g
+        elif isinstance(g, LinearRing):
+            obj = kml.newlinearring()
+            obj.outerboundaryis.coords = g
+        elif isinstance(g, Polygon):
+            obj = kml.newpolygon()
+            obj.outerboundaryis = g[0]
+            obj.innerboundaryis = g[1:]
+        elif isinstance(g, GeometryCollection):
+            obj = kml.newmultigeometry()
+            for mg in g:
+                self._encode(obj, mg)
+        if obj:
+            self._processor(obj)
+        return kml
+
+    @property
+    def kml(self):
+        return self._encode(self._kml, self.geometry)
+
+
+class KMLConverter(object):
+    def __init__(self, geometry):
+        self.geometry = geometry
+
+    def convert(self, file_path, properties={}):
+        geo_processor = properties.get('geo_processor', None)
+        kml_processor = properties.get('kml_processor', None)
+        encoder = KMLEncoder(self.geometry, geo_processor=geo_processor)
+        kml = encoder.kml
+        if callable(kml_processor):
+            kml = kml_processor(kml)
+        format = properties.get('format', 'kml')
+        pretty = properties.get('pretty', False)
+        if not file_path.endswith(format):
+            path, ext = os.path.splitext(file_path)
+            file_path = '.'.join([path, format])
+        create_dirs(file_path)
+        if format == 'kml':
+            kml.save(file_path, format=pretty)
+        elif format == 'kmz':
+            kml.savekmz(file_path, format=pretty)
+        else:
+            raise AttributeError(u"Unknown format: %s" % format)
+        f = open(file_path)
+        return f
+
+def create_dirs(full_path):
+    directory = os.path.dirname(full_path)
+    if not os.path.exists(directory):
+        try:
+            os.makedirs(directory)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+    if not os.path.isdir(directory):
+        raise IOError("%s exists and is not a directory." % directory)

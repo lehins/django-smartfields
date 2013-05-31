@@ -1,12 +1,20 @@
 from django.db.models.fields.files import FileField, ImageField, FieldFile
+from django.conf import settings
 
 from smart_fields.forms.widgets import PluploadVideoInput
 from smart_fields.settings import KEEP_ORPHANS, VIDEO_TAG
 
 __all__ = (
     "SmartFileField", "SmartImageField", "SmartAudioField", "SmartVideoField",
-    "SmartPdfField",
+    "SmartPDFField", "SmartKMLFileField"
 )
+
+if 'south' in settings.INSTALLED_APPS:
+    from south.modelsinspector import add_introspection_rules
+    add_introspection_rules(
+        [], ["^smart_fields\.models\.fields\.%sFileField" % f for f in [
+            "SmartFile", "SmartImage", "SmartKML", "SmartPDF"]])
+
 
 
 class SmartField(object):
@@ -48,9 +56,11 @@ class SmartImageField(ImageField, SmartField):
     def save_form_data(self, instance, data):
         self.smart_field_save_form_data(instance, data)
         super(SmartImageField, self).save_form_data(instance, data)
-    
 
-class SmartPdfField(SmartFileField):
+class SmartKMLFileField(SmartFileField):
+    media_type='kml'
+
+class SmartPDFField(SmartFileField):
     pass
 
 class SmartAudioField(SmartFileField):
