@@ -1,3 +1,5 @@
+import os
+
 from django.conf import settings
 from django.core.cache import cache
 from django.core.files.storage import FileSystemStorage
@@ -6,9 +8,9 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.models.fields.files import FieldFile, FileField, ImageFieldFile, \
     ImageField
 
-from smart_fields.utils import ImageConverter, VideoConverter, KMLConverter
-from smart_fields.models.fields import SmartKMLFileField
-import os
+from smart_fields.models.fields import SmartKMLField, SmartHTMLField
+from smart_fields.utils import ImageConverter, VideoConverter, KMLConverter, \
+    stripHtml, sanitizeHtml
 
 class SmartFieldsHandler(object):
     _smart_fields = {}
@@ -27,6 +29,8 @@ class SmartFieldsHandler(object):
     def _smart_field_init(self, field_name, field_settings):
         field_profile = field_settings.get('profile', {})
         field_file = self._smart_field(field_name)
+        if not issubclass(type(field_file), FieldFile):
+            return
         if field_file.field.media_type == 'kml' and not 'geometry' in field_settings:
             raise ImproperlyConfigured(
                 u"Geometry field is required for KMLFileField to work.")
@@ -145,16 +149,32 @@ class SmartFieldsHandler(object):
         for field_name, field_settings in self.smart_fields_settings.iteritems():
             self._smart_field_init(field_name, field_settings)
 
+    def smart_fields_presave(self, old):
+        for field_name, field_settings in self.smart_fields_settings.iteritems():
+            field_profile = field_settings.get('profile', {})
+            smart_field = self._smart_field(field_name)
+            field = self._meta.get_field(field_name)
+            if isinstance(field, SmartHTMLField):
+                setattr(self, field_name, sanitizeHtml(smart_field))
+                if (not old or smart_field != old._smart_field(field_name)):
+                    if field.sanitize:
+                        setattr(self, field_name, sanitizeHtml(smart_field))
+                    no_html_field_name = self.smart_fields_settings[field_name].get(
+                        'no_html_field_name', None)
+                    if no_html_field_name:
+                        setattr(self, no_html_field_name, stripHtml(smart_field))
+
     def smart_fields_save(self, old):
         for field_name, field_settings in self.smart_fields_settings.iteritems():
             field_profile = field_settings.get('profile', {})
-            field_file = self._smart_field(field_name)
-            if issubclass(type(field_file.field), SmartKMLFileField):
+            smart_field = self._smart_field(field_name)
+            field = self._meta.get_field(field_name)
+            if isinstance(field, SmartKMLField):
                 is_new = False
                 geometry = field_settings['geometry']
                 if callable(geometry):
                     geometry = geometry(self)
-                if not field_file and geometry:
+                if not smart_field and geometry:
                     is_new = True
                 if old:
                     old_geometry = old.smart_fields_settings[field_name]['geometry']
@@ -162,32 +182,35 @@ class SmartFieldsHandler(object):
                         old_geometry = old_geometry(old)
                     if old_geometry != geometry:
                         is_new = True
-                        if not field_file.field.keep_orphans:
+                        if not smart_field.field.keep_orphans:
                             self.smart_fields_cleanup(old, field_name)
                 if is_new:
                     self._smart_fields_kml_save(
-                        field_file, field_name, field_settings)
-            elif issubclass(type(field_file), FieldFile):
+                        smart_field, field_name, field_settings)
+            elif issubclass(type(field), FileField):
                 is_new = False
-                media_type = getattr(field_file.field, 'media_type', 'file')
-                if field_file:
+                media_type = getattr(smart_field.field, 'media_type', 'file')
+                if smart_field:
                     if not (old and old._smart_field(field_name)):
                         self._smart_field_init(field_name, field_settings)
                         is_new = True
-                    elif old._smart_field(field_name) != field_file:
+                    elif old._smart_field(field_name) != smart_field:
                         is_new = True
                 if old and old._smart_field(field_name):
                     if not is_new:
                         self._smart_field_init(field_name, field_settings)
-                    elif not field_file.field.keep_orphans:
+                    elif not smart_field.field.keep_orphans:
                         self.smart_fields_cleanup(old, field_name)
                 if is_new and field_profile:
                     self._smart_field_init(field_name, field_settings)
                     if media_type == 'image':
-                        self._smart_fields_image_save(field_file, field_profile)
+                        self._smart_fields_image_save(smart_field, field_profile)
                     elif media_type == 'video':
                         self._smart_fields_video_save(
-                            field_file, self.smart_fields[field_name], field_profile)
+                            smart_field, self.smart_fields[field_name], 
+                            field_profile)
+                    
+                
 
     def smart_fields_delete(self):
         for field_name in self.smart_fields_settings:

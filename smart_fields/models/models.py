@@ -23,6 +23,7 @@ class SmartFieldsBaseModel(models.Model, SmartFieldsHandler):
             try:
                 old = self.__class__.objects.get(pk=self.pk)
             except self.__class__.DoesNotExist: pass
+        self.smart_fields_presave(old)
         super(SmartFieldsBaseModel, self).save(*args, **kwargs)
         self.smart_fields_save(old)
 

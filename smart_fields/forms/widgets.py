@@ -122,7 +122,7 @@ class PluploadVideoInput(PluploadFileInput):
 
     @classmethod
     def _get_full_url(cls, url, use_ssl=None):
-        domain = settings.VIDEO_TAG_DOMAIN
+        domain = getattr(settings, 'VIDEO_TAG_DOMAIN', None)
         if domain is None:
             if 'django.contrib.sites' in settings.INSTALLED_APPS:
                 domain = Site.objects.get_current().domain

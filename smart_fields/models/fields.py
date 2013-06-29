@@ -1,4 +1,5 @@
 from django.db.models.fields.files import FileField, ImageField, FieldFile
+from django.db.models.fields import TextField
 from django.conf import settings
 
 from smart_fields.forms.widgets import PluploadVideoInput
@@ -6,14 +7,14 @@ from smart_fields.settings import KEEP_ORPHANS, VIDEO_TAG
 
 __all__ = (
     "SmartFileField", "SmartImageField", "SmartAudioField", "SmartVideoField",
-    "SmartPDFField", "SmartKMLFileField"
+    "SmartPDFField", "SmartKMLField", "SmartHTMLField",
 )
 
 if 'south' in settings.INSTALLED_APPS:
     from south.modelsinspector import add_introspection_rules
     add_introspection_rules(
-        [], ["^smart_fields\.models\.fields\.%sFileField" % f for f in [
-            "SmartFile", "SmartImage", "SmartKML", "SmartPDF"]])
+        [], ["^smart_fields\.models\.fields\.Smart%sField" % f for f in [
+            "File", "Image", "Audio", "Video", "PDF", "KML", "HTML"]])
 
 
 
@@ -57,11 +58,11 @@ class SmartImageField(ImageField, SmartField):
         self.smart_field_save_form_data(instance, data)
         super(SmartImageField, self).save_form_data(instance, data)
 
-class SmartKMLFileField(SmartFileField):
+class SmartKMLField(SmartFileField):
     media_type='kml'
 
 class SmartPDFField(SmartFileField):
-    pass
+    media_type='pdf'
 
 class SmartAudioField(SmartFileField):
     media_type = 'audio'
@@ -76,3 +77,10 @@ class VideoFieldFile(FieldFile):
 class SmartVideoField(SmartFileField):
     attr_class = VideoFieldFile
     media_type = 'video'
+
+
+class SmartHTMLField(TextField):
+
+    def __init__(self, *args, **kwargs):
+        self.sanitize = kwargs.pop('sanitize', True)
+        super(SmartHTMLField, self).__init__(*args, **kwargs)

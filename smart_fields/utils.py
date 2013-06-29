@@ -324,3 +324,39 @@ def create_dirs(full_path):
                 raise
     if not os.path.isdir(directory):
         raise IOError("%s exists and is not a directory." % directory)
+
+
+def sanitizeHtml(value):
+    from BeautifulSoup import BeautifulSoup, Comment 
+    # taken from http://birdhouse.org/blog/2010/05/12/secure-user-input-with-django/
+    rjs = r'[\s]*(&#x.{1,7})?'.join(list('javascript:'))
+    rvb = r'[\s]*(&#x.{1,7})?'.join(list('vbscript:'))
+    re_scripts = re.compile('(%s)|(%s)' % (rjs, rvb), re.IGNORECASE)
+    # TODO get whitelist from settings
+    validTags = 'div p i strong b u a h1 h2 h3 blockquote br ul ol li img'.split()
+    validAttrs = 'href src width height'.split()
+    soup = BeautifulSoup(value)
+    for comment in soup.findAll(text=lambda text: isinstance(text, Comment)):
+        # Get rid of comments
+        comment.extract()
+    for tag in soup.findAll(True):
+        if tag.name not in validTags:
+            tag.hidden = True
+        else:
+            attrs = tag.attrs
+            tag.attrs = []
+            if tag.name == "a":
+                tag.attrs.append(("target", "_blank"))
+            for attr, val in attrs:
+                if attr in validAttrs:
+                    val = re_scripts.sub('', val) # Remove scripts (vbs & js)
+                    tag.attrs.append((attr, val))
+    return soup.renderContents().decode('utf8')
+
+
+def stripHtml(value):
+    from BeautifulSoup import BeautifulSoup
+    soup = BeautifulSoup(value)
+    for tag in soup.findAll(True):
+        tag.hidden = True
+    return soup.renderContents().decode('utf8')

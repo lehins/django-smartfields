@@ -9,23 +9,23 @@ PLUPLOAD_SETTINGS = getattr(settings, 'SMARTFIELDS_PLUPLOAD_SETTINGS', {
         'runtimes': 'gears,html5,flash,silverlight,browserplus',
         'multi_selection': False,
         'max_file_size': "20mb",
-        'flash_swf_url': static("js/plupload/plupload.flash.swf"),
-        'silverlight_xap_url': static("js/plupload/plupload.silverlight.xap"),
+        'flash_swf_url': static("plupload/plupload.flash.swf"),
+        'silverlight_xap_url': static("plupload/plupload.silverlight.xap"),
         'filters': [],
         })
 
 
 PLUPLOAD_JS = getattr(settings, 'SMARTFIELDS_PLUPLOAD_JS', 
-                      tuple([os.path.join('js/plupload/js/', x) for x in [
+                      tuple([os.path.join('plupload/js/', x) for x in [
                 'plupload.js', 'plupload.gears.js', 'plupload.silverlight.js', 
                 'plupload.flash.js', 'plupload.browserplus.js', 'plupload.html4.js', 
                 'plupload.html5.js']]))
 
 PLUPLOAD_QUEUE_JS = getattr(settings, 'SMARTFIELDS_PLUPLOAD_QUEUE_JS', (
-        'js/plupload/js/jquery.plupload.queue/jquery.plupload.queue.js',))
+        'plupload/js/jquery.plupload.queue/jquery.plupload.queue.js',))
 
 PLUPLOAD_QUEUE_CSS = getattr(settings, 'SMARTFIELDS_PLUPLOAD_QUEUE_CSS', {
-        'all': ('js/plupload/js/jquery.plupload.queue/css/jquery.plupload.queue.css',)})
+        'all': ('plupload/js/jquery.plupload.queue/css/jquery.plupload.queue.css',)})
 
 VIDEO_TAG = getattr(settings, 'SMARTFIELDS_VIDEO_TAG', {
         'form_template': '<video id="video_%(name)s" class="video-js vjs-default-skin" controls="controls" preload="auto" width="320" height="240" data-setup="{}">%(sources)s</video>',
