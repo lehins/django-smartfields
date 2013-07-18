@@ -1,3 +1,5 @@
+import unicodedata, re
+import warnings
 from django.db.models.fields.files import FileField, ImageField, FieldFile
 from django.db.models.fields import TextField
 from django.conf import settings
@@ -61,8 +63,16 @@ class SmartImageField(ImageField, SmartField):
 class SmartKMLField(SmartFileField):
     media_type='kml'
 
+
+class PDFFieldFile(FieldFile):
+    def extract_text(self):
+        import slate
+        return slate.PDF(self).text()
+
 class SmartPDFField(SmartFileField):
+    attr_class = PDFFieldFile
     media_type='pdf'
+
 
 class SmartAudioField(SmartFileField):
     media_type = 'audio'
