@@ -1,7 +1,35 @@
 var smartfields = {
 
-    VERSION: '0.0.1',
+    VERSION: '0.0.2',
 
+    init: function(){
+	$('.sf-limit-length').each(function(i, elem){
+	    var $this = $(elem);
+	    var maxlength = parseInt($this.data("maxlength"));
+	    var minlength = parseInt($this.data("minlength"));
+	    if(isNaN(minlength) && isNaN(maxlength)){
+		return;
+	    }
+	    var text = "Text length has to be ";
+	    var count_elem = $("<span>").text($this.val().length);
+	    if(!isNaN(minlength)){
+		text = text + "at least " + minlength;
+	    }
+	    if(!isNaN(maxlength)){
+		text = text + "at most " + maxlength;
+		$this.keyup(function(){
+		    var content = $this.val();
+		    if(content.length > maxlength){
+		    content = content.substr(0, maxlength);
+		    $this.val(content);
+		}
+		count_elem.text(content.length);
+	    });
+	    }
+	    text+= " characters. Current length is: ";
+	    $this.before($("<div>").text(text).append(count_elem));
+	});
+    },
     get_err_msg: function(err, settings){
 	var file = err.file;
 	if (file && err.code == plupload.FILE_SIZE_ERROR) {
@@ -17,7 +45,7 @@ var smartfields = {
 		    filters.push.apply(
 			filters, filter.extensions.split(','));
 		});
-		ext_msg = filters.length > 1 ? "extensions" : "extension";
+		var ext_msg = filters.length > 1 ? "extensions" : "extension";
 		message = "Only files with '" + filters + 
 		    "' " + ext_msg + " are allowed. ";
 	    }
@@ -304,3 +332,5 @@ var smartfields = {
 	init();
     }
 };
+
+$(document).ready(smartfields.init);

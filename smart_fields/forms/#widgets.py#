@@ -106,7 +106,7 @@ class SmartTextarea(SmartWidgetMixin, forms.Textarea):
 class SmartTextInput(SmartWidgetMixin, forms.TextInput):
     pass
 
-class ButtonInput(forms.widgets.Input):
+class ButtonInput(SmartWidgetMixin, forms.widgets.Input):
     input_type = 'submit'
 
 class PluploadFileInput(forms.ClearableFileInput):
