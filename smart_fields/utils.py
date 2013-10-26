@@ -16,6 +16,11 @@ except ImportError:
 __all__ = (
     "ImageConverter", "VideoConverter",
 )
+VALID_TAGS = getattr(settings, 'SMART_FIELDS_VALID_HTML_TAGS', 'div p i strong'
+                      ' em s b u a h1 h2 h3 blockquote br ul ol li img').split()
+VALID_ATTRS = getattr(settings, 'SMART_FIELDS_VALID_HTML_ATTRS',
+                       'href src width height').split()
+
 # syntax
 # FORMAT: ([extensions], [read_modes], [write_modes])
 SUPPORTED_IMAGE_FORMATS = {
@@ -333,8 +338,8 @@ def sanitizeHtml(value):
     rvb = r'[\s]*(&#x.{1,7})?'.join(list('vbscript:'))
     re_scripts = re.compile('(%s)|(%s)' % (rjs, rvb), re.IGNORECASE)
     # TODO get whitelist from settings
-    validTags = 'div p i strong b u a h1 h2 h3 blockquote br ul ol li img'.split()
-    validAttrs = 'href src width height'.split()
+    validTags = VALID_TAGS
+    validAttrs = VALID_ATTRS
     soup = BeautifulSoup(value)
     for comment in soup.findAll(text=lambda text: isinstance(text, Comment)):
         # Get rid of comments
