@@ -234,7 +234,7 @@ class PluploadVideoInput(PluploadFileInput):
                 sub = {'media_type': value.field.media_type,
                        'format': profile[key]['format'],
                        'full_url': self._get_full_url(field.url, use_ssl=use_ssl)}
-                sources.append(source_template % sub)
+                sources.insert(0, source_template % sub)
         return mark_safe(content_template % {
                 'name': value.field.name,
                 'sources': ' '.join(sources)})
