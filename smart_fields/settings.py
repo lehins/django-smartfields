@@ -44,14 +44,14 @@ DEFAULT_VIDEO_PROFILES = getattr(settings, 'SMARTFIELDS_DEFAULT_VIDEO_PROFILES',
         'cmd': "%(converter)s -i %(input)s -y -codec:v %(vcodec)s " \
             "-vprofile %(vprofile)s -preset %(preset)s -b:v %(vbitrate)s " \
             "-maxrate %(maxrate)s -bufsize %(bufsize)s " \
-            "-vf scale=%(width)s:%(height)s " \
+            #"-vf scale=%(width)s:%(height)s " \
             "-threads %(threads)s -codec:a %(acodec)s -b:a %(abitrate)s %(output)s",
         'converter': 'avconv',
         'vcodec': 'libx264',
         'vprofile': 'main',
         'preset': 'medium',
-        'vbitrate': '300k',
-        'maxrate': '300k',
+        'vbitrate': '600k',
+        'maxrate': '600k',
         'bufsize': '600k',
         'width': -1,
         'height': 360,
