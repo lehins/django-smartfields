@@ -145,6 +145,7 @@ class AsynchronousFileReader(threading.Thread):
         return not self.is_alive() and self._queue.empty()
 
 class VideoConverter(threading.Thread):
+    # TODO add exit status, kill on error
     def __init__(self, file_in, files_out, progress_setter=None, progress_key=None):
         self.file_in = file_in
         self.files_out = files_out
