@@ -1,0 +1,4 @@
+
+
+class VideoConverter(object):
+    pass
