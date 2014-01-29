@@ -1,12 +1,20 @@
 from django.contrib.gis.geos.geometry import GEOSGeometry
+from django.conf import settings
 from django.core.files.base import File
 from django.db.models.fields.files import FieldFile
 
-from smartfields.models.fields.files import FileField
+from smartfields.models import FileField
+from smartfields.utils import from_string_import
 
 GEO_CONVERTER = from_string_import(
     getattr(settings, 'SMARTFIELDS_GEO_CONVERTER', 
             'smartfields.gis.utils.GeoConverter'))
+
+if 'south' in settings.INSTALLED_APPS:
+    from south.modelsinspector import add_introspection_rules
+    add_introspection_rules(
+        [], ["^smartfields\.gis\.models\.fields\.GeoFileField"])
+
 
 class GeoFieldFile(FieldFile):
     converter_class = GEO_CONVERTER
@@ -22,22 +30,21 @@ class GeoFieldFile(FieldFile):
             geometry = self.field.geometry
         if not isinstance(geometry, GEOSGeometry):
             raise TypeError("'geometry' has to be either a GEOSGeometry type or"
-                            " a string name of a non-empty GeometryField.")
-        file_name = self.field.generate_filename(
+                            " a string name of a non-empty GeometryField. %s" % type(geometry)) 
+        self.name = self.field.generate_filename(
             self.instance, "%s.%s" % (name, self.field.format.lower()))
-        file_path = self.storage.path(file_name)
+        file_path = self.storage.path(self.name)
         converter = self.converter_class(geometry)
         file = converter.convert(file_path, format=self.field.format, **kwargs)
         self.file = File(file)
-        self._size = file.size
         self._commited = True
-        self.instance.save()
+        setattr(self.instance, self.field.name, self.name)
 
 
 class GeoFileField(FileField):
     attr_class = GeoFieldFile
     
-    def __init__(self, geometry, format='KML', **kwargs):
+    def __init__(self, geometry=None, format='KML', **kwargs):
         self.geometry = geometry
         self.format = format
         super(GeoFileField, self).__init__(**kwargs)
