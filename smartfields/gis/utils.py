@@ -42,19 +42,22 @@ class KMLEncoder(object):
         self._processor(obj)
         return kml
 
-    def get_kml(self):
+    def _get_kml(self):
         kml = self._encode(self._kml, self.geometry)
         if callable(self._kml_processor):
             self._kml_processor(kml)
+        create_dirs(self.path)
         return kml
 
     @property
     def kml(self):
-        self.get_kml().save(self.path, format=self._pretty)
+        self._get_kml().save(self.path, format=self._pretty)
+        return None
 
     @property
     def kmz(self):
-        self.get_kml().savekmz(self.path, format=self._pretty)
+        self._get_kml().savekmz(self.path, format=self._pretty)
+        return None
 
 class GeoConverter(object):
 
