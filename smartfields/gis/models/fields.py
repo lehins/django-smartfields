@@ -38,9 +38,7 @@ class GeoFieldFile(FieldFile):
         converter = self.converter_class(geometry, encoder=self.field.encoder)
         content = converter.convert(
             file_path, format=self.field.format, instance=self.instance, **kwargs)
-        if isinstance(content, file):
-            self.file = File(file)
-        elif content is not None:
+        if content is not None:
             self.save(self.name, ContentFile(content), save=False)
         self._commited = True
         setattr(self.instance, self.field.name, self.name)

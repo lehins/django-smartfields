@@ -96,6 +96,10 @@ class FileDependant(object):
                 instance, new_field, filename)
         setattr(instance, self.get_attname(field), new_field_file)
         return new_field_file
+
+    def handle_dependency(self, instance, field):
+        return attach_file(instance, getattr(self, field.attname))
+
             
 class ImageDependant(FileDependant):
 
@@ -106,7 +110,7 @@ class DependantFieldFileMixin(object):
 
     def delete_dependants(self):
         if self and not self.field.keep_orphans and self:
-            for d in self.field.dependants:
+            for d in self.field.dependencies:
                 # getting the actual dependant field file
                 f = getattr(self.instance, d.get_attname(self.field), None)
                 if f:
@@ -116,7 +120,7 @@ class DependantFieldFileMixin(object):
 
     def update_dependants(self):
         converter = self.converter_class(self)
-        for d in self.field.dependants:
+        for d in self.field.dependencies:
             new_file = d.attach_file(self.instance, self)
             content = converter.convert(**d.extra_kwargs)
             new_file.save(new_file.name, ContentFile(content), save=False)
@@ -135,9 +139,9 @@ class ImageFieldFile(files.ImageFieldFile, DependantFieldFileMixin):
 class ImageField(models.ImageField, FileFieldMixin):
     attr_class = ImageFieldFile
     
-    def __init__(self, keep_orphans=None, dependants=[], **kwargs):
+    def __init__(self, keep_orphans=None, dependants=None, **kwargs):
         self.sf_init(keep_orphans)
-        self.dependants = dependants
+        self.dependencies = dependants or []
         super(ImageField, self).__init__(**kwargs)
 
     def save_form_data(self, instance, data):
@@ -145,8 +149,7 @@ class ImageField(models.ImageField, FileFieldMixin):
         super(ImageField, self).save_form_data(instance, data)
 
     def contribute_to_class(self, cls, name):
-        print "something"
-        cls.smartfields_dependant.append(self)
+        cls.smartfields_dependencies.append(self)
         super(ImageField, self).contribute_to_class(cls, name)
 
     def pre_save(self, model_instance, add):
