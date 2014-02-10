@@ -2,7 +2,9 @@ import random, time
 from django.db import models
 from django.utils.text import slugify
 
-__all__ = ["SlugField"]
+from smartfields import forms
+
+__all__ = ["CharField", "SlugField"]
 
 class Dependency(object):
 
@@ -21,6 +23,21 @@ class Dependency(object):
             raise TypeError(
                 "'%s' dependency has to be either a function or a name of a field "
                 "attached to the same model." % field.name)
+
+class CharField(models.CharField):
+
+    def __init__(self, placeholder=None, **kwargs):
+        self.placeholder = placeholder
+        super(CharField, self).__init__(**kwargs)
+        
+    def formfield(self, **kwargs):
+        defaults = {
+            'form_class': forms.CharField,
+            'placeholder': self.placeholder
+        }
+        defaults.update(kwargs)
+        return super(CharField, self).formfield(**defaults)
+
 
 
 class SlugField(models.SlugField):

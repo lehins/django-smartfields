@@ -1,16 +1,52 @@
-from django.forms import forms
+from django import forms
+from django.forms.util import ErrorList
 from django.utils.html import conditional_escape
 from django.utils.encoding import force_text
 from django.utils.safestring import mark_safe
 from django.utils import six
 
+from smartfields.forms import widgets
 
-class BaseForm(forms.BaseForm):
+__all__ = ["Form", "ModelForm"]
+
+# add placeholder to all fields
+# field inside label, outside label
+
+class DivErrorList(ErrorList):
+
+    def __unicode__(self):
+        return self.as_divs()
+
+    def as_divs(self):
+        if not self: return u''
+        return u'<div class="errorlist">%s</div>' % ''.join([
+                u'<div class="alert alert-danger">%s</div>' % 
+                e for e in self])
+
+
+class BoundField(forms.forms.BoundField):
+    default_css_classes = []
+    
+    def as_widget(self, widget=None, attrs=None, only_initial=False):
+        return super(BoundField, self).as_widget(
+            widget=widget, attrs=attrs, only_initial=only_initial)
+            
+
+class FormMixin(object):
     row_css_class_prefix = "col-md-"
     fields_layout = []
+    bound_field_class = BoundField
     #fields_layout = [(('title', 'slug'), ('image')), (('description',), None)]
 
-    def _render_field(self, bf, template, bf_errors=None):
+    def __getitem__(self, name):
+        "Returns a new version of BoundField with the given name."
+        try:
+            field = self.fields[name]
+        except KeyError:
+            raise KeyError('Key %r not found in Form' % name)
+        return self.bound_field_class(self, field, name)
+
+    def _render_field(self, bf, template, help_text_html, bf_errors=None):
         bf_errors = bf_errors or self.error_class(
             [conditional_escape(error) for error in bf.errors])
         extra_classes = "form-group"
@@ -18,13 +54,20 @@ class BaseForm(forms.BaseForm):
             extra_classes+= " has-error"
         css_classes = bf.css_classes(extra_classes)
         html_class_attr = ' class="%s"' % css_classes
+        field = six.text_type(bf)
         if bf.label:
-            label = conditional_escape(force_text(bf.label))
-            label = bf.label_tag(label) or ''
+            contents = conditional_escape(force_text(bf.label))
+            label_suffix = None
+            if isinstance(bf.field.widget, forms.CheckboxInput):
+                contents = "%s %s" % (field, contents)
+                label_suffix = ''
+                field = ''
+            label = bf.label_tag(contents, attrs={'class': 'control-label'}, 
+                                 label_suffix=label_suffix) or ''
         else:
             label = ''
-        if field.help_text:
-            help_text = help_text_html % force_text(field.help_text)
+        if bf.help_text:
+            help_text = help_text_html % force_text(bf.help_text)
         else:
             help_text = ''
         if bf.errors:
@@ -34,13 +77,13 @@ class BaseForm(forms.BaseForm):
         return template % {
             'errors': force_text(bf_errors),
             'label': force_text(label),
-            'field': six.text_type(bf),
+            'field': field,
             'help_text': help_text,
             'html_class_attr': html_class_attr,
             'error_class': error_class
         }
     
-    def html_output(self, full_row, sub_row, error_row, row_ender, help_text_html):
+    def _bootstrap_html_output(self, full_row, sub_row, error_row, help_text_html):
         top_errors = self.non_field_errors()
         output, hidden_fields = [], []
 
@@ -60,7 +103,7 @@ class BaseForm(forms.BaseForm):
                     bf = self[name]
                     assert not bf.is_hidden, \
                         "Hidden fields don't support layout. Field name '%s'." % name
-                    sub_rows.append(self._render_field(bf, sub_row))
+                    sub_rows.append(self._render_field(bf, sub_row, help_text_html))
                     rendered_names.append(name)
                 rendered_colum = '\n'.join(sub_rows)
                 if rendered_column:
@@ -82,7 +125,8 @@ class BaseForm(forms.BaseForm):
                                        for e in bf_errors])
                 hidden_fields.append(six.text_type(bf))
             else:
-                output.append(self._render_field(bf, sub_row, bf_errors))
+                output.append(self._render_field(
+                    bf, sub_row, help_text_html, bf_errors=bf_errors))
 
         if top_errors:
             output.insert(0, error_row % force_text(top_errors))
@@ -93,10 +137,25 @@ class BaseForm(forms.BaseForm):
 
 
     def as_bootstrap(self):
-        return self.html_output(
+        return self._bootstrap_html_output(
             full_row='<div class="row">%s</div>',
-            sub_row='<div%(html_class_attr)s">' 
-                    '%(label)s%(field)s%(errors)</div>',
+            sub_row='<div%(html_class_attr)s>' 
+                    '%(label)s%(field)s%(help_text)s%(errors)s</div>',
             error_row='<div class="alert alert-danger">%s</div>',
             help_text_html='<span class="help-block">%s</span>'
         )
+
+
+class Form(FormMixin, forms.Form):
+
+    def __init__(self, **kwargs):
+        error_class = kwargs.pop('error_class', None) or DivErrorList
+        kwargs['error_class'] = error_class
+        super(Form, self).__init__(**kwargs)
+            
+
+class ModelForm(FormMixin, forms.ModelForm):
+    def __init__(self, **kwargs):
+        error_class = kwargs.pop('error_class', None) or DivErrorList
+        kwargs['error_class'] = error_class
+        super(ModelForm, self).__init__(**kwargs)
