@@ -5,10 +5,11 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from smartfields.utils import from_string_import
+from smartfields.models.fields import Field
 
 __all__ = (
-    "FileField", "ImageField", "ImageDependant", #"AudioField", "VideoField",
-    #"PDFField", "SmartHTMLField",
+    "FileField", "ImageField", "ImageDependant", "VideoField",
+    #"PDFField", "SmartHTMLField", "AudioField"
 )
 
 IMAGE_CONVERTER = from_string_import(
@@ -34,14 +35,20 @@ class FileFieldMixin(object):
             file.delete(save=False)
 
     
-class FileField(models.FileField, FileFieldMixin):
+class FileField(models.FileField):
+    keep_orphans = getattr(settings, 'SMARTFIELDS_KEEP_ORPHANS', False)
 
-    def __init__(self, keep_orphans=None, **kwargs):
-        self.sf_init(keep_orphans)
+    def __init__(self, keep_orphans=None, upload_url=None, **kwargs):
+        if keep_orphans is not None:
+            self.keep_orphans = keep_orphans
+        self.upload_url = upload_url
+        print kwargs
         super(FileField, self).__init__(**kwargs)
 
     def save_form_data(self, instance, data):
-        self.sf_save_form_data(instance, data)
+        if data is not None and not self.keep_orphans:
+            file = getattr(instance, self.attname)
+            file.delete(save=False)
         super(FileField, self).save_form_data(instance, data)
 
 
@@ -98,7 +105,7 @@ class FileDependant(object):
         return new_field_file
 
     def handle_dependency(self, instance, field):
-        return attach_file(instance, getattr(self, field.attname))
+        return self.attach_file(instance, getattr(instance, field.attname))
 
             
 class ImageDependant(FileDependant):
@@ -136,17 +143,12 @@ class ImageFieldFile(files.ImageFieldFile, DependantFieldFileMixin):
     delete.alters_data = True
 
 
-class ImageField(models.ImageField, FileFieldMixin):
+class ImageField(models.ImageField, FileField):
     attr_class = ImageFieldFile
     
-    def __init__(self, keep_orphans=None, dependants=None, **kwargs):
-        self.sf_init(keep_orphans)
+    def __init__(self, keep_orphans=None, dependants=None, upload_url=None, **kwargs):
         self.dependencies = dependants or []
         super(ImageField, self).__init__(**kwargs)
-
-    def save_form_data(self, instance, data):
-        self.sf_save_form_data(instance, data)
-        super(ImageField, self).save_form_data(instance, data)
 
     def contribute_to_class(self, cls, name):
         cls.smartfields_dependencies.append(self)
@@ -162,5 +164,5 @@ class ImageField(models.ImageField, FileFieldMixin):
         return file
 
 
-
-
+class VideoField(FileField):
+    pass

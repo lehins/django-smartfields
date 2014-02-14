@@ -52,18 +52,23 @@ class FormMixin(object):
         extra_classes = "form-group"
         if bf_errors:
             extra_classes+= " has-error"
+        if isinstance(bf.field.widget, forms.CheckboxInput):
+            extra_classes+= " checkbox"
         css_classes = bf.css_classes(extra_classes)
         html_class_attr = ' class="%s"' % css_classes
         field = six.text_type(bf)
         if bf.label:
             contents = conditional_escape(force_text(bf.label))
             label_suffix = None
+            attrs = None
             if isinstance(bf.field.widget, forms.CheckboxInput):
-                contents = "%s %s" % (field, contents)
+                contents = mark_safe("%s %s" % (field, contents))
                 label_suffix = ''
                 field = ''
-            label = bf.label_tag(contents, attrs={'class': 'control-label'}, 
-                                 label_suffix=label_suffix) or ''
+            else:
+                attrs = {'class': 'control-label'}
+            label = bf.label_tag(
+                contents, attrs=attrs, label_suffix=label_suffix) or ''
         else:
             label = ''
         if bf.help_text:
@@ -94,7 +99,7 @@ class FormMixin(object):
             rendered_rows = []
             for column in row:
                 if column is None:
-                    rows.append('<div class="%soffset-%s"></div>' % (
+                    rendered_rows.append('<div class="%soffset-%s"></div>' % (
                         self.row_css_class_prefix, column_width))
                     continue
                 sub_rows = []
@@ -105,7 +110,7 @@ class FormMixin(object):
                         "Hidden fields don't support layout. Field name '%s'." % name
                     sub_rows.append(self._render_field(bf, sub_row, help_text_html))
                     rendered_names.append(name)
-                rendered_colum = '\n'.join(sub_rows)
+                rendered_column = '\n'.join(sub_rows)
                 if rendered_column:
                     rendered = '<div class="%s%s">%s</div>' % (
                         self.row_css_class_prefix, column_width, rendered_column)
@@ -144,6 +149,8 @@ class FormMixin(object):
             error_row='<div class="alert alert-danger">%s</div>',
             help_text_html='<span class="help-block">%s</span>'
         )
+
+
 
 
 class Form(FormMixin, forms.Form):

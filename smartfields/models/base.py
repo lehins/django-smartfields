@@ -13,3 +13,10 @@ class Model(models.Model):
             for d in field.dependencies:
                 d.handle_dependency(self, field)
 
+
+    def save(self, *args, **kwargs):
+        for field in self.smartfields_dependencies:
+            for d in field.dependencies:
+                d.handle_dependency(self, field)
+        super(Model, self).save(*args, **kwargs)
+

@@ -1,6 +1,8 @@
-import json
 from django.forms import widgets
 from django.forms.widgets import Media, MediaDefiningClass, Widget
+from django.utils.safestring import mark_safe
+
+from smartfields.forms.utils import AttrsDict
 
 __all__ = (
     'Media', 'MediaDefiningClass', 'Widget', 'TextInput',
@@ -9,123 +11,59 @@ __all__ = (
     'FileInput', 'DateInput', 'DateTimeInput', 'TimeInput', 'Textarea', 'CheckboxInput',
     'Select', 'NullBooleanSelect', 'SelectMultiple', 'RadioSelect',
     'CheckboxSelectMultiple', 'MultiWidget', 'SplitDateTimeWidget',
+    'TextareaLimited', 'SlugInput'
 )
 
 
-class AttrsMixin(object):
-    _attrs = {}
-    _attrs_classes = set()
-    _attrs_styles = {}
-    _attrs_data = {}
-    _attrs_cached = None
+class SubWidget(widgets.SubWidget):
+    def __init__(self, parent_widget, name, value, attrs, choices):
+        super(SubWidget, self).__init__(
+            parent_widget, name, value, AttrsDict(attrs), choices)
+    
 
-    def _get_attrs(self):
-        if self._attrs_cached is not None:
-            return self._attrs_cached
-        attrs = self._attrs.copy()
-        if self._attrs_classes:
-            attrs['class'] = ' '.join(self._attrs_classes)
-        if self._attrs_styles:
-            styles = [':'.join(x) for x in self._attrs_styles.iteritems()]
-            attrs['style'] = ';'.join(styles) + ';'
-        if self._attrs_data:
-            attrs['data'] = json.dumps(self._attrs_data)
-        self._attrs_cached = attrs
-        return attrs
+class Widget(Widget):
 
-    def _set_attrs(self, attrs):
-        self._attrs_cached = None
-        if attrs is None:
-            self._attrs = {}
-            self._attrs_classes = set()
-            self._attrs_styles = {}
-            self._attrs_data = {}
-        else:
-            for name, val in attrs.iteritems():
-                if name == 'class':
-                    if val is None:
-                        self._attrs_classes = set()
-                    else:
-                        self._attrs_classes = self._attrs_classes.union(val.split())
-                elif name == 'style':
-                    if val is None:
-                        self._attrs_styles = {}
-                    else:
-                        self._attrs_styles.update(
-                            dict([x.split(':') for x in val.split(';') if x]))
-                elif name == 'data':
-                    if val is None:
-                        self._attrs_data = {}
-                    else:
-                        self._attrs_data.update(val)
-                else:
-                    self._attrs[name] = val
-
-    def _del_attrs(self):
-        del self._attrs
-        del self._attrs_classes
-        del self._attrs_styles
-        del self._attrs_data
-        del self._attrs_cached
-
-    attrs = property(_get_attrs, _set_attrs, _del_attrs)
-
-class Label(AttrsMixin):
-    def __init__(self, label, attrs=None):
-        self.attrs = attrs
-
-class SubWidget(AttrsMixin, widgets.SubWidget):
-    pass
-
-
-class WidgetMixin(AttrsMixin):
+    def __init__(self, attrs=None):
+        self.attrs = AttrsDict(attrs)
 
     def subwidgets(self, name, value, attrs=None, choices=()):
-        """
-        Yields all "subwidgets" of this widget. Used only by RadioSelect to
-        allow template access to individual <input type="radio"> buttons.
-
-        Arguments are the same as for render().
-        """
         yield SubWidget(self, name, value, attrs, choices)
 
-class Input(WidgetMixin, widgets.Input):
+    def build_attrs(self, extra_attrs=None, **kwargs):
+        attrs = AttrsDict(self.attrs, **kwargs)
+        if extra_attrs:
+            attrs.update(extra_attrs)
+        return attrs
+
+
+class Input(widgets.Input, Widget):
     pass
 
 
 class TextInput(widgets.TextInput, Input):
 
     def __init__(self, *args, **kwargs):
-        self.attrs = {'class': 'form-control'}
         super(TextInput, self).__init__(*args, **kwargs)
+        self.attrs['class'] = 'form-control'
 
 
 class NumberInput(widgets.NumberInput, TextInput):
-    def __init__(self, *args, **kwargs):
-        self.attrs = {'class': 'form-control'}
-        super(NumberInput, self).__init__(*args, **kwargs)
+    pass
 
 
 class EmailInput(widgets.EmailInput, TextInput):
-    def __init__(self, *args, **kwargs):
-        self.attrs = {'class': 'form-control'}
-        super(EmailInput, self).__init__(*args, **kwargs)
+    pass
 
 
 class URLInput(widgets.URLInput, TextInput):
-    def __init__(self, *args, **kwargs):
-        self.attrs = {'class': 'form-control'}
-        super(URLInput, self).__init__(*args, **kwargs)
+    pass
 
 
-class PasswordInput(widgets.PasswordInput, Input):
+class PasswordInput(widgets.PasswordInput, TextInput):
 
     def __init__(self, *args, **kwargs):
-        self.attrs = {
-            'class': 'form-control',
-            'autocomplete': 'off'
-        }
         super(PasswordInput, self).__init__(*args, **kwargs)
+        self.attrs['autocomplete'] = self.attrs.get('autocomplete', 'off')
 
 
 class HiddenInput(widgets.HiddenInput, Input):
@@ -135,57 +73,60 @@ class HiddenInput(widgets.HiddenInput, Input):
 class MultipleHiddenInput(widgets.MultipleHiddenInput, HiddenInput):
     pass
 
-
 class FileInput(widgets.FileInput, Input):
-    # TODO: add progress
     pass
-
 
 class ClearableFileInput(widgets.ClearableFileInput, FileInput):
     pass
 
 
-class Textarea(WidgetMixin, widgets.Widget):
+class Textarea(widgets.Textarea, Widget):
     def __init__(self, *args, **kwargs):
-        self.attrs = {'class': 'form-control'}
         super(Textarea, self).__init__(*args, **kwargs)
+        self.attrs['class'] = 'form-control'
 
+
+class TextareaLimited(Textarea):
+    def __init__(self, *args, **kwargs):
+        super(TextareaLimited, self).__init__(*args, **kwargs)
+        self.attrs['class'] = 'textarea-limited'
+
+
+# possibly import/implement DateTimeBaseInput, will depend on render
 
 class DateInput(widgets.DateInput, TextInput):
-    def __init__(self, *args, **kwargs):
-        self.attrs = {'class': 'form-control'}
-        super(DateInput, self).__init__(*args, **kwargs)
+    def __init__(self, attrs={}, **kwargs):
+        super(DateInput, self).__init__(attrs=attrs, **kwargs)
 
 
 class DateTimeInput(widgets.DateTimeInput, TextInput):
-    def __init__(self, *args, **kwargs):
-        self.attrs = {'class': 'form-control'}
-        super(DateTimeInput, self).__init__(*args, **kwargs)
+    def __init__(self, attrs={}, **kwargs):
+        super(DateTimeInput, self).__init__(attrs=attrs, **kwargs)
 
 
 class TimeInput(widgets.TimeInput, TextInput):
-    def __init__(self, *args, **kwargs):
-        self.attrs = {'class': 'form-control'}
-        super(TimeInput, self).__init__(*args, **kwargs)
+    def __init__(self, attrs={}, **kwargs):
+        super(TimeInput, self).__init__(attrs={}, **kwargs)
 
 
-class CheckboxInput(WidgetMixin, widgets.CheckboxInput):
+class CheckboxInput(widgets.CheckboxInput, Widget):
+    def __init__(self, attrs={}, **kwargs):
+        super(CheckboxInput, self).__init__(attrs=attrs, **kwargs)
 
-    def __init__(self, *args, **kwargs):
-        self.attrs = {'class': 'checkbox'}
-        super(CheckboxInput, self).__init__(*args, **kwargs)
+
+class Select(widgets.Select, Widget):
+    def __init__(self, attrs={}, **kwargs):
+        super(Select, self).__init__(attrs=attrs, **kwargs)
     
 
-class Select(WidgetMixin, widgets.Select):
-    pass
-
-
 class NullBooleanSelect(widgets.NullBooleanSelect, Select):
-    pass
+    def __init__(self, attrs={}, **kwargs):
+        super(NullBooleanSelect, self).__init__(attrs=attrs, **kwargs)
 
 
 class SelectMultiple(widgets.NullBooleanSelect, Select):
     pass
+
 
 
 class ChoiceInput(widgets.ChoiceInput, SubWidget):
@@ -204,9 +145,10 @@ class CheckboxChoiceInput(widgets.CheckboxChoiceInput, ChoiceInput):
     pass
 
 
-class ChoiceFieldRenderer(AttrsMixin, widgets.ChoiceFieldRenderer):
-    pass
-
+class ChoiceFieldRenderer(widgets.ChoiceFieldRenderer):
+    def __init__(self, name, value, attrs, choices):
+        super(ChoiceFieldRenderer, self).__init__(
+            name, value, AttrsDict(attrs), choices)
 
 class RadioFieldRenderer(widgets.RadioFieldRenderer, ChoiceFieldRenderer):
     choice_input_class = RadioChoiceInput
@@ -224,13 +166,33 @@ class CheckboxSelectMultiple(widgets.CheckboxSelectMultiple, SelectMultiple):
     renderer = CheckboxFieldRenderer
 
 
-class MultiWidget(WidgetMixin, widgets.MultiWidget):
-    pass
+class MultiWidget(widgets.MultiWidget, Widget):
+    def __init__(self, attrs={}, *args, **kwargs):
+        super(MultiWidget, self).__init__(attrs=attrs, *args, **kwargs)
 
 
 class SplitDateTimeWidget(widgets.SplitDateTimeWidget, MultiWidget):
-    pass
+    def __init__(self, attrs={}, *args, **kwargs):
+        super(SplitDateTimeWidget, self).__init__(attrs=attrs, *args, **kwargs)
 
 
 class SplitHiddenDateTimeWidget(widgets.SplitHiddenDateTimeWidget, SplitDateTimeWidget):
-    pass
+    def __init__(self, attrs={}, *args, **kwargs):
+        super(SplitHiddenDateTimeWidget, self).__init__(attrs=attrs, *args, **kwargs)
+
+
+
+
+class SlugInput(TextInput):
+    url_prefix = None
+    template = '<div class="input-group">\n<span class="input-group-addon">' \
+               '%(url_prefix)s</span>\n%(widget)s</div>'
+
+    def render(self, *args, **kwargs):
+        widget = super(SlugInput, self).render(*args, **kwargs)
+        if self.url_prefix:
+            return mark_safe(self.template % {
+                'url_prefix': self.url_prefix,
+                'widget': widget
+            })
+        return widget

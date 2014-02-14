@@ -4,54 +4,131 @@ from smartfields.forms.widgets import (
     TextInput, NumberInput, EmailInput, URLInput, HiddenInput,
     MultipleHiddenInput, ClearableFileInput, CheckboxInput, Select,
     NullBooleanSelect, SelectMultiple, DateInput, DateTimeInput, TimeInput,
-    SplitDateTimeWidget, SplitHiddenDateTimeWidget
+    SplitDateTimeWidget, SplitHiddenDateTimeWidget, SlugInput, TextareaLimited
 )
 
 class Field(fields.Field):
     widget = TextInput
     hidden_widget = HiddenInput
 
-
-class CharField(fields.CharField, Field):
-    widget = TextInput
-    
     def __init__(self, placeholder=None, **kwargs):
         self.placeholder = placeholder
-        super(CharField, self).__init__(**kwargs)
+        super(Field, self).__init__(**kwargs)
 
     def widget_attrs(self, widget):
         if self.placeholder is not None:
-            widget.attrs = {'placeholder': self.placeholder}
-        return super(CharField, self).widget_attrs(widget)
+            widget.attrs['placeholder'] = self.placeholder
+        return super(Field, self).widget_attrs(widget)
 
+
+class CharField(fields.CharField, Field):
+
+    def widget_attrs(self, widget):
+        if self.max_length is not None and isinstance(widget, TextareaLimited):
+            widget.attrs['data-maxlength'] = self.max_length
+        attrs = super(CharField, self).widget_attrs(widget)
+        return attrs
 
 class IntegerField(fields.IntegerField, Field):
     widget = NumberInput
-    
-    def __init__(self, placeholder=None, **kwargs):
-        self.placeholder = placeholder
-        super(IntegerField, self).__init__(**kwargs)
 
-    def widget_attrs(self, widget):
-        if self.placeholder is not None:
-            widget.attrs = {'placeholder': self.placeholder}
-        return super(IntegerField, self).widget_attrs(widget)
 
 class FloatField(fields.FloatField, IntegerField):
-    widget = NumberInput
+    pass
     
 
 class DecimalField(fields.DecimalField, IntegerField):
-    widget = NumberInput
+    pass
+
 
 class DateField(fields.DateField, Field):
     widget = DateInput
 
 
+class TimeField(fields.TimeField, Field):
+    widget = TimeInput
 
 
+class DateTimeField(fields.DateTimeField, Field):
+    widget = DateTimeInput
 
 
+class RegexField(fields.RegexField, CharField):
+    pass
+
+
+class EmailField(fields.EmailField, CharField):
+    widget = EmailInput
+
+
+class FileField(fields.FileField, Field):
+    widget = ClearableFileInput
+
+
+class ImageField(fields.ImageField, FileField):
+    pass
+
+
+class URLField(fields.URLField, CharField):
+    widget = URLInput
+
+
+class BooleanField(fields.BooleanField, Field):
+    widget = CheckboxInput
+
+
+class NullBooleanField(fields.NullBooleanField, BooleanField):
+    widget = NullBooleanSelect
+
+
+class ChoiceField(fields.ChoiceField, Field):
+    widget = Select
+
+
+class TypedChoiceField(fields.TypedChoiceField, ChoiceField):
+    pass
+
+class MultipleChoiceField(fields.MultipleChoiceField, ChoiceField):
+    widget = SelectMultiple
+    hidden_widget = MultipleHiddenInput
+
+
+class TypedMultipleChoiceField(fields.TypedMultipleChoiceField, MultipleChoiceField):
+    pass
+
+
+class ComboField(fields.ComboField, Field):
+    pass
+
+
+class MultiValueField(fields.MultiValueField, Field):
+    pass
+
+
+class FilePathField(fields.FilePathField, ChoiceField):
+    pass
+
+
+class SplitDateTimeField(fields.SplitDateTimeField, MultiValueField):
+    widget = SplitDateTimeWidget
+    hidden_widget = SplitHiddenDateTimeWidget
+    
+
+
+class IPAddressField(fields.IPAddressField, CharField):
+    pass
+
+
+class GenericIPAddressField(fields.GenericIPAddressField, CharField):
+    pass
+
+
+class SlugField(fields.SlugField, CharField):
+    widget = SlugInput
+
+    def __init__(self, url_prefix=None, **kwargs):
+        super(SlugField, self).__init__(**kwargs)
+        self.widget.url_prefix = url_prefix
 
 
 
