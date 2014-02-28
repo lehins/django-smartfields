@@ -3,101 +3,80 @@ from django.db import models
 from django.contrib.sites.models import Site
 from django.utils.text import slugify
 
-from smartfields import forms
 
-#__all__ = [str(x) for x in (
-#    'AutoField', 'BLANK_CHOICE_DASH', 'BigIntegerField', 'BinaryField',
-#    'BooleanField', 'CharField', 'CommaSeparatedIntegerField', 'DateField',
-#    'DateTimeField', 'DecimalField', 'EmailField', 'Empty', 'Field',
-#    'FieldDoesNotExist', 'FilePathField', 'FloatField',
-#    'GenericIPAddressField', 'IPAddressField', 'IntegerField', 'NOT_PROVIDED',
-#    'NullBooleanField', 'PositiveIntegerField', 'PositiveSmallIntegerField',
-#    'SlugField', 'SmallIntegerField', 'TextField', 'TimeField', 'URLField',
-#)]
 
 
 class Dependency(object):
 
-    def __init__(self, dependency):
+    def __init__(self, dependency, persistent=True, forward=True):
+        self.forward = forward
+        self.persistent = persistent
         self.dependency = dependency
 
-    def handle_dependency(self, instance, field):
+
+    def handle_dependency(self, instance, this_field):
+        this_value = getattr(instance, this_field.attname, None)
+        # non persistent dependencies proceed only with an empty field value
+        if not self.persistent and this_value: return
+
         if callable(self.dependency):
-            value = self.dependency(instance)
-            setattr(instance, field.attname, value)
-            return value
+            new_value = self.dependency(instance, this_field, this_value)
+            setattr(instance, this_field.attname, new_value)
         elif isinstance(self.dependency, basestring):
-            value = getattr(instance, self.dependency)
-            return field.process_dependency(instance, value)
+            other_field = instance._meta.get_field(self.dependency)
+            other_value = getattr(instance, self.dependency)
+            self.process_dependency(
+                instance, (this_field, this_value), (other_field, other_value))
         elif self.dependency is not None:
             raise TypeError(
                 "'%s' dependency has to be either a function or a name of a field "
                 "attached to the same model." % field.name)
 
+
+    def process_dependency(self, instance,
+                           (this_field, this_value), (other_field, other_value)):
+        if self.forward:
+            attname = other_field.attname
+            new_value = other_field.process_dependency(instance, other_value, this_value)
+        else:
+            attname = this_field.attname
+            new_value = this_field.process_dependency(instance, this_value, other_value)
+        setattr(instance, attname, new_value)
+
+
+
+
+
 class Field(models.Field):
-    formfield_class = forms.CharField
+    dependencies = []
 
-    def __init__(self, placeholder=None, **kwargs):
-        self.placeholder = placeholder
-        super(Field, self).__init__(**kwargs)
-        
-    def formfield(self, **kwargs):
-        defaults = {
-            'form_class': self.formfield_class,
-            'placeholder': self.placeholder
-        }
-        defaults.update(kwargs)
-        return super(Field, self).formfield(**defaults)
+    def __init__(self, dependencies=None, *args, **kwargs):
+        if dependencies is not None:
+            self.dependencies = dependencies
+        super(Field, self).__init__(*args, **kwargs)
 
 
-class CharField(models.CharField, Field):
-    pass
+    def contribute_to_class(self, cls, name):
+        if self.dependencies:
+            cls.smartfields_dependencies.append(self)
+        super(Field, self).contribute_to_class(cls, name)
 
-
-class CommaSeparatedIntegerField(models.CommaSeparatedIntegerField, Field):
-    pass
-
-
-class DateField(models.DateField, Field):
-    formfield_class = forms.DateField
-
-
-class DateTimeField(models.DateTimeField, DateField):
-    formfield_class = forms.DateTimeField
-
-
-class DecimalField(models.DecimalField, Field):
-    formfield_class = forms.DecimalField
-
-
-class EmailField(models.EmailField, CharField):
-    formfield_class = forms.EmailField
-
-
-class FilePathField(models.FilePathField, Field):
-    formfield_class = forms.FilePathField
 
 
 
 class SlugField(Field, models.SlugField):
-    formfield_class = forms.SlugField
 
-    def __init__(self, default_dependency=None, url_prefix=None, **kwargs):
-        assert not (default_dependency and kwargs.get('default', None)), \
-            "'default' and 'default_dependant' can not be used at the same time."
-        self.dependencies = [Dependency(default_dependency)]
-        self.url_prefix = url_prefix
-        super(SlugField, self).__init__(**kwargs)
+    def __init__(self, default_dependency=None, *args, **kwargs):
+        if default_dependency is not None:
+            kwargs.update(dependencies=[Dependency(
+                default_dependency, forward=False, persistent=False)])
+        super(SlugField, self).__init__(*args, **kwargs)
 
-    def contribute_to_class(self, cls, name):
-        cls.smartfields_dependencies.append(self)
-        super(SlugField, self).contribute_to_class(cls, name)
-
-    def process_dependency(self, instance, value):
-        cur_value = getattr(instance, self.attname, None)
-        if not cur_value and value:
-            slug = slugify(value)
+    def process_dependency(self, instance, current_value, dependant_value):
+        if dependant_value:
+            slug = slugify(dependant_value)
             if self._unique:
+                # modify a slug to make sure it's unique by adding a random number
                 manager = instance.__class__._default_manager
                 unique_slug = slug
                 existing = manager.filter(**{self.name: unique_slug})
@@ -105,15 +84,11 @@ class SlugField(Field, models.SlugField):
                     unique_slug = "%s-%s" % (slug, random.randint(0, int(time.time())))
                     existing = manager.filter(**{self.name: unique_slug})
                 slug = unique_slug
-            setattr(instance, self.attname, slug)
+            return slug
+        return current_value
 
-    def formfield(self, **kwargs):
-        if self.url_prefix is None:
-            url_prefix = "%s/%s/" % (
-                Site.objects.get_current().domain, self.model._meta.app_label)
-        else:
-            url_prefix = self.url_prefix
-            
-        defaults = {'url_prefix': url_prefix}
-        defaults.update(kwargs)
-        return super(SlugField, self).formfield(**defaults)
+
+class HTMLField(Field, models.TextField):
+
+    def __init__(self, sanitize=True, dependencies=[]):
+        pass

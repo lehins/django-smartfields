@@ -1,0 +1,10 @@
+{% extends 'bootstrap3/field.html' %}
+
+{% load crispy_forms_field %}
+
+{% block field %}
+  {% if feedback_text %}
+    <div class="textarea-feedback feedback"><span class="feedback-counter">0</span>{{ feedback_text }}</div>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}

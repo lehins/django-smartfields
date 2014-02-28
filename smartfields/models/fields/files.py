@@ -5,50 +5,39 @@ from django.conf import settings
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 from smartfields.utils import from_string_import
-from smartfields.models.fields import Field
 
 __all__ = (
     "FileField", "ImageField", "ImageDependant", "VideoField",
     #"PDFField", "SmartHTMLField", "AudioField"
 )
 
+FAIL_SILENTLY = getattr(settings, 'SMARTFIELDS_FAIL_SILENTLY', True)
+
 IMAGE_CONVERTER = from_string_import(
-    getattr(settings, 'SMARTFIELDS_IMAGE_CONVERTER', 
+    getattr(settings, 'SMARTFIELDS_IMAGE_CONVERTER',
             'smartfields.utils.image.ImageConverter'))
 
 VIDEO_CONVERTER = from_string_import(
-    getattr(settings, 'SMARTFIELDS_VIDEO_CONVERTER', 
+    getattr(settings, 'SMARTFIELDS_VIDEO_CONVERTER',
             'smartfields.utils.video.VideoConverter'))
 
 
-class FileFieldMixin(object):
-    keep_orphans = getattr(settings, 'SMARTFIELDS_KEEP_ORPHANS', False)
 
-    def sf_init(self, keep_orphans):
-        if keep_orphans is not None:
-            self.keep_orphans = keep_orphans
-
-    def sf_save_form_data(self, instance, data):
-        # remove file if it is marked to be cleared
-        if data is not None and not self.keep_orphans:
-            file = getattr(instance, self.attname)
-            file.delete(save=False)
-
-    
 class FileField(models.FileField):
+    """Regular FileField that cleansup after itself."""
+
     keep_orphans = getattr(settings, 'SMARTFIELDS_KEEP_ORPHANS', False)
 
-    def __init__(self, keep_orphans=None, upload_url=None, **kwargs):
+    def __init__(self, keep_orphans=None, **kwargs):
         if keep_orphans is not None:
             self.keep_orphans = keep_orphans
-        self.upload_url = upload_url
-        print kwargs
         super(FileField, self).__init__(**kwargs)
 
     def save_form_data(self, instance, data):
-        if data is not None and not self.keep_orphans:
+        if not self.keep_orphans and data is not None:
             file = getattr(instance, self.attname)
-            file.delete(save=False)
+            if file != data:
+                file.delete(save=False)
         super(FileField, self).save_form_data(instance, data)
 
 
@@ -61,7 +50,7 @@ class FileDependant(object):
     def field_file_class(self):
         return self.file_field_class.attr_class
 
-    def __init__(self, suffix, format=None, default=None, storage=None, 
+    def __init__(self, suffix, format=None, default=None, storage=None,
                  storage_default=None, **kwargs):
         self.suffix = suffix
         self.format = format
@@ -97,7 +86,7 @@ class FileDependant(object):
                 storage = self.storage_default
             new_field_name = "%s_%s" % (field.name, self.suffix)
             new_field = self.file_field_class(
-                upload_to=lambda instance, name: name, 
+                upload_to=lambda instance, name: name,
                 storage=storage, name=new_field_name)
             new_field_file = self.field_file_class(
                 instance, new_field, filename)
@@ -107,7 +96,7 @@ class FileDependant(object):
     def handle_dependency(self, instance, field):
         return self.attach_file(instance, getattr(instance, field.attname))
 
-            
+
 class ImageDependant(FileDependant):
 
     file_field_class = models.ImageField
@@ -116,14 +105,16 @@ class ImageDependant(FileDependant):
 class DependantFieldFileMixin(object):
 
     def delete_dependants(self):
-        if self and not self.field.keep_orphans and self:
+        if self and not self.field.keep_orphans:
             for d in self.field.dependencies:
                 # getting the actual dependant field file
                 f = getattr(self.instance, d.get_attname(self.field), None)
                 if f:
-                    try: 
+                    try:
                         f.delete(save=False)
-                    except OSError: pass
+                    except OSError:
+                        if not FAIL_SILENTLY:
+                            raise
 
     def update_dependants(self):
         converter = self.converter_class(self)
@@ -143,10 +134,10 @@ class ImageFieldFile(files.ImageFieldFile, DependantFieldFileMixin):
     delete.alters_data = True
 
 
-class ImageField(models.ImageField, FileField):
+class ImageField(FileField):
     attr_class = ImageFieldFile
-    
-    def __init__(self, keep_orphans=None, dependants=None, upload_url=None, **kwargs):
+
+    def __init__(self, dependants=None, **kwargs):
         self.dependencies = dependants or []
         super(ImageField, self).__init__(**kwargs)
 
@@ -156,6 +147,7 @@ class ImageField(models.ImageField, FileField):
 
     def pre_save(self, model_instance, add):
         "Saves the file, updates dependants just before saving the model."
+        # Skipping parent's pre_save call on purpose
         file = super(models.FileField, self).pre_save(model_instance, add)
         if file and not file._committed:
             # Commit the file to storage prior to saving the model
