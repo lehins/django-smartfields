@@ -4,16 +4,14 @@
 
 {% block field %}
 <div class="row">
-  <div class="col-md-9">
+  <div id="{{ field.auto_id }}_preview">
+    {% if field.value %}
+      {{ field.value.html_tag|safe }}
+    {% endif %}
+  </div>
+  <div>
     {{ block.super }}
     {% include 'bootstrap3/layout/help_text_and_errors.html' %}
-  </div>
-  <div class="col-md-3">
-    <div id="{{ field.auto_id }}_preview">
-      {% if field.value %}
-	{{ field.value.html_tag|safe }}
-      {% endif %}
-    </div>
   </div>
 </div>
 {% endblock %}

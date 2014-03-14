@@ -13,83 +13,83 @@ __all__ = (
     "FileUploadView", "FileQueueUploadView",
 )
 
-def json_response(context, status=200):
+def json_response(context, status_code=200):
     return HttpResponse(json.dumps(context), mimetype="application/json",
-                        status=status)
+                        status=status_code)
 
 class FileUploadView(View):
+    model = None
     model_form = None
     field_name = None
     prefix = None
     has_permission = None
+
+    @property
+    def UploadForm(self):
+        Meta = types.ClassType("Meta", (), {
+            'model': self.model,
+            'fields': (self.field_name,)
+        })
+        properties = {
+            "Meta": Meta
+        }
+        cleaner_name = "clean_%s" % self.field_name
+        if self.model_form is not None:
+            properties[self.field_name] = self.model_form.base_fields[self.field_name]
+            if hasattr(self.model_form, cleaner_name):
+                properites[cleaner_name] = getattr(self.model_form, cleaner_name)
+        Form = types.ClassType("UploadForm", (ModelForm,), properties)
+        return Form
+
 
     @method_decorator(login_required)
     @method_decorator(csrf_protect)
     def dispatch(self, request, pk=None, *args, **kwargs):
         if not pk:
             raise Http404
+        self.model = self.model or self.model_form._meta.model
         if not (self.has_permission and callable(self.has_permission) and
-                self.model_form and self.field_name):
+                self.model and self.field_name):
             return HttpResponse("Missing required implementation", status=501)
-        obj = get_object_or_404(self.model_form._meta.model, pk=pk)
+        obj = get_object_or_404(self.model, pk=pk)
         if not self.has_permission(obj, request.user):
             return HttpResponseForbidden()
         return super(FileUploadView, self).dispatch(
-            request, obj=obj, *args, **kwargs)
+            request, obj, *args, **kwargs)
 
-    def complete(self, request, obj=None):
-        #form = self.model_form(instance=obj, prefix=self.prefix)
-        #field = form.fields.get(self.field_name, None)
-        #value = obj.__dict__[self.field_name]
-        #if not field:
-        #    raise Http404
-        context = {
-            'task': 'uploading',
-            'task_name': "Uploading",
-            'status': 'complete'
-        }
-        if obj:
-            field = getattr(obj, self.field_name)
-            if field:
-                context.update({
-                    'file_name': field.name,
-                    'file_url': field.url
-                })
-        return json_response(context)
+    def complete(self, obj, status):
+        field_file = getattr(obj, self.field_name)
+        if field_file:
+            status.update({
+                'file_name': field_file.name,
+                'file_url': field_file.url,
+                'html_tag': field_file.html_tag
+            })
+        return json_response(status)
 
-    def post(self, request, obj=None):
-        status = None #obj.smart_field_status(obj.pk, self.field_name)
-        if status and status['status'] != 'complete':
-            return json_response({
-                'task': 'uploading',
-                'task_name': "Uploading",
-                'status': 'busy',
-                'reason': status}, status=409)
-        UploadMeta = types.ClassType("UploadMeta", (), {
-            'model': self.model_form._meta.model,
-            'fields': (self.field_name,)
-        })
-        UploadForm = types.ClassType("UploadForm", (ModelForm,), {
-            "Meta": UploadMeta
-        })
-        form = UploadForm(
+
+    def post(self, request, obj):
+        status = obj.smartfield_status(self.field_name)
+        if status['state'] != 'ready':
+            return json_response(status, status_code=409)
+        form = self.UploadForm(
             instance=obj, data=request.POST, files=request.FILES)
         if form.is_valid():
             obj = form.save()
-            return self.get(request, obj=obj)
-        errors = form.errors.get(form.add_prefix(self.field_name))
-        return json_response({
+            return self.get(request, obj)
+        status.update({
             'task': 'uploading',
             'task_name': "Uploading",
-            'status': 'failed',
-            'errors': errors
+            'state': 'error',
+            'messages': form.errors.get(self.field_name)
         })
+        return json_response(status)
 
-    def get(self, request, obj=None):
-        status = None #obj.smart_field_status(obj.pk, self.field_name)
-        if status:
-            return json_response(status)
-        return self.complete(request, obj=obj)
+    def get(self, request, obj):
+        status = obj.smartfield_status(self.field_name)
+        if status['state'] == 'complete':
+            return self.complete(obj, status)
+        return json_response(status)
 
 
 class FileQueueUploadView(View):

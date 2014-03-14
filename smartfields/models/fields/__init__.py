@@ -1,94 +1,95 @@
 import random, time
 from django.db import models
-from django.contrib.sites.models import Site
 from django.utils.text import slugify
 
-
-
-
-class Dependency(object):
-
-    def __init__(self, dependency, persistent=True, forward=True):
-        self.forward = forward
-        self.persistent = persistent
-        self.dependency = dependency
-
-
-    def handle_dependency(self, instance, this_field):
-        this_value = getattr(instance, this_field.attname, None)
-        # non persistent dependencies proceed only with an empty field value
-        if not self.persistent and this_value: return
-
-        if callable(self.dependency):
-            new_value = self.dependency(instance, this_field, this_value)
-            setattr(instance, this_field.attname, new_value)
-        elif isinstance(self.dependency, basestring):
-            other_field = instance._meta.get_field(self.dependency)
-            other_value = getattr(instance, self.dependency)
-            self.process_dependency(
-                instance, (this_field, this_value), (other_field, other_value))
-        elif self.dependency is not None:
-            raise TypeError(
-                "'%s' dependency has to be either a function or a name of a field "
-                "attached to the same model." % field.name)
-
-
-    def process_dependency(self, instance,
-                           (this_field, this_value), (other_field, other_value)):
-        if self.forward:
-            attname = other_field.attname
-            new_value = other_field.process_dependency(instance, other_value, this_value)
-        else:
-            attname = this_field.attname
-            new_value = this_field.process_dependency(instance, this_value, other_value)
-        setattr(instance, attname, new_value)
-
-
-
+from smartfields.models.fields.dependencies import Dependency, ForwardDependency
+from smartfields.models.fields.managers import FieldManager
+from smartfields.processors.html import HTMLSanitizer, HTMLStripper
 
 
 class Field(models.Field):
-    dependencies = []
+    manager = None
+    manager_class = FieldManager
 
-    def __init__(self, dependencies=None, *args, **kwargs):
+    def __init__(self, dependencies=None, manager_class=None, *args, **kwargs):
+        if manager_class is not None:
+            self.manager_class = manager_class
         if dependencies is not None:
-            self.dependencies = dependencies
+            self.manager = self.manager_class(self, dependencies)
         super(Field, self).__init__(*args, **kwargs)
 
 
     def contribute_to_class(self, cls, name):
-        if self.dependencies:
-            cls.smartfields_dependencies.append(self)
+        if self.manager is not None:
+            cls.smartfields_managers.append(self.manager)
         super(Field, self).contribute_to_class(cls, name)
+
+
+    def get_status(self, instance):
+        current_status = {
+            'app': instance._meta.app_label,
+            'model': instance._meta.model_name,
+            'pk': instance.pk,
+            'field_name': self.name,
+            'state': 'ready'
+        }
+        if self.manager is not None:
+            status = self.manager.get_status(instance)
+            if status is not None:
+                current_status.update(status)
+        return current_status
 
 
 
 
 class SlugField(Field, models.SlugField):
 
-    def __init__(self, default_dependency=None, *args, **kwargs):
-        if default_dependency is not None:
-            kwargs.update(dependencies=[Dependency(
-                default_dependency, forward=False, persistent=False)])
-        super(SlugField, self).__init__(*args, **kwargs)
-
-    def process_dependency(self, instance, current_value, dependant_value):
-        if dependant_value:
-            slug = slugify(dependant_value)
-            if self._unique:
-                # modify a slug to make sure it's unique by adding a random number
+    @staticmethod
+    def generate_slug(instance, field, value):
+        current_value = getattr(instance, field.name)
+        if not current_value and value:
+            slug = slugify(value)
+            if field._unique:
                 manager = instance.__class__._default_manager
                 unique_slug = slug
-                existing = manager.filter(**{self.name: unique_slug})
+                existing = manager.filter(**{field.name: unique_slug})
+                # making sure slug is unique by adding a random number
                 while existing.exists():
                     unique_slug = "%s-%s" % (slug, random.randint(0, int(time.time())))
-                    existing = manager.filter(**{self.name: unique_slug})
+                    existing = manager.filter(**{field.name: unique_slug})
                 slug = unique_slug
             return slug
         return current_value
 
 
+    def __init__(self, default_dependency=None, dependencies=[], *args, **kwargs):
+        if default_dependency is not None:
+            dependencies.append(Dependency(
+                dependency=default_dependency, handler=self.generate_slug))
+        super(SlugField, self).__init__(dependencies=dependencies, *args, **kwargs)
+
+
 class HTMLField(Field, models.TextField):
 
-    def __init__(self, sanitize=True, dependencies=[]):
-        pass
+    def __init__(self, sanitize=True, no_html_field=None, dependencies=[], *args, **kwargs):
+        """:keyword bool sanitize: if set to `True` creaters a self dependency,
+        that removes unwanted tags and attributes, which are specified and
+        handled by :class:`HTMLSanitizer`. Default: `True`
+
+        :keyword str no_html_field: field name, which will hold the HTML
+        stripped value of this field.
+
+        """
+        if sanitize:
+            dependencies.append(Dependency(
+                processor_class=HTMLSanitizer, persistent=False))
+        if no_html_field is not None:
+            dependencies.append(ForwardDependency(
+                no_html_field, processor_class=HTMLStripper, persistent=False))
+        super(HTMLField, self).__init__(dependencies=dependencies, *args, **kwargs)
+
+
+    def save_form_data(self, instance, data):
+        super(HTMLField, self).save_form_data(instance, data)
+        if self.manager is not None:
+            self.manager.update(instance)

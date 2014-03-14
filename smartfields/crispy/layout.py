@@ -27,6 +27,15 @@ class ImageField(FileField):
         super(ImageField, self).__init__(*args, **kwargs)
 
 
+class VideoField(FileField):
+    template = "%s/videofield.html" % TEMPLATE_PACK
+
+    def __init__(self, *args, **kwargs):
+        kwargs['wrapper_class'] = kwargs.get('wrapper_class', 'smartfields-imagefield')
+        super(VideoField, self).__init__(*args, **kwargs)
+
+
+
 class LimitedField(Field):
     template = "%s/limitedfield.html" % TEMPLATE_PACK
 

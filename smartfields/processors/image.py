@@ -1,8 +1,15 @@
+from django.core.files.base import ContentFile
 from django.utils.image import Image
 from django.utils.six import StringIO
 
+from smartfields.processors.base import BaseProcessor
+
+__all__ = [
+    "ImageConverter"
+]
+
 # syntax
-# FORMAT: ([extensions], [read_modes], [write_modes])
+# pattern: ([extensions], [read_modes], [write_modes])
 SUPPORTED_IMAGE_FORMATS = {
     "BMP": (['bmp', 'dib'], ['1', 'L', 'P', 'RGB'], ['1', 'L', 'P', 'RGB']),
     #"DCX": (['dcx'], ['1', 'L', 'P', 'RGB'], None), - Intel fax format
@@ -13,24 +20,19 @@ SUPPORTED_IMAGE_FORMATS = {
     "PCD": (['pcd'], ['RGB'], None),
     "PCX": (['pcx'], ['1', 'L', 'P', 'RGB'], ['1', 'L', 'P', 'RGB']),
     # "PDF": (['pdf'], None, ['1', 'RGB']), - No read support
-    "PNG": (
-        ['png'], ['1', 'L', 'P', 'RGB', 'RGBA'], ['1', 'L', 'P', 'RGB', 'RGBA']),
-    "PPM": (['pbm', 'pgm', 'ppm'], ['1', 'L', 'RGB'], ['1', 'L', 'RGB']),         
+    "PNG": (['png'], ['1', 'L', 'P', 'RGB', 'RGBA'], ['1', 'L', 'P', 'RGB', 'RGBA']),
+    "PPM": (['pbm', 'pgm', 'ppm'], ['1', 'L', 'RGB'], ['1', 'L', 'RGB']),
     "PSD": (['psd'], ['P'], None),
-    "TIFF": (
-        ['tif', 'tiff'], ['1', 'L', 'RGB', 'CMYK'], ['1', 'L', 'RGB', 'CMYK']),
+    "TIFF": (['tif', 'tiff'], ['1', 'L', 'RGB', 'CMYK'], ['1', 'L', 'RGB', 'CMYK']),
     "XBM": (['xbm'], ['1'], ['1']),
     "XPM": (['xpm'], ['P'], None),
     "SGI": (['sgi'], ['L', 'RGB'], None),
     "TGA": (['tga', 'tpic'], ['RGB', 'RGBA'], None)
 }
 
-class ImageConverter(object):
+class ImageConverter(BaseProcessor):
     preference_mode_list = ['RGBA', 'RGB', 'P', 'CMYK', 'L', '1']
     browser_format_support = ['JPEG', 'GIF', 'PNG']
-
-    def __init__(self, data):
-        self.data = data
 
     @classmethod
     def browser_exts(cls):
@@ -39,15 +41,16 @@ class ImageConverter(object):
             supported.extend(SUPPORTED_IMAGE_FORMATS.get(format)[0])
         return supported
 
+
     @classmethod
     def input_exts(cls):
         supported = []
         for format, support in SUPPORTED_IMAGE_FORMATS.iteritems():
             supported.extend(support[0])
         return supported
-            
 
-    def convert(self, max_dim=None, format=None, mode=None):
+
+    def process(self, max_dim=None, format=None, mode=None, **kwargs):
         """
         Resize image to fit it into (width, height) box.
         """
@@ -84,7 +87,7 @@ class ImageConverter(object):
             return string.getvalue()
         string = StringIO()
         image.save(string, format=format)
-        return string.getvalue()
+        return ContentFile(string.getvalue())
 
     def get_dimensions(self, original, maximum):
         if maximum is None or (
@@ -99,5 +102,3 @@ class ImageConverter(object):
         else:
             new_dimensions = maximum
         return new_dimensions
-        
-    

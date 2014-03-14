@@ -1,9 +1,7 @@
-smartfields = {
-    setProgress : ($progressbar, percent) ->
-        $progressbar.attr('aria-valuenow', percent)
-            .css('width', percent + "%")
-            .find('span').html(percent + "% Complete")
-}
+transitionEnd = 'transitionend webkitTransitionEnd oTransitionEnd ' +
+                'otransitionend MSTransitionEnd'
+
+smartfields = {}
 
 class smartfields.FileField
     constructor: (@$elem) ->
@@ -11,22 +9,18 @@ class smartfields.FileField
         @id = @$browse_btn.attr('id')
         @$delete_btn = $("##{@id}_delete")
         @$upload_btn = $("##{@id}_upload")
-        @$upload_bar = $("##{@id}_progressbar_upload")
-        @$server_bar = $("##{@id}_progressbar_server")
+        @$progress = $("##{@id}_progress").hide()
         @$current = $("##{@id}_current")
-        @$current_link = $("##{@id}_link").click ->
+        @$current_btn = $("##{@id}_link").click ->
             href = $(@).data('href')
             if href
-                window.open(href, '_blank').focus()
-        @options = @$browse_btn.data('plupload')
+                window.open(href, $(@).data('target')).focus()
         @$upload_btn.parent().hide()
-        @$upload_bar.parent().hide()
         if !@$current.val()
-            if @$delete_btn
-                @$delete_btn.parent().hide()
-            @$current_link.parent().hide()
+            @$delete_btn.parent().hide()
+            @$current_btn.parent().hide()
 
-        defOptions = {
+        @options = {
             'browse_button': @id,
             'container': @$elem[0],
             'file_data_name': @$browse_btn.attr('name'),
@@ -53,9 +47,54 @@ class smartfields.FileField
                 Destroy:        $.proxy(@Destroy @)
             }
         }
-        $.extend(@options, defOptions)
+        $.extend(@options, @$browse_btn.data('plupload'))
         @uploader = new plupload.Uploader(@options)
         @uploader.init()
+
+
+    setProgress : (index, percent, task_name) ->
+        if !index? && !percent? && !task_name?
+            for bar in @$progress.children()
+                $(bar).attr('aria-valuenow', 0)
+                    .width("0%")
+                    .find('span').html("Ready")
+        else
+            len = @$progress.children().length
+            bar = @$progress.children()[len - 1 - index]
+            $(bar).attr('aria-valuenow', percent)
+                .width("#{percent}%")
+                .find('span').html("#{percent}% #{task_name}")
+            @$current.val("#{task_name}... #{percent}%")
+            if index > 0
+                bar = @$progress.children()[len - index]
+                $(bar).attr('aria-valuenow', 100-percent)
+                    .width("#{100-percent}%")
+
+
+    handleResponse: (data, complete, error) ->
+        if data.state == 'complete'
+            completed = false
+            delayedComplete = () =>
+                if !completed
+                    completed = true
+                    @$progress.hide()
+                    @setProgress()
+                    @$delete_btn.parent().show()
+                    @$current.val(data.file_name)
+                    @$current_btn.data('href', data.file_url).parent().show()
+                    complete?(data)
+            @setProgress(1, 100, data.task_name)
+            @$progress.one(transitionEnd, => delayedComplete)
+            setTimeout(delayedComplete, 2000)
+        else if data.state == 'error'
+            console.log(data)
+            error?(data)
+        else if data.state != 'ready'
+            if data.state == 'in_progress'
+                progress = Math.round(100 * data.progress)
+                @setProgress(1, progress, data.task_name)
+            setTimeout((=> $.get(@options.url, (data) => @handleResponse(data))), 3000)
+
 
     postDeleteCallback: (data, textStatus, jqXHR) ->
 
@@ -88,46 +127,46 @@ class smartfields.FileField
         @$upload_btn.click ->
             up.start()
             false
-        if @$delete_btn
-            @$delete_btn.click =>
-                post_data = {
-                    'csrfmiddlewaretoken': @$browse_btn.data('csrfToken')
-                }
-                post_data["#{@$browse_btn.attr('name')}-clear"] = "on"
-                $.post(@options.url, post_data, (data, textStatus, jqXHR) =>
-                    if data.status == 'complete'
-                        @$current.val('')
-                        @$current_link.attr('href', "").parent().hide()
-                        @$delete_btn.parent().hide()
-                        @postDeleteCallback(data, textStatus, jqXHR)
+        @$delete_btn.click =>
+            post_data = {
+                'csrfmiddlewaretoken': @$browse_btn.data('csrfToken')
+            }
+            post_data["#{@$browse_btn.attr('name')}-clear"] = "on"
+            $.post(@options.url, post_data, (data, textStatus, jqXHR) =>
+                if data.state == 'ready'
+                    @$current.val('')
+                    @$current_btn.data('href', "").parent().hide()
+                    @$delete_btn.parent().hide()
+                    @postDeleteCallback(data, textStatus, jqXHR)
                 )
+        status = @$browse_btn.data('status')
+        if status?.state == 'in_progress'
+            @$progress.show()
+        @handleResponse(status)
 
     FilesAdded: (up, files) ->
         @$current.val(files[0].name)
         @$upload_btn.parent().show()
-        @$upload_bar.parent().show()
-        if @$delete_btn then @$delete_btn.parent().hide()
+        @$progress.show()
+        @$delete_btn?.parent().hide()
         # remove previously selected files from the queue, so only one left
         up.splice(0, up.files.length-1)
 
     BeforeUpload: ->
+        @setProgress()
         @$upload_btn.parent().hide()
 
     UploadProgress: (up, file) ->
-        smartfields.setProgress(@$upload_bar, file.percent)
+        @setProgress(0, file.percent, "Uploading")
 
     FileUploaded: (up, file, data) ->
         if data.status == 200
             response = $.parseJSON(data.response)
-            if response.status == 'complete'
-                if @$delete_btn then @$delete_btn.parent().show()
-                @$upload_bar.one('transitionend webkitTransitionEnd oTransitionEnd ' +
-                    'otransitionend MSTransitionEnd', =>
-                        smartfields.setProgress(@$upload_bar, 0)
-                        @$upload_bar.parent().hide()
-                )
-                @$current.val(response.file_name)
-                @$current_link.attr('href', response.file_url).parent().show()
+            @handleResponse(response)
+        else if data.status == 409
+            response = $.parseJSON(data.response)
+            console.log(response)
+
 
 
 class smartfields.ImageField extends smartfields.FileField
@@ -136,16 +175,11 @@ class smartfields.ImageField extends smartfields.FileField
         @$current_preview = $("##{@id}_preview")
 
     postDeleteCallback: (data, textStatus, jqXHR) ->
-        if data.status == 'complete'
-            @$current_preview.attr('src', '')
+        @$current_preview.empty()
 
+    handleResponse: (data) ->
+        super data, (data) => @$current_preview.empty().html(data.html_tag)
 
-    FileUploaded: (up, file, data) ->
-        if data.status == 200
-            response = $.parseJSON(data.response)
-            if response.status == 'complete'
-                @$current_preview.attr('src', response.file_url)
-        super up, file, data
 
 class smartfields.LimitedField
     constructor: (@$elem) ->

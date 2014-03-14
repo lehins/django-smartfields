@@ -5,8 +5,8 @@
 {% block field %}
   <div class="input-group">
     <span class="input-group-btn">
-      <span class="btn btn-primary btn-file" title="Browse">
-	<input class="smartfields-btn-browse" id="{{ field.auto_id }}" name="{{ field.name }}" type="file" {{ field.field.widget.attrs|flatatt }} data-csrf-token="{{ csrf_token }}">
+      <span class="btn btn-secondary btn-file" title="Browse">
+	<input class="smartfields-btn-browse" id="{{ field.auto_id }}" name="{{ field.name }}" type="file" {{ field.field.widget.attrs|flatatt }} data-csrf-token="{{ csrf_token }}" data-status="{{ field.value.status_json }}">
 	Browse
       </span>
     </span>
@@ -16,16 +16,19 @@
       </span>
     {% endif %}
     <span class="input-group-btn" title="Upload">
-      <button id="{{ field.auto_id }}_upload" type="button" class="btn"><span class="glyphicon glyphicon-upload"></span></button>
+      <button id="{{ field.auto_id }}_upload" type="button" class="btn btn-primary"><span class="glyphicon glyphicon-upload"></span></button>
     </span>
     <input id="{{ field.auto_id }}_current" class="form-control" type="text" readonly="" value="{{ field.value }}">
     <span class="input-group-btn" title="Download">
       <button id="{{ field.auto_id }}_link" type="button" class="btn" data-href="{% if field.value %}{{ field.value.url }}{% endif %}" data-target="_blank"><span class="glyphicon glyphicon-download-alt"></span></a>
     </span>
   </div>
-  <div class="progress">
-    <div id="{{ field.auto_id }}_progressbar_upload" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%;">
-      <span class="sr-only">0% Complete</span>
+  <div class="progress" id="{{ field.auto_id }}_progress" >
+    <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width:0%;">
+      <span class="sr-only">Ready</span>
+    </div>
+    <div class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width:0%;">
+      <span class="sr-only">Ready</span>
     </div>
   </div>
 {% endblock %}
