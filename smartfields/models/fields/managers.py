@@ -68,11 +68,10 @@ class FieldManager(object):
                 d.update(instance, self.field, value, processor=processor)
             status['state'] = 'complete'
             self.set_status(instance, status)
-        except ProcessingError, e:
-            self.set_error_status(instance, str(e))
         except BaseException, e:
-            self.set_error_status(instance, str(e))
-            raise
+            self.set_error_status(instance, "%s: %s" % (type(e).__name__, str(e)))
+            if not isinstance(e, ProcessingError):
+                raise
         self.handle(instance)
 
 
@@ -116,6 +115,13 @@ class FileFieldManager(FieldManager):
     def delete(self):
         for d in self.dependencies:
             d.delete()
+
+    def get_status(self, instance):
+        status = super(FileFieldManager, self).get_status(instance)
+        if status is not None and status['state'] == 'error':
+            # cleanup in case of an error
+            getattr(instance, self.field.name).delete()
+        return status
 
 
 

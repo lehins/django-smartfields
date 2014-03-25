@@ -81,8 +81,9 @@ class HTMLField(Field, models.TextField):
 
         """
         if sanitize:
+            sanitizer_class = kwargs.pop('sanitizer_class', HTMLSanitizer)
             dependencies.append(Dependency(
-                processor_class=HTMLSanitizer, persistent=False))
+                processor_class=sanitizer_class, persistent=False))
         if no_html_field is not None:
             dependencies.append(ForwardDependency(
                 no_html_field, processor_class=HTMLStripper, persistent=False))

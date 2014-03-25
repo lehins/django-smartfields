@@ -3,9 +3,9 @@
 {% load crispy_forms_filters %}
 
 {% block field %}
-<div class="row">
+<div>
   <div id="{{ field.auto_id }}_preview">
-    {% if field.value %}
+    {% if field.value and field.value.state == 'ready' %}
       {{ field.value.html_tag|safe }}
     {% endif %}
   </div>

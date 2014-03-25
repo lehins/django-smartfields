@@ -14,6 +14,10 @@ __all__ = [
 class FieldFile(files.FieldFile):
 
     @property
+    def state(self):
+        return self.status['state']
+
+    @property
     def status(self):
         return self.field.get_status(self.instance)
 

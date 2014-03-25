@@ -1,5 +1,6 @@
 import re
-from BeautifulSoup import BeautifulSoup, Comment
+#from BeautifulSoup import BeautifulSoup, Comment
+from bs4 import BeautifulSoup, Comment # problem with mod_wsgi seems to be fixed
 from django.conf import settings
 
 from smartfields.processors.base import BaseProcessor
@@ -49,13 +50,14 @@ class HTMLSanitizer(HTMLStripper):
             tag.hidden = True
         else:
             attrs = tag.attrs
-            tag.attrs = []
-            if tag.name == "a":
-                tag.attrs.append(("target", "_blank"))
-            for attr, val in attrs:
+            tag.attrs = {}
+            for attr, val in attrs.iteritems():
                 if attr in self.valid_attrs:
-                    val = self.re_scripts.sub('', val) # Remove scripts (vbs & js)
-                    tag.attrs.append((attr, val))
+                    new_val = self.re_scripts.sub('', val) # Remove scripts (vbs & js)
+                    while new_val != val:
+                        val = new_val
+                        new_val = self.re_scripts.sub('', val)
+                    tag.attrs[attr] = val
 
 
     def process(self, valid_tags=None, valid_attrs=None, **kwargs):

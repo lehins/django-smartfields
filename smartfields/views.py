@@ -71,7 +71,7 @@ class FileUploadView(View):
     def post(self, request, obj):
         status = obj.smartfield_status(self.field_name)
         if status['state'] != 'ready':
-            return json_response(status, status_code=409)
+            return json_response(status)
         form = self.UploadForm(
             instance=obj, data=request.POST, files=request.FILES)
         if form.is_valid():

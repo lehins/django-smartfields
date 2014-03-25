@@ -1,0 +1,25 @@
+.btn-file {
+    overflow: hidden;
+    position: relative;
+}
+
+.btn-file input[type="file"] {
+    background: white;
+    cursor: inherit;
+    display: block;
+    filter: alpha(opacity=0);
+    font-size: 999px;
+    min-width: 100%;
+    min-height: 100%;
+    opacity: 0;
+    outline: none;
+    position: absolute;
+    top: 0; right: 0;
+    text-align: right;
+}
+
+.progress {
+    border-radius: 0;
+    height: 8px;
+    margin-bottom: 0;
+}

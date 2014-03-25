@@ -2,7 +2,7 @@ from django.core.files.base import ContentFile
 from django.utils.image import Image
 from django.utils.six import StringIO
 
-from smartfields.processors.base import BaseProcessor, ProcessingError
+from smartfields.processors.base import BaseProcessor
 
 __all__ = [
     "ImageConverter"
@@ -17,7 +17,7 @@ SUPPORTED_IMAGE_FORMATS = {
     "GIF": (['gif'], ['P', 'L'], ['P', 'L']),
     "IM": (['im'], [], []),
     "JPEG": (['jpg', 'jpe', 'jpeg'], ['L', 'RGB', 'CMYK'], ['L', 'RGB', 'CMYK']),
-    #"PCD": (['pcd'], ['RGB'], None), # segfaults
+    "PCD": (['pcd'], ['RGB'], None),
     "PCX": (['pcx'], ['1', 'L', 'P', 'RGB'], ['1', 'L', 'P', 'RGB']),
     # "PDF": (['pdf'], None, ['1', 'RGB']), - No read support
     "PNG": (['png'], ['1', 'L', 'P', 'RGB', 'RGBA'], ['1', 'L', 'P', 'RGB', 'RGBA']),
@@ -33,6 +33,7 @@ SUPPORTED_IMAGE_FORMATS = {
 class ImageConverter(BaseProcessor):
     preference_mode_list = ['RGBA', 'RGB', 'P', 'CMYK', 'L', '1']
     browser_format_support = ['JPEG', 'GIF', 'PNG']
+    extensions_supported = 
 
     @classmethod
     def browser_exts(cls):
@@ -70,28 +71,24 @@ class ImageConverter(BaseProcessor):
         supported_modes = support[2]
         # decide output color mode
         if mode and mode not in supported_modes:
-            raise TypeError("Unsupported output color mode: '%s' for format: '%s'" %
-                            (mode, formt))
-        try:
-            if mode:
-                image = image.convert(mode)
-            elif not image.mode in supported_modes:
-                for mode in self.preference_mode_list:
-                    if mode in supported_modes:
-                        image = image.convert(mode)
-                    break;
-            # decide output dimensions
-            new_dim = self.get_dimensions(image.size, max_dim)
-            if new_dim is not None:
-                image = image.resize(new_dim, resample=Image.ANTIALIAS)
-            if format == image.format:
-                return string.getvalue()
-            string = StringIO()
-            image.save(string, format=format)
-            return ContentFile(string.getvalue())
-        except IOError, e:
-            raise ProcessingError(
-                "There was a problem with image conversion: %s" % str(e))
+            raise TypeError("Unsupported output color mode: '%s' for format"
+                            ": '%s'" % (mode, format))
+        if mode:
+            image = image.convert(mode)
+        elif not image.mode in supported_modes:
+            for mode in self.preference_mode_list:
+                if mode in supported_modes:
+                    image = image.convert(mode)
+                break;
+        # decide output dimensions
+        new_dim = self.get_dimensions(image.size, max_dim)
+        if new_dim is not None:
+            image = image.resize(new_dim, resample=Image.ANTIALIAS)
+        if format == image.format:
+            return string.getvalue()
+        string = StringIO()
+        image.save(string, format=format)
+        return ContentFile(string.getvalue())
 
     def get_dimensions(self, original, maximum):
         if maximum is None or (
