@@ -23,9 +23,9 @@ class smartfields.FileField
             href = $(@).data('href')
             if href
                 window.open(href, $(@).data('target')).focus()
-        @$upload_btn.parent().hide()
+        @$upload_btn.hide()
         if !@$current.val()
-            @$delete_btn.parent().hide()
+            @$delete_btn.hide()
             @$current_btn.parent().hide()
         @$delete_btn.click =>
             post_data = {
@@ -35,8 +35,8 @@ class smartfields.FileField
             $.post(@options.url, post_data, (data, textStatus, jqXHR) =>
                 if data.state == 'ready'
                     @$current.val('')
-                    @$current_btn.data('href', "").parent().hide()
-                    @$delete_btn.parent().hide()
+                    @$current_btn.data('href', "").hide()
+                    @$delete_btn.hide()
                     @fileDeleted(data, textStatus, jqXHR)
                 )
         @options = {
@@ -110,7 +110,7 @@ class smartfields.FileField
                     completed = true
                     @$progress.hide()
                     @setProgress()
-                    @$delete_btn.parent().show()
+                    @$delete_btn.show()
                     @$current.val(data.file_name)
                     @$current_btn.data('href', data.file_url).parent().show()
                     complete?(data)
@@ -192,16 +192,16 @@ class smartfields.FileField
 
     FilesAdded: (up, files) ->
         @$current.val(files[0].name)
-        @$upload_btn.parent().show()
+        @$upload_btn.show()
         @$progress.show()
-        @$delete_btn?.parent().hide()
+        @$delete_btn.hide()
         # remove previously selected files from the queue, so only one left
         up.splice(0, up.files.length-1)
         @setErrors()
 
     BeforeUpload: ->
         @setProgress()
-        @$upload_btn.parent().hide()
+        @$upload_btn.hide()
 
     UploadProgress: (up, file) ->
         @setProgress(0, file.percent, "Uploading")
@@ -217,15 +217,15 @@ class smartfields.FileField
 
 
 class smartfields.MediaField extends smartfields.FileField
-    constructor: (@$elem) ->
-        super @$elem
+    constructor: ($elem) ->
+        super $elem
         @$current_preview = $("##{@id}_preview")
 
     fileDeleted: (data, textStatus, jqXHR) ->
         @$current_preview.empty()
 
-    handleResponse: (data) ->
-        super data, (data) =>
+    handleResponse: (data, complete, error) ->
+        super data, ((data) =>
             $preview = @$current_preview.empty().html(data.html_tag)
             persistentLoader = (attempt) =>
                 @$current_preview.find("[src]").each( ->
@@ -240,6 +240,8 @@ class smartfields.MediaField extends smartfields.FileField
                     )
                 )
             persistentLoader(5)
+            complete?()
+            ), error
 
     BeforeUpload: ->
         @$current_preview.empty()

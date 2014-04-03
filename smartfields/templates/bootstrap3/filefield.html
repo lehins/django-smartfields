@@ -5,20 +5,16 @@
 {% block field %}
   <div class="input-group">
     <span class="input-group-btn">
-      <span class="btn btn-secondary btn-file" title="Browse">
+      <span class="btn btn-primary btn-file" title="Browse">
 	<input class="smartfields-btn-browse" id="{{ field.auto_id }}" name="{{ field.name }}" type="file" {{ field.field.widget.attrs|flatatt }} data-csrf-token="{{ csrf_token }}" data-status="{{ field.value.status_json }}">
 	Browse
       </span>
+      {% if not field.field.required %}
+	<button id="{{ field.auto_id }}_delete" type="button" class="btn" title="Delete"><span class="glyphicon glyphicon-trash"></span></button>
+      {% endif %}
+      <button id="{{ field.auto_id }}_upload" type="button" class="btn btn-success" title="Upload"><span class="glyphicon glyphicon-upload"></span></button>
     </span>
-    {% if not field.field.required %}
-      <span class="input-group-btn" title="Delete">
-	<button id="{{ field.auto_id }}_delete" type="button" class="btn"><span class="glyphicon glyphicon-trash"></span></button>
-      </span>
-    {% endif %}
-    <span class="input-group-btn" title="Upload">
-      <button id="{{ field.auto_id }}_upload" type="button" class="btn btn-primary"><span class="glyphicon glyphicon-upload"></span></button>
-    </span>
-    <input id="{{ field.auto_id }}_current" class="form-control" type="text" readonly="" value="{{ field.value }}">
+    <input id="{{ field.auto_id }}_current" class="form-control" type="text" readonly="" value="{{ field.value.name_base }}">
     <span class="input-group-btn" title="Download">
       <button id="{{ field.auto_id }}_link" type="button" class="btn" data-href="{% if field.value %}{{ field.value.url }}{% endif %}" data-target="_blank"><span class="glyphicon glyphicon-download-alt"></span></a>
     </span>

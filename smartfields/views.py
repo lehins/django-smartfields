@@ -1,13 +1,13 @@
-from django.views.generic import View
+import json, types
+
+from django.contrib.auth.decorators import login_required
+from django.http import Http404, HttpResponse, HttpResponseForbidden
+from django.forms import ModelForm
+from django.shortcuts import get_object_or_404
+from django.template.response import TemplateResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_protect
-from django.contrib.auth.decorators import login_required
-from django.shortcuts import get_object_or_404
-from django.http import Http404, HttpResponse, HttpResponseForbidden
-from django.template.response import TemplateResponse
-from django.forms import ModelForm
-
-import json, types
+from django.views.generic import View
 
 __all__ = (
     "FileUploadView", "FileQueueUploadView",
@@ -44,14 +44,15 @@ class FileUploadView(View):
 
     @method_decorator(login_required)
     @method_decorator(csrf_protect)
-    def dispatch(self, request, pk=None, *args, **kwargs):
-        if not pk:
-            raise Http404
+    def dispatch(self, request, pk=None, obj=None, *args, **kwargs):
         self.model = self.model or self.model_form._meta.model
+        if obj is None:
+            if pk is None:
+                raise Http404
+            obj = get_object_or_404(self.model, pk=pk)
         if not (self.has_permission and callable(self.has_permission) and
                 self.model and self.field_name):
             return HttpResponse("Missing required implementation", status=501)
-        obj = get_object_or_404(self.model, pk=pk)
         if not self.has_permission(obj, request.user):
             return HttpResponseForbidden()
         return super(FileUploadView, self).dispatch(
@@ -61,7 +62,7 @@ class FileUploadView(View):
         field_file = getattr(obj, self.field_name)
         if field_file:
             status.update({
-                'file_name': field_file.name,
+                'file_name': field_file.name_base,
                 'file_url': field_file.url,
                 'html_tag': field_file.html_tag
             })
@@ -72,11 +73,22 @@ class FileUploadView(View):
         status = obj.smartfield_status(self.field_name)
         if status['state'] != 'ready':
             return json_response(status)
+
+        created = False # necessary hack for progress reporting
+        if not obj.pk:
+            created = True
+            obj.save()
+
         form = self.UploadForm(
             instance=obj, data=request.POST, files=request.FILES)
         if form.is_valid():
+            #obj.save()
             obj = form.save()
             return self.get(request, obj)
+
+        if created:
+            obj.delete()
+
         status.update({
             'task': 'uploading',
             'task_name': "Uploading",

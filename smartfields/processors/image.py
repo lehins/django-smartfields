@@ -94,15 +94,17 @@ class ImageConverter(BaseProcessor):
                 "There was a problem with image conversion: %s" % str(e))
 
     def get_dimensions(self, original, maximum):
-        if maximum is None or (
-                original[0] <= maximum[0] and original[1] <= maximum[1]):
+        if maximum is None or \
+           (original[0] <= maximum[0] and original[1] <= maximum[1]) or \
+           (maximum[0] == 0 and original[1] <= maximum[1]) or \
+           (maximum[1] == 0 and original[0] <= maximum[0]):
             return None
+        maximum = (original[0] if maximum[0] == 0 else maximum[0],
+                   original[1] if maximum[1] == 0 else maximum[1])
         requested_ratio = float(maximum[0])/float(maximum[1])
         original_ratio = float(original[0])/float(original[1])
         if original_ratio > requested_ratio:
-            new_dimensions = (maximum[0], int(round(maximum[0]*(1/original_ratio))))
+            return (maximum[0], int(round(maximum[0]*(1/original_ratio))))
         elif original_ratio < requested_ratio:
-            new_dimensions = (int(round(maximum[1]*original_ratio)), maximum[1])
-        else:
-            new_dimensions = maximum
-        return new_dimensions
+            return (int(round(maximum[1]*original_ratio)), maximum[1])
+        return maximum

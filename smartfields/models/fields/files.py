@@ -32,6 +32,12 @@ class FieldFile(files.FieldFile):
                file=self, field=self.field, instance=self.instance)
         return ''
 
+    @property
+    def name_base(self):
+        if self:
+            return os.path.split(self.name)[1]
+        return ''
+
 
     def delete(self, **kwargs):
         if self.field.manager is not None:

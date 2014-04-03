@@ -98,6 +98,8 @@ class FieldManager(object):
     def set_status(self, instance, status):
         """Sets the field status for up to 5 minutes."""
         status_key = self.get_status_key(instance)
+        # for debugging
+        status['key'] = status_key
         cache.set(status_key, status, timeout=300)
 
 

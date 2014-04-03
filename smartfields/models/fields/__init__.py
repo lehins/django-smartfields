@@ -21,6 +21,8 @@ class Field(models.Field):
 
     def contribute_to_class(self, cls, name):
         if self.manager is not None:
+            if cls.smartfields_managers is None:
+                cls.smartfields_managers = []
             cls.smartfields_managers.append(self.manager)
         super(Field, self).contribute_to_class(cls, name)
 

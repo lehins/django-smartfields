@@ -2,7 +2,7 @@ from django.db import models
 
 class Model(models.Model):
 
-    smartfields_managers = []
+    smartfields_managers = None
 
     class Meta:
         abstract = True
