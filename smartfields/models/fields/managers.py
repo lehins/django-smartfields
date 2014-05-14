@@ -13,7 +13,7 @@ __all__ = [
 class FieldManager(object):
     processor_class = BaseProcessor
 
-    def __init__(self, field, dependencies, processor_class=None):
+    def __init__(self, field, dependencies=None, processor_class=None):
         """:class:`FieldManager` is similar to a ModelManager in a sense that it is
         capable of changing the value of a field depending on values form other
         fields related to a model instance as well as modyfing a model instance
@@ -21,7 +21,7 @@ class FieldManager(object):
 
         :param Field field: field instance that needs some extra managing.
 
-        :params list dependencies: list of :class:`Dependency` instances that
+        :keyword list dependencies: list of :class:`Dependency` instances that
         will be managed by this :class:`FieldManager`.
 
         :keyword BaseProcessor processor_class: class that will be instantiated
@@ -31,7 +31,7 @@ class FieldManager(object):
         self.field = field
         if processor_class is not None:
             self.processor_class = processor_class
-        self.dependencies = list(dependencies)
+        self.dependencies = list(dependencies or [])
 
 
     def handle(self, instance):

@@ -82,6 +82,11 @@ class FileField(Field, models.FileField):
                 self.manager.update(model_instance)
         return file
 
+    def delete(self, model_instance):
+        if not self.keep_orphans:
+            field_file = getattr(model_instance, self.name)
+            if field_file:
+                field_file.delete()
 
 
 

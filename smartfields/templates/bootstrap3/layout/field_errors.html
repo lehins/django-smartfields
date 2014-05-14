@@ -1,7 +1,0 @@
-<ul id="{{ field.auto_id }}_errors">
-  {% if form_show_errors and field.errors %}
-    {% for error in field.errors %}
-      <li id="error_{{ forloop.counter }}_{{ field.auto_id }}" class="bg-danger"><strong>{{ error }}</strong></li>
-    {% endfor %}
-  {% endif %}
-</ul>

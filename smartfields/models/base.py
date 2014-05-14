@@ -9,15 +9,29 @@ class Model(models.Model):
 
     def __init__(self, *args, **kwargs):
         super(Model, self).__init__(*args, **kwargs)
+        self.smartfields_handle()
+
+
+    def save(self, *args, **kwargs):
+        self.smartfields_handle()
+        super(Model, self).save(*args, **kwargs)
+
+
+    def delete(self, *args, **kwargs):
+        if self.smartfields_managers is not None:
+            for manager in self.smartfields_managers:
+                delete_handle = getattr(manager.field, 'delete', None)
+                if callable(delete_handle):
+                    delete_handle(self)
+        return super(Model, self).delete(*args, **kwargs)
+                    
+
+
+    def smartfields_handle(self):
         if self.smartfields_managers is not None:
             for manager in self.smartfields_managers:
                 manager.handle(self)
 
-    def save(self, *args, **kwargs):
-        if self.smartfields_managers is not None:
-            for manager in self.smartfields_managers:
-                manager.handle(self)
-        super(Model, self).save(*args, **kwargs)
 
     def smartfield_status(self, field_name):
         """A way to find out a status a filed."""

@@ -1,9 +1,24 @@
 transitionEnd = 'transitionend webkitTransitionEnd oTransitionEnd ' +
                 'otransitionend MSTransitionEnd'
 
-smartfields = {}
 
-window.smartfields = smartfields
+window.smartfields =
+    getFunction: (func, parent=window) ->
+        if not func?
+            null
+        else if typeof func is 'function'
+            func
+        else if typeof func is 'string'
+            cur_obj = parent
+            hierarchy = func.split('.')
+            last = hierarchy.length - 1;
+            for name in hierarchy
+                cur_obj = cur_obj[name]
+            if not typeof cur_obj is 'function'
+                throw TypeError("#{func} is not a function")
+            cur_obj
+        else
+            throw TypeError("#{typeof func} is incorrect. Has to be a string or function")
 
 class smartfields.FileField
     constructor: (@$elem) ->
@@ -14,6 +29,13 @@ class smartfields.FileField
         @$progress = $("##{@id}_progress").hide()
         @$current = $("##{@id}_current")
         @$errors = $("##{@id}_errors")
+        @callbacks =
+            onError: smartfields.getFunction(@$browse_btn.data('onError'))
+            onComplete: smartfields.getFunction(@$browse_btn.data('onComplete'))
+            onReady: smartfields.getFunction(@$browse_btn.data('onReady'))
+            onBusy: smartfields.getFunction(@$browse_btn.data('onBusy'))
+            onProgress: smartfields.getFunction(@$browse_btn.data('onProgress'))
+
         @$browse_btn.change( =>
             # in case plupload fails to inititalize
             file_name = @$browse_btn.val().split('\\').pop() # remove 'fakepath'
@@ -88,22 +110,19 @@ class smartfields.FileField
                     .find('span').html("Ready")
         else
             len = @$progress.children().length
-            bar = @$progress.children()[len - 1 - index]
-            $(bar).attr('aria-valuenow', percent)
-                .width("#{percent}%")
-                .find('span').html("#{percent}% #{task_name}")
             if index > 0
                 bar = @$progress.children()[len - index]
                 $(bar).attr('aria-valuenow', 100-percent)
                     .width("#{100-percent}%")
+            bar = @$progress.children()[len - 1 - index]
+            $(bar).attr('aria-valuenow', percent)
+                .width("#{percent}%")
+                .find('span').html("#{percent}% #{task_name}")
             @$current.val("#{task_name}... #{percent}%")
 
 
     handleResponse: (data, complete, error) ->
-        if @form_submitted and data.state != 'error'
-            @form_submitted = false
-            @$form.submit()
-        else if data.state == 'complete'
+        if data.state is 'complete'
             completed = false
             delayedComplete = () =>
                 if !completed
@@ -114,19 +133,29 @@ class smartfields.FileField
                     @$current.val(data.file_name)
                     @$current_btn.data('href', data.file_url).parent().show()
                     complete?(data)
+                    @callbacks.onComplete?(@, data)
+                    if @form_submitted and data.state != 'error'
+                        @form_submitted = false
+                        @$form.submit()
+
             @setProgress(1, 100, data.task_name)
             @$progress.one(transitionEnd, => delayedComplete)
             #transitionEnd is not guaranteed to fire. setTimeout as a fallback
-            setTimeout(delayedComplete, 2000)
-        else if data.state == 'error'
+            setTimeout(delayedComplete, 1500)
+        else if data.state is 'error'
             @setErrors(data.messages)
             error?(data)
+            @callbacks.onError?(@, data)
         else if data.state != 'ready'
-            if data.state == 'in_progress'
+            if data.state is 'in_progress'
                 progress = Math.round(100 * data.progress)
                 @setProgress(1, progress, data.task_name)
+                @callbacks.onProgress?(@, data, progress)
             setTimeout((=> $.get(@options.url, (data) => @handleResponse(data))), 3000)
+        else if data.state is 'ready'
+            @callbacks.onReady?(@, data)
 
+            
 
     fileDeleted: (data, textStatus, jqXHR) ->
 
@@ -174,7 +203,7 @@ class smartfields.FileField
         switch error.code
             when plupload.FILE_EXTENSION_ERROR
                 @setErrors(["Unsupported file type: #{error.file.name}"])
-                up.splice(0, up.files.length)
+                up.splice(0, up.files.length) # remove unsupported file
             else @setErrors([error.message])
 
     Destroy: ->
@@ -212,7 +241,6 @@ class smartfields.FileField
             @handleResponse(response)
         else if data.status == 409
             response = $.parseJSON(data.response)
-            console.log(response)
 
 
 
@@ -227,15 +255,15 @@ class smartfields.MediaField extends smartfields.FileField
     handleResponse: (data, complete, error) ->
         super data, ((data) =>
             $preview = @$current_preview.empty().html(data.html_tag)
-            persistentLoader = (attempt) =>
+            # make sure server is ready to serve the file, by retrying the load
+            persistentLoader = (attempts) =>
                 @$current_preview.find("[src]").each( ->
                     $(@).load(->)
                     .error(->
-                        console.log("not loaded: #{attempt}")
-                        if attempt > 0
+                        if attempts > 0
                             setTimeout((->
                                 $preview.empty().html(data.html_tag)
-                                persistentLoader(attempt - 1)
+                                persistentLoader(attempts - 1)
                                 ), 1000)
                     )
                 )
@@ -256,10 +284,13 @@ class smartfields.LimitedField
             $field.keyup ->
                 content = $field.val()
                 # account for new lines as 2 characters
-                current_length = content.length + content.split('\n').length - 1
-                if current_length > maxlength
-                    content = content.substr(0, maxlength)
+                newlines = content.split('\n').length - 1
+                current_length = content.length + newlines
+                if current_length >= maxlength
+                    content = content.substr(0, maxlength-newlines)
                     $field.val(content)
+                    newlines = content.split('\n').length - 1
+                    current_length = content.length + newlines
                 $feedback.text(maxlength - current_length)
                 true
             .trigger('keyup')
@@ -267,14 +298,17 @@ class smartfields.LimitedField
 
 $(document).ready ->
     $(".smartfields-filefield").each ->
-        new smartfields.FileField($(@))
+        if not $(@).data('smartfield')?
+            $(@).data('smartfield', new smartfields.FileField($(@)))
         null
 
     $(".smartfields-mediafield").each ->
-        new smartfields.MediaField($(@))
+        if not $(@).data('smartfield')?
+            $(@).data('smartfield', new smartfields.MediaField($(@)))
         null
 
     $(".smartfields-limitedfield").each ->
-        new smartfields.LimitedField($(@))
+        if not $(@).data('smartfield')?
+            $(@).data('smartfield', new smartfields.LimitedField($(@)))
         null
     null

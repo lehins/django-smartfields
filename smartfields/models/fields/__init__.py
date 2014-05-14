@@ -14,16 +14,14 @@ class Field(models.Field):
     def __init__(self, dependencies=None, manager_class=None, *args, **kwargs):
         if manager_class is not None:
             self.manager_class = manager_class
-        if dependencies is not None:
-            self.manager = self.manager_class(self, dependencies)
+        self.manager = self.manager_class(self, dependencies)
         super(Field, self).__init__(*args, **kwargs)
 
 
     def contribute_to_class(self, cls, name):
-        if self.manager is not None:
-            if not hasattr(cls, 'smartfields_managers') or cls.smartfields_managers is None:
-                cls.smartfields_managers = []
-            cls.smartfields_managers.append(self.manager)
+        if not hasattr(cls, 'smartfields_managers') or cls.smartfields_managers is None:
+            cls.smartfields_managers = []
+        cls.smartfields_managers.append(self.manager)
         super(Field, self).contribute_to_class(cls, name)
 
 
@@ -35,10 +33,9 @@ class Field(models.Field):
             'field_name': self.name,
             'state': 'ready'
         }
-        if self.manager is not None:
-            status = self.manager.get_status(instance)
-            if status is not None:
-                current_status.update(status)
+        status = self.manager.get_status(instance)
+        if status is not None:
+            current_status.update(status)
         return current_status
 
 

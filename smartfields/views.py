@@ -3,6 +3,7 @@ import json, types
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse, HttpResponseForbidden
 from django.forms import ModelForm
+from django.forms.models import modelform_factory
 from django.shortcuts import get_object_or_404
 from django.template.response import TemplateResponse
 from django.utils.decorators import method_decorator
@@ -13,9 +14,6 @@ __all__ = (
     "FileUploadView", "FileQueueUploadView",
 )
 
-def json_response(context, status_code=200):
-    return HttpResponse(json.dumps(context), mimetype="application/json",
-                        status=status_code)
 
 class FileUploadView(View):
     model = None
@@ -26,6 +24,8 @@ class FileUploadView(View):
 
     @property
     def UploadForm(self):
+        return modelform_factory(self.model, fields=(self.field_name,))
+        # remove deprecated stuff later:
         Meta = types.ClassType("Meta", (), {
             'model': self.model,
             'fields': (self.field_name,)
@@ -33,8 +33,8 @@ class FileUploadView(View):
         properties = {
             "Meta": Meta
         }
-        cleaner_name = "clean_%s" % self.field_name
         if self.model_form is not None:
+            cleaner_name = "clean_%s" % self.field_name
             properties[self.field_name] = self.model_form.base_fields[self.field_name]
             if hasattr(self.model_form, cleaner_name):
                 properites[cleaner_name] = getattr(self.model_form, cleaner_name)
@@ -58,6 +58,10 @@ class FileUploadView(View):
         return super(FileUploadView, self).dispatch(
             request, obj, *args, **kwargs)
 
+    def json_response(self, context, status_code=200):
+        return HttpResponse(json.dumps(context), mimetype="application/json",
+                            status=status_code)
+
     def complete(self, obj, status):
         field_file = getattr(obj, self.field_name)
         if field_file:
@@ -66,13 +70,19 @@ class FileUploadView(View):
                 'file_url': field_file.url,
                 'html_tag': field_file.html_tag
             })
-        return json_response(status)
+            if field_file.field.manager and field_file.field.manager.dependencies:
+                dependencies = {}
+                for dep in field_file.field.manager.dependencies:
+                    name = dep.get_name(field_file.field)
+                    dependencies[name] = getattr(obj, name).url
+                status['dependencies'] = dependencies
+        return self.json_response(status)
 
 
     def post(self, request, obj):
         status = obj.smartfield_status(self.field_name)
         if status['state'] != 'ready':
-            return json_response(status)
+            return self.json_response(status)
 
         created = False # necessary hack for progress reporting
         if not obj.pk:
@@ -82,7 +92,6 @@ class FileUploadView(View):
         form = self.UploadForm(
             instance=obj, data=request.POST, files=request.FILES)
         if form.is_valid():
-            #obj.save()
             obj = form.save()
             return self.get(request, obj)
 
@@ -95,13 +104,13 @@ class FileUploadView(View):
             'state': 'error',
             'messages': form.errors.get(self.field_name)
         })
-        return json_response(status)
+        return self.json_response(status)
 
     def get(self, request, obj):
         status = obj.smartfield_status(self.field_name)
         if status['state'] == 'complete':
             return self.complete(obj, status)
-        return json_response(status)
+        return self.json_response(status)
 
 
 class FileQueueUploadView(View):
@@ -141,11 +150,11 @@ class FileQueueUploadView(View):
                                  'file_elem_id': plupload_form.get_file_elem_id(
                             plupload_form.file_field_name, pk)
                                  })
-                return json_response(context)
+                return self.json_response(context)
         if errors:
             context.update({'status': 'failed',
                             'errors': errors})
-            return json_response(context)
+            return self.json_response(context)
         custom_errors = self.pre_valid(request, plupload_form, *args, **kwargs)
         if custom_errors:
             errors.extend(custom_errors)
@@ -161,8 +170,8 @@ class FileQueueUploadView(View):
                         'file_elem_id': plupload_form.get_file_elem_id(
                             plupload_form.file_field_name, obj.pk),
                         'rendered_result': plupload_form.get_file_elem_rendered(obj)})
-                return json_response(context)
+                return self.json_response(context)
         for key, e in plupload_form.errors.iteritems():
             errors.extend(e)
         context.update({'status': 'failed', 'errors': errors})
-        return json_response(context)
+        return self.json_response(context)
