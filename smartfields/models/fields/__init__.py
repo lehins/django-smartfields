@@ -61,7 +61,8 @@ class SlugField(Field, models.SlugField):
         return current_value
 
 
-    def __init__(self, default_dependency=None, dependencies=[], *args, **kwargs):
+    def __init__(self, default_dependency=None, dependencies=None, *args, **kwargs):
+        dependencies = dependencies or []
         if default_dependency is not None:
             dependencies.append(Dependency(
                 dependency=default_dependency, handler=self.generate_slug))
@@ -70,7 +71,7 @@ class SlugField(Field, models.SlugField):
 
 class HTMLField(Field, models.TextField):
 
-    def __init__(self, sanitize=True, no_html_field=None, dependencies=[], *args, **kwargs):
+    def __init__(self, sanitize=True, no_html_field=None, dependencies=None, *args, **kwargs):
         """:keyword bool sanitize: if set to `True` creaters a self dependency,
         that removes unwanted tags and attributes, which are specified and
         handled by :class:`HTMLSanitizer`. Default: `True`
@@ -79,6 +80,7 @@ class HTMLField(Field, models.TextField):
         stripped value of this field.
 
         """
+        dependencies = dependencies or []
         if sanitize:
             sanitizer_class = kwargs.pop('sanitizer_class', HTMLSanitizer)
             dependencies.append(Dependency(
