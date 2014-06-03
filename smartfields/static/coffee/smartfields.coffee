@@ -96,8 +96,16 @@ class smartfields.FileField
             if !@form_submitted? and @uploader.files.length > 0
                 @form_submitted = true
                 @uploader.start()
+                if !@$browse_btn.data('silent')
+                    bootbox.alert("This form contains a file that can take some time to upload.
+                        Please, wait for it to finish, you should be able to see the progress
+                        under the file input. It will advance to the next step once it's done
+                        uploading")
                 false
             else
+                #if @uploader.state == plupload.STARTED
+                #    bootbox.alert(
+                #        "There is a file being uploaded, please wait for it to finish.")
                 !@form_submitted? or !@form_submitted
         )
 
@@ -151,6 +159,9 @@ class smartfields.FileField
                 progress = Math.round(100 * data.progress)
                 @setProgress(1, progress, data.task_name)
                 @callbacks.onProgress?(@, data, progress)
+                if @form_submitted
+                    @form_submitted = false
+                    @$form.submit()
             setTimeout((=> $.get(@options.url, (data) => @handleResponse(data))), 3000)
         else if data.state is 'ready'
             @callbacks.onReady?(@, data)

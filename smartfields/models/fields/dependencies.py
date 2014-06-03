@@ -96,6 +96,7 @@ class ForwardDependency(Dependency):
 class FileDependency(Dependency):
 
     _field_file = None
+    _using_default = False
     file_field_class = models.FileField
 
     @property
@@ -117,6 +118,7 @@ class FileDependency(Dependency):
         return "%s_%s" % (field.name, self.suffix)
 
     def make_filename(self, original_file):
+        self._using_default = False
         if original_file:
             name, original_ext = os.path.splitext(original_file.name)
             if self.format is None:
@@ -124,6 +126,8 @@ class FileDependency(Dependency):
             else:
                 ext = ".%s" % self.format
             return "%s_%s%s" % (name, self.suffix, ext.lower())
+        if self.default:
+            self._using_default = True
         return self.default
 
     def handle(self, instance, field, field_file):
@@ -143,7 +147,7 @@ class FileDependency(Dependency):
             instance, new_field, new_field_file)
 
     def delete(self):
-        if self._field_file:
+        if self._field_file and not self._using_default:
             try:
                 self._field_file.delete(save=False)
             except OSError:
@@ -165,18 +169,17 @@ class WEBMDependency(FileDependency):
     def __init__(self, *args, **kwargs):
         default_kwargs = {
             'cmd_template': (
-                "avconv -i {input} -y -codec:v {vcodec} -b:v {vbitrate} -qmin "\
-                "10 -qmax 42 -maxrate {maxrate} -bufsize {bufsize} -vf "\
-                "scale={width}:{height} -threads {threads} -codec:a {acodec} -b:a "\
-                "{abitrate} {output}"),
+                "ffmpeg -i {input} -y -codec:v {vcodec} -b:v {vbitrate} "\
+                "-maxrate {maxrate} -bufsize {bufsize} -vf "\
+                "scale={width}:{height} -threads {threads} -c:a {acodec} {output}"),
             'format': 'webm',
             'converter': 'avconv',
             'vcodec': 'libvpx',
-            'vbitrate': '300k',
-            'maxrate': '300k',
-            'bufsize': '600k',
-            'width': 640,
-            'height': -1,
+            'vbitrate': '1M',
+            'maxrate': '1M',
+            'bufsize': '2M',
+            'width': -1,
+            'height': 720,
             'threads': 4,
             'acodec': 'libvorbis',
             'abitrate': '96k'
@@ -192,22 +195,19 @@ class MP4Dependency(FileDependency):
     def __init__(self, *args, **kwargs):
         default_kwargs = {
             'cmd_template': (
-                'avconv -i {input} -y -codec:v {vcodec} -vprofile {vprofile} '\
-                '-preset {preset} -b:v {vbitrate} -maxrate {maxrate} -bufsize '\
-                '{bufsize} -vf scale={width}:{height} -threads {threads} -codec:a '\
+                'ffmpeg -i {input} -y -c:v {vcodec} -b:v {vbitrate} -maxrate {maxrate} -bufsize '\
+                '{bufsize} -vf scale={width}:{height} -threads {threads} -c:a '\
                 '{acodec} -b:a {abitrate} {output}'),
             'format': 'mp4',
             'converter': 'avconv',
             'vcodec': 'libx264',
-            'vprofile': 'main',
-            'preset': 'medium',
-            'vbitrate': '600k',
-            'maxrate': '600k',
-            'bufsize': '600k',
-            'width': 640,
-            'height': 'trunc(ow/a/2)*2', # fixes: height not divisible by 2
+            'vbitrate': '1M',
+            'maxrate': '1M',
+            'bufsize': '2M',
+            'width': -1,
+            'height': 720,
             'threads': 0,
-            'acodec': 'libvo_aacenc',
+            'acodec': 'libfdk_aac',
             'abitrate': '96k'
         }
         default_kwargs.update(kwargs)

@@ -10,9 +10,7 @@
   </div>
   <div class="col-md-3">
     <div id="{{ field.auto_id }}_preview">
-      {% if field.value %}
-	{{ field.value.html_tag|safe }}
-      {% endif %}
+      {{ field.value.html_tag|safe }}
     </div>
   </div>
 </div>

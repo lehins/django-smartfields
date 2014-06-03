@@ -40,7 +40,7 @@ class VideoConverter(object):
     responsive = True
 
     duration_re = "Duration: (?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+)"
-    progress_re = "time=(?P<seconds>\d+)"
+    progress_re = "time=(?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+)"
 
     def __init__(self, file):
         if not file:
@@ -49,15 +49,15 @@ class VideoConverter(object):
 
 
     def timedict_to_seconds(self, timedict):
-        result = 0
+        seconds = 0
         for key, t in timedict.iteritems():
             if key == 'seconds':
-                result+= int(t)
+                seconds+= int(t)
             elif key == 'minutes':
-                result+= int(t)*60
+                seconds+= int(t)*60
             elif key == 'hours':
-                result+= int(t)*3600
-        return result
+                seconds+= int(t)*3600
+        return seconds
 
 
     def process(self, cmd_template=None, progress_setter=None,

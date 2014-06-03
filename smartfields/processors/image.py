@@ -33,6 +33,7 @@ SUPPORTED_IMAGE_FORMATS = {
 class ImageConverter(BaseProcessor):
     preference_mode_list = ['RGBA', 'RGB', 'P', 'CMYK', 'L', '1']
     browser_format_support = ['JPEG', 'GIF', 'PNG']
+    responsive = True
 
     @classmethod
     def browser_exts(cls):
@@ -50,16 +51,19 @@ class ImageConverter(BaseProcessor):
         return supported
 
 
-    def process(self, max_dim=None, format=None, mode=None, **kwargs):
+    def process(self, max_dim=None, format=None, mode=None, progress_setter=None, **kwargs):
         """
         Resize image to fit it into (width, height) box.
         """
+        set_progress = progress_setter or (lambda x: x)
+        set_progress(0)
         cur_pos = self.data.tell()
         self.data.seek(0)
         string = StringIO(self.data.read())
         self.data.seek(cur_pos)
         if not (max_dim or format or mode):
             # nothing to do, just return copy of the data
+            set_progress(100)
             return string.getvalue()
         image = Image.open(string)
         # decide output format
@@ -85,9 +89,11 @@ class ImageConverter(BaseProcessor):
             if new_dim is not None:
                 image = image.resize(new_dim, resample=Image.ANTIALIAS)
             if format == image.format:
+                set_progress(100)
                 return string.getvalue()
             string = StringIO()
             image.save(string, format=format)
+            set_progress(100)
             return ContentFile(string.getvalue())
         except IOError, e:
             raise ProcessingError(

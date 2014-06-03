@@ -5,8 +5,8 @@ from django.utils.functional import curry
 from smartfields.processors import ProcessingError, BaseProcessor, ImageConverter, VideoConverter
 
 __all__ = [
-    "FieldManager", "FileFieldManager", "ImageFieldManager", "VideoFieldManager",
-    "ProgressFieldManager"
+    'FieldManager', 'FileFieldManager', 'ImageFieldManager', 'VideoFieldManager',
+    'ProgressFieldManager', 'AsyncImageFieldManager'
 ]
 
 
@@ -204,3 +204,7 @@ class ProgressFieldManager(FileFieldManager):
 
 class VideoFieldManager(ProgressFieldManager):
     processor_class = VideoConverter
+
+
+class AsyncImageFieldManager(ProgressFieldManager):
+    processor_class = ImageConverter

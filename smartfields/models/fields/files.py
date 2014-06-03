@@ -27,9 +27,15 @@ class FieldFile(files.FieldFile):
 
     @property
     def html_tag(self):
-        if self.field.html_tag_template is not None and self:
-           return self.field.html_tag_template.format(
-               file=self, field=self.field, instance=self.instance)
+        if self:
+            if self.field.html_tag_template is not None:
+                return self.field.html_tag_template.format(
+                    file=self, field=self.field, instance=self.instance)
+        else:
+            if self.field.html_tag_template_empty is not None:
+                return self.field.html_tag_template_empty.format(
+                    file=self, field=self.field, instance=self.instance)
+
         return ''
 
     @property
@@ -55,11 +61,14 @@ class FileField(Field, models.FileField):
     keep_orphans = getattr(settings, 'SMARTFIELDS_KEEP_ORPHANS', False)
     html_tag_template = None
 
-    def __init__(self, keep_orphans=None, html_tag_template=None, **kwargs):
+    def __init__(self, keep_orphans=None, 
+                 html_tag_template=None, html_tag_template_empty=None, **kwargs):
         if keep_orphans is not None:
             self.keep_orphans = keep_orphans
         if html_tag_template is not None:
             self.html_tag_template = html_tag_template
+        if html_tag_template_empty is not None:
+            self.html_tag_template_empty = html_tag_template_empty
         super(FileField, self).__init__(**kwargs)
 
 
@@ -98,7 +107,7 @@ class ImageFieldFile(FieldFile, files.ImageFieldFile):
 
 class ImageField(FileField, models.ImageField):
     attr_class = ImageFieldFile
-    manager_class = ImageFieldManager
+    manager_class = AsyncImageFieldManager
     html_tag_template = '<img src="{file.url}"/>'
 
 
