@@ -27,15 +27,9 @@ class FieldFile(files.FieldFile):
 
     @property
     def html_tag(self):
-        if self:
-            if self.field.html_tag_template is not None:
-                return self.field.html_tag_template.format(
-                    file=self, field=self.field, instance=self.instance)
-        else:
-            if self.field.html_tag_template_empty is not None:
-                return self.field.html_tag_template_empty.format(
-                    file=self, field=self.field, instance=self.instance)
-
+        if self.field.html_tag_getter is not None and callable(self.field.html_tag_getter):
+            return self.field.html_tag_getter(
+                file=self, field=self.field, instance=self.instance, is_empty=bool(self))
         return ''
 
     @property
@@ -59,16 +53,12 @@ class FileField(Field, models.FileField):
     attr_class = FieldFile
     manager_class = FileFieldManager
     keep_orphans = getattr(settings, 'SMARTFIELDS_KEEP_ORPHANS', False)
-    html_tag_template = None
+    html_tag_getter = None
 
-    def __init__(self, keep_orphans=None, 
-                 html_tag_template=None, html_tag_template_empty=None, **kwargs):
+    def __init__(self, keep_orphans=None, html_tag_getter=None, **kwargs):
         if keep_orphans is not None:
             self.keep_orphans = keep_orphans
-        if html_tag_template is not None:
-            self.html_tag_template = html_tag_template
-        if html_tag_template_empty is not None:
-            self.html_tag_template_empty = html_tag_template_empty
+        self.html_tag_getter = html_tag_getter
         super(FileField, self).__init__(**kwargs)
 
 
