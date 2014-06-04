@@ -220,6 +220,7 @@ class smartfields.FileField
     Destroy: ->
 
     PostInit: (up) ->
+        console.log(@callbacks.onComplete)
         @$browse_btn.click( -> false)
             .replaceWith(@$elem.find(".moxie-shim").hide().find('input'))
         @$upload_btn.click ->
