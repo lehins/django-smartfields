@@ -71,10 +71,7 @@ class VideoConverter(BaseProcessor):
         context = kwargs.copy()
         context['input'] = self.get_input_path()
         context['output'] = out_file.name
-        foo = open('/home/lehins/foo.txt', 'a')
-        foo.write(repr(context))
         cmd = cmd_template.format(**context).split()
-        foo.write(' '.join(cmd))
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             universal_newlines=True)
@@ -100,12 +97,10 @@ class VideoConverter(BaseProcessor):
                             progress = float(seconds)/duration
                             progress = progress if progress < 100 else 99.99
                             progress_setter(progress)
-                            foo.write(str(progress))
                         # Problem with output parsing.
                         # Continue, but don't set the progress
                         except ZeroDivisionError: pass
             time.sleep(1)
         stdout_reader.join()
         process.stdout.close()
-        foo.close()
         return out_file
