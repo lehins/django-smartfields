@@ -64,7 +64,7 @@ class ImageConverter(BaseProcessor):
         if not (max_dim or format or mode):
             # nothing to do, just return copy of the data
             set_progress(100)
-            return string.getvalue()
+            return ContentFile(string.getvalue())
         image = Image.open(string)
         # decide output format
         format = format or image.format
@@ -90,7 +90,7 @@ class ImageConverter(BaseProcessor):
                 image = image.resize(new_dim, resample=Image.ANTIALIAS)
             if format == image.format:
                 set_progress(100)
-                return string.getvalue()
+                return ContentFile(string.getvalue())
             string = StringIO()
             image.save(string, format=format)
             set_progress(100)

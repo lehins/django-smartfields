@@ -179,7 +179,6 @@ class ProgressFieldManager(FileFieldManager):
     def progress_setter(self, instance, multiplier, index, progress,
                         subprocessor_class=None):
         processor_class = subprocessor_class or self.processor_class
-        print "progress: %s, multiplier: %s" % (progress, multiplier)
         try:
             progress = multiplier * (index + progress)
         except TypeError, e:

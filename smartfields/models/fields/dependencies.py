@@ -161,12 +161,14 @@ class FileDependency(Dependency):
             value = getattr(instance, self.dependency)
         else:
             value = field_file
+        if not value:
+            return
         if self.processor_class is not None:
            processor = self.processor_class(value, field=field, instance=instance)
         content = processor.process(**self.extra_kwargs)
         new_file = self.handle(instance, field, field_file)
         new_file.save(new_file.name, content, save=False)
-
+        
 
 
 
