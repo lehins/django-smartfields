@@ -161,8 +161,8 @@ class FileDependency(Dependency):
             value = getattr(instance, self.dependency)
         else:
             value = field_file
-        if not value:
-            return
+        #if not value:
+        #    return
         if self.processor_class is not None:
            processor = self.processor_class(value, field=field, instance=instance)
         content = processor.process(**self.extra_kwargs)
