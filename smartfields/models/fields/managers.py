@@ -161,7 +161,7 @@ class ManagerProgressHandler(threading.Thread):
 class ProgressFieldManager(FileFieldManager):
 
     def __init__(self, *args, **kwargs):
-        self.async = kwargs.pop('async', True)
+        self.async = kwargs.pop('async', False)
         super(ProgressFieldManager, self).__init__(*args, **kwargs)
 
 
@@ -179,6 +179,7 @@ class ProgressFieldManager(FileFieldManager):
     def progress_setter(self, instance, multiplier, index, progress,
                         subprocessor_class=None):
         processor_class = subprocessor_class or self.processor_class
+        print "progress: %s, multiplier: %s" % (progress, multiplier)
         try:
             progress = multiplier * (index + progress)
         except TypeError, e:
