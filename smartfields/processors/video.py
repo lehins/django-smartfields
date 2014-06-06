@@ -1,5 +1,6 @@
 import re, threading, subprocess, time, Queue
 
+from smartfields.processors.base import BaseProcessor
 from smartfields.utils import NamedTemporaryFile
 
 
@@ -34,18 +35,13 @@ class AsynchronousFileReader(threading.Thread):
 
 
 
-class VideoConverter(object):
+class VideoConverter(BaseProcessor):
     task = 'convert'
     task_name = "Converting"
     responsive = True
 
     duration_re = "Duration: (?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+)"
     progress_re = "time=(?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+)"
-
-    def __init__(self, file):
-        if not file:
-            raise ProcessingError("There is no video file associated.")
-        self.file = file
 
 
     def timedict_to_seconds(self, timedict):
@@ -60,6 +56,10 @@ class VideoConverter(object):
         return seconds
 
 
+    def get_input_path(self):
+        return self.data.path
+
+
     def process(self, cmd_template=None, progress_setter=None,
                 progress_re=None, duration_re=None, **kwargs):
         if not cmd_template:
@@ -69,9 +69,12 @@ class VideoConverter(object):
         out_file = NamedTemporaryFile(mode='rb', suffix='_%s.%s' % (
             kwargs.get('suffix', ''), kwargs.get('format', '')))
         context = kwargs.copy()
-        context['input'] = self.file.path
+        context['input'] = self.get_input_path()
         context['output'] = out_file.name
+        foo = open('/home/lehins/foo.txt', 'a')
+        foo.write(repr(context))
         cmd = cmd_template.format(**context).split()
+        foo.write(' '.join(cmd))
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
             universal_newlines=True)
@@ -97,10 +100,12 @@ class VideoConverter(object):
                             progress = float(seconds)/duration
                             progress = progress if progress < 100 else 99.99
                             progress_setter(progress)
+                            foo.write(str(progress))
                         # Problem with output parsing.
                         # Continue, but don't set the progress
                         except ZeroDivisionError: pass
             time.sleep(1)
         stdout_reader.join()
         process.stdout.close()
+        foo.close()
         return out_file

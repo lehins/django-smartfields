@@ -44,6 +44,12 @@ class ModelMixin(object):
                 manager.handle(self)
 
 
+    def smartfields_update(self):
+        if self.smartfields_managers is not None:
+            for manager in self.smartfields_managers:
+                manager.update(self)
+
+
     def smartfield_status(self, field_name):
         """A way to find out a status a filed."""
         field = self._meta.get_field(field_name)

@@ -58,7 +58,7 @@ class FileField(Field, models.FileField):
     def __init__(self, keep_orphans=None, html_tag_getter=None, **kwargs):
         if keep_orphans is not None:
             self.keep_orphans = keep_orphans
-        self.html_tag_getter = html_tag_getter
+        self.html_tag_getter = html_tag_getter or self.html_tag_getter
         super(FileField, self).__init__(**kwargs)
 
 
@@ -66,7 +66,11 @@ class FileField(Field, models.FileField):
         if not self.keep_orphans and data is not None:
             file = getattr(instance, self.name)
             if file != data:
-                file.delete(save=False)
+                try:
+                    file.delete(save=False)
+                except: # can raise OSError or any other exception, depends on backend
+                    if not file.field.FAIL_SILENTLY:
+                        raise
         super(FileField, self).save_form_data(instance, data)
 
 
@@ -80,6 +84,7 @@ class FileField(Field, models.FileField):
             if self.manager is not None:
                 self.manager.update(model_instance)
         return file
+
 
     def delete(self, model_instance):
         if not self.keep_orphans:
@@ -98,12 +103,20 @@ class ImageFieldFile(FieldFile, files.ImageFieldFile):
 class ImageField(FileField, models.ImageField):
     attr_class = ImageFieldFile
     manager_class = AsyncImageFieldManager
-    html_tag_template = '<img src="{file.url}"/>'
+
+    def html_tag_getter(self, empty=False, **kwargs):
+        if not empty:
+            return '<img src="{file.url}"/>'.format(**Kwargs)
+        return ''
 
 
 
 
 class VideoField(FileField):
     manager_class = VideoFieldManager
-    html_tag_template = """<video id="video_{file.field.name}"
-    controls="controls" preload="auto" src="{file.url}"/>"""
+
+    def html_tag_getter(self, empty=False, **kwargs):
+        if not empty:
+            return """<video id="video_{file.field.name}"
+            controls="controls" preload="auto" src="{file.url}"/>""".format(**kwargs)
+        return ''

@@ -8,7 +8,6 @@ __all__ = [
     "Dependency", "FileDependency", "MP4Dependency", "WEBMDependency"
 ]
 
-FAIL_SILENTLY = getattr(settings, 'SMARTFIELDS_FAIL_SILENTLY', True)
 
 
 class Dependency(object):
@@ -62,7 +61,7 @@ class Dependency(object):
         if self.dependency is not None:
             value = getattr(instance, self.dependency)
         if self.processor_class is not None: # override handlers processor
-           processor = self.processor_class(value)
+            processor = self.processor_class(value, field=field, instance=instance)
         if processor is not None:
             value = processor.process(**self.extra_kwargs)
         setattr(instance, field.name, value)
@@ -103,7 +102,7 @@ class FileDependency(Dependency):
     def field_file_class(self):
         return self.file_field_class.attr_class
 
-    def __init__(self, suffix, default=None, storage=None,
+    def __init__(self, suffix=None, default=None, storage=None,
                  storage_default=None, **kwargs):
         self.suffix = suffix
         kwargs['suffix'] = suffix
@@ -131,6 +130,9 @@ class FileDependency(Dependency):
         return self.default
 
     def handle(self, instance, field, field_file):
+        if self.suffix is None:
+            return super(FileDependency, self).handle(
+                instance, field, field_file)
         filename = self.make_filename(field_file)
         if field_file:
             storage = self.storage or field.storage
@@ -150,13 +152,17 @@ class FileDependency(Dependency):
         if self._field_file and not self._using_default:
             try:
                 self._field_file.delete(save=False)
-            except OSError:
-                if not FAIL_SILENTLY:
+            except: # can raise OSError or any other exception, depends on backend
+                if not self._field_file.field.FAIL_SILENTLY:
                     raise
 
     def update(self, instance, field, field_file, processor=None):
+        if self.dependency is not None:
+            value = getattr(instance, self.dependency)
+        else:
+            value = field_file
         if self.processor_class is not None:
-           processor = self.processor_class(field_file)
+           processor = self.processor_class(value, field=field, instance=instance)
         content = processor.process(**self.extra_kwargs)
         new_file = self.handle(instance, field, field_file)
         new_file.save(new_file.name, content, save=False)

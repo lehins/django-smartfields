@@ -38,11 +38,11 @@ class HTMLStripper(BaseProcessor):
 
 class HTMLSanitizer(HTMLStripper):
 
-    def __init__(self, data):
+    def __init__(self, data, **kwargs):
         rjs = r'[\s]*(&#x.{1,7})?'.join(list('javascript:'))
         rvb = r'[\s]*(&#x.{1,7})?'.join(list('vbscript:'))
         self.re_scripts = re.compile('(%s)|(%s)' % (rjs, rvb), re.IGNORECASE)
-        super(HTMLSanitizer, self).__init__(data)
+        super(HTMLSanitizer, self).__init__(data, **kwargs)
 
 
     def process_tag(self, tag):

@@ -56,7 +56,7 @@ class FieldManager(object):
 
         """
         value = getattr(instance, self.field.name)
-        processor = self.processor_class(value)
+        processor = self.processor_class(value, field=self.field, instance=instance)
         status = {
             'task': self.processor_class.task,
             'task_name': self.processor_class.task_name,

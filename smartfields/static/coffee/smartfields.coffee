@@ -91,9 +91,11 @@ class smartfields.FileField
         $.extend(@options, @$browse_btn.data('plupload'))
         @uploader = new plupload.Uploader(@options)
         @uploader.init()
-        @form_submitted = null
+        @form_submitted = false
         @$form = @$elem.closest('form').submit( =>
-            if !@form_submitted? and @uploader.files.length > 0
+            console.log(@uploader.files.length)
+            console.log(@form_submitted)
+            if !@form_submitted and @uploader.files.length > 0
                 @form_submitted = true
                 @uploader.start()
                 if !@$browse_btn.data('silent')
@@ -106,7 +108,7 @@ class smartfields.FileField
                 #if @uploader.state == plupload.STARTED
                 #    bootbox.alert(
                 #        "There is a file being uploaded, please wait for it to finish.")
-                !@form_submitted? or !@form_submitted
+                !@form_submitted
         )
 
 
@@ -247,6 +249,7 @@ class smartfields.FileField
         @setProgress(0, file.percent, "Uploading")
 
     FileUploaded: (up, file, data) ->
+        up.removeFile(file)
         if data.status == 200
             response = $.parseJSON(data.response)
             @handleResponse(response)

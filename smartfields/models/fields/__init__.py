@@ -1,5 +1,6 @@
 import random, time
 from django.db import models
+from django.conf import settings
 from django.utils.text import slugify
 
 from smartfields.models.fields.dependencies import Dependency, ForwardDependency
@@ -8,13 +9,16 @@ from smartfields.processors.html import HTMLSanitizer, HTMLStripper
 
 
 class Field(models.Field):
+    FAIL_SILENTLY = getattr(settings, 'SMARTFIELDS_FAIL_SILENTLY', True)
     manager = None
     manager_class = FieldManager
-
-    def __init__(self, dependencies=None, manager_class=None, *args, **kwargs):
+    
+    def __init__(self, dependencies=None, manager_class=None, processor_class=None, 
+                 *args, **kwargs):
         if manager_class is not None:
             self.manager_class = manager_class
-        self.manager = self.manager_class(self, dependencies)
+        self.manager = self.manager_class(
+            self, dependencies=dependencies, processor_class=processor_class)
         super(Field, self).__init__(*args, **kwargs)
 
 
