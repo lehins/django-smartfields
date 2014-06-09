@@ -161,7 +161,7 @@ class ManagerProgressHandler(threading.Thread):
 class ProgressFieldManager(FileFieldManager):
 
     def __init__(self, *args, **kwargs):
-        self.async = kwargs.pop('async', False)
+        self.async = kwargs.pop('async', True)
         super(ProgressFieldManager, self).__init__(*args, **kwargs)
 
 
