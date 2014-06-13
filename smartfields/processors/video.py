@@ -82,6 +82,7 @@ class VideoConverter(BaseProcessor):
         stdout_reader = AsynchronousFileReader(process.stdout, stdout_queue)
         stdout_reader.start()
         duration = None
+        i = 1
         while not stdout_reader.eof(): # or not stderr_reader.eof():
             while not stdout_queue.empty():
                 line = stdout_queue.get()
@@ -95,7 +96,7 @@ class VideoConverter(BaseProcessor):
                         seconds = self.timedict_to_seconds(prog.groupdict())
                         try:
                             progress = float(seconds)/duration
-                            progress = progress if progress < 100 else 99.99
+                            progress = progress if progress < 1 else 0.99
                             progress_setter(progress)
                         # Problem with output parsing.
                         # Continue, but don't set the progress

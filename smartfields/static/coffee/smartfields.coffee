@@ -13,6 +13,8 @@ window.smartfields =
             hierarchy = func.split('.')
             last = hierarchy.length - 1;
             for name in hierarchy
+                if !cur_obj?
+                    return cur_obj
                 cur_obj = cur_obj[name]
             if not typeof cur_obj is 'function'
                 throw TypeError("#{func} is not a function")
