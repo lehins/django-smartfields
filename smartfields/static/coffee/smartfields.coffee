@@ -3,6 +3,8 @@ transitionEnd = 'transitionend webkitTransitionEnd oTransitionEnd ' +
 
 
 window.smartfields =
+    isCsrfAjaxSetup: false
+    
     getFunction: (func, parent=window) ->
         if not func?
             null
@@ -22,9 +24,36 @@ window.smartfields =
         else
             throw TypeError("#{typeof func} is incorrect. Has to be a string or function")
 
+    getCookie: (name) ->
+        cookieValue = null
+        if document.cookie and document.cookie != ''
+            cookies = document.cookie.split(';')
+            for cookie in cookies
+                cookie = $.trim(cookie)
+                if cookie.substring(0, name.length + 1) == (name + '=')
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1))
+                    break
+        cookieValue
+
+    isSafeMethod: (method) ->
+        /^(GET|HEAD|OPTIONS|TRACE)$/.test(method)
+
+    csrfAjaxSetup: (csrftoken) ->
+        if !@isCsrfAjaxSetup
+            $.ajaxSetup(
+                beforeSend: (xhr, settings) ->
+                    if (!smartfields.isSafeMethod(settings.type) && !this.crossDomain)
+                        xhr.setRequestHeader("X-CSRFToken", csrftoken)
+            )
+            @isCsrfAjaxSetup = true
+
 class smartfields.FileField
     constructor: (@$elem) ->
         @$browse_btn = @$elem.find('.smartfields-btn-browse')
+        csrftoken = smartfields.getCookie(@$browse_btn.data('csrfCookieName'))
+        if !csrftoken?
+            console.error("'#{@$browse_btn.data('csrfCookieName')}' cookie is not found")
+        smartfields.csrfAjaxSetup(csrftoken)
         @id = @$browse_btn.attr('id')
         @$delete_btn = $("##{@id}_delete")
         @$upload_btn = $("##{@id}_upload")
@@ -52,9 +81,6 @@ class smartfields.FileField
             @$delete_btn.hide()
             @$current_btn.parent().hide()
         @$delete_btn.click =>
-            post_data = {
-                'csrfmiddlewaretoken': @$browse_btn.data('csrfToken')
-            }
             post_data["#{@$browse_btn.attr('name')}-clear"] = "on"
             $.post(@options.url, post_data, (data, textStatus, jqXHR) =>
                 if data.state == 'ready'
@@ -64,12 +90,11 @@ class smartfields.FileField
                     @fileDeleted(data, textStatus, jqXHR)
                 )
         @options = {
-            'browse_button': @id,
-            'container': @$elem[0],
-            'file_data_name': @$browse_btn.attr('name'),
-            'multipart_params': {
-                'csrfmiddlewaretoken': @$browse_btn.data('csrfToken')
-            },
+            browse_button: @id,
+            container: @$elem[0],
+            file_data_name: @$browse_btn.attr('name'),
+            headers:
+                'X-CSRFToken': csrftoken
             init: {
                 Init:           $.proxy(@Init, @),
                 PostInit:       $.proxy(@PostInit, @),
@@ -87,16 +112,14 @@ class smartfields.FileField
                 ChunkUploaded:  $.proxy(@ChunkUploaded, @),
                 UploadComplete: $.proxy(@UploadComplete, @),
                 Error:          $.proxy(@Error, @),
-                Destroy:        $.proxy(@Destroy @)
+                Destroy:        $.proxy(@Destroy, @)
             }
         }
-        $.extend(@options, @$browse_btn.data('plupload'))
+        $.extend(@options, @$browse_btn.data('pluploadOptions'))
         @uploader = new plupload.Uploader(@options)
         @uploader.init()
         @form_submitted = false
         @$form = @$elem.closest('form').submit( =>
-            console.log(@uploader.files.length)
-            console.log(@form_submitted)
             if !@form_submitted and @uploader.files.length > 0
                 @form_submitted = true
                 @uploader.start()

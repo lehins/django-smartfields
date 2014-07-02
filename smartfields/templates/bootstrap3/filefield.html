@@ -6,11 +6,11 @@
   <div class="input-group">
     <span class="input-group-btn">
       <span class="btn btn-primary btn-file" title="Browse">
-	<input class="smartfields-btn-browse" id="{{ field.auto_id }}" name="{{ field.name }}" type="file" {{ field.field.widget.attrs|flatatt }} data-csrf-token="{{ csrf_token }}" data-status="{{ field.value.status_json }}">
-	Browse
+				<input class="smartfields-btn-browse" id="{{ field.auto_id }}" name="{{ field.name }}" type="file" {{ field.field.widget.attrs|flatatt }} data-status="{{ field.value.status_json }}">
+				Browse
       </span>
       {% if not field.field.required %}
-	<button id="{{ field.auto_id }}_delete" type="button" class="btn" title="Delete"><span class="glyphicon glyphicon-trash"></span></button>
+				<button id="{{ field.auto_id }}_delete" type="button" class="btn" title="Delete"><span class="glyphicon glyphicon-trash"></span></button>
       {% endif %}
       <button id="{{ field.auto_id }}_upload" type="button" class="btn btn-success" title="Upload"><span class="glyphicon glyphicon-upload"></span></button>
     </span>

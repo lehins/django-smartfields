@@ -1,7 +1,8 @@
 import json, types
 
 from django.contrib.auth.decorators import login_required
-from django.http import Http404, HttpResponse, HttpResponseForbidden
+from django.core.exceptions import ImproperlyConfigured, PermissionDenied
+from django.http import Http404, HttpResponse
 from django.forms import ModelForm
 from django.forms.models import modelform_factory
 from django.shortcuts import get_object_or_404
@@ -11,56 +12,77 @@ from django.views.decorators.csrf import csrf_protect
 from django.views.generic import View
 
 __all__ = (
-    "FileUploadView", "FileQueueUploadView",
+    "FileUploadView",
 )
 
 
 class FileUploadView(View):
-    model = None
-    model_form = None
-    field_name = None
-    prefix = None
-    has_permission = None
+    _model = None
+    _field_name = None
+    parent_field_name = None
 
     @property
-    def UploadForm(self):
+    def model(self):
+        if self._model is not None:
+            return self._model
+        raise ImproperlyConfigured("'model' is a required property")
+
+    @model.setter
+    def model(self, value):
+        self._model = value
+
+    @property
+    def field_name(self):
+        if self._field_name is not None:
+            return self._field_name
+        raise ImproperlyConfigured("'field_name' is a required property")
+
+    @field_name.setter
+    def field_name(self, value):
+        self._field_name = value
+
+    def has_permission(self, obj, user):
+        raise ImproperlyConfigured("'has_permission' is a required method")
+
+
+    def get_form(self):
         return modelform_factory(self.model, fields=(self.field_name,))
-        # remove deprecated stuff later:
-        Meta = types.ClassType("Meta", (), {
-            'model': self.model,
-            'fields': (self.field_name,)
-        })
-        properties = {
-            "Meta": Meta
-        }
-        if self.model_form is not None:
-            cleaner_name = "clean_%s" % self.field_name
-            properties[self.field_name] = self.model_form.base_fields[self.field_name]
-            if hasattr(self.model_form, cleaner_name):
-                properites[cleaner_name] = getattr(self.model_form, cleaner_name)
-        Form = types.ClassType("UploadForm", (ModelForm,), properties)
-        return Form
 
 
-    @method_decorator(login_required)
-    @method_decorator(csrf_protect)
-    def dispatch(self, request, pk=None, obj=None, *args, **kwargs):
-        self.model = self.model or self.model_form._meta.model
-        if obj is None:
-            if pk is None:
+    def get_object(self, pk=None, parent_pk=None):
+        kwargs = {}
+        manager = self.model.objects
+        if parent_pk is not None and self.parent_field_name is not None:
+            parent_field = self.model._meta.get_field_by_name(self.parent_field_name)[0]
+            parent_model = parent_field.rel.to
+            parent_pk_field_name = "%s_%s" % (
+                self.parent_field_name, parent_model._meta.pk.name)
+            kwargs = {parent_pk_field_name: parent_pk}
+            manager = manager.select_related(self.parent_field_name)
+        if pk is None:
+            obj = self.model(**kwargs)
+        else:
+            try:
+                obj = manager.get(pk=pk, **kwargs)
+            except self.model.DoesNotExist: 
                 raise Http404
-            obj = get_object_or_404(self.model, pk=pk)
-        if not (self.has_permission and callable(self.has_permission) and
-                self.model and self.field_name):
-            return HttpResponse("Missing required implementation", status=501)
-        if not self.has_permission(obj, request.user):
-            return HttpResponseForbidden()
-        return super(FileUploadView, self).dispatch(
-            request, obj, *args, **kwargs)
+        return obj
+
 
     def json_response(self, context, status_code=200):
         return HttpResponse(json.dumps(context), mimetype="application/json",
                             status=status_code)
+
+
+    @method_decorator(csrf_protect)
+    @method_decorator(login_required)
+    def dispatch(self, request, pk=None, parent_pk=None, *args, **kwargs):
+        obj = self.get_object(pk=pk, parent_pk=parent_pk)
+        if not self.has_permission(obj, request.user):
+            raise PermissionDenied
+        return super(FileUploadView, self).dispatch(
+            request, obj, pk=pk, parent_pk=parent_pk, *args, **kwargs)
+
 
     def complete(self, obj, status):
         field_file = getattr(obj, self.field_name)
@@ -79,21 +101,31 @@ class FileUploadView(View):
         return self.json_response(status)
 
 
-    def post(self, request, obj):
+    def get(self, request, obj, *args, **kwargs):
+        status = obj.smartfield_status(self.field_name)
+        if status['state'] == 'complete':
+            return self.complete(obj, status)
+        return self.json_response(status)
+
+
+    def post(self, request, obj, *args, **kwargs):
         status = obj.smartfield_status(self.field_name)
         if status['state'] != 'ready':
             return self.json_response(status)
 
-        created = False # necessary hack for progress reporting
+        # TODO: figure out field key for new objects, so progress reporting would work
+        # since urls are preconfigured, when pk is None, maybe use uuid in request.GET
+        created = False # necessary hack for status
         if not obj.pk:
             created = True
             obj.save()
 
-        form = self.UploadForm(
+        form_class = self.get_form()
+        form = form_class(
             instance=obj, data=request.POST, files=request.FILES)
         if form.is_valid():
             obj = form.save()
-            return self.get(request, obj)
+            return self.get(request, obj, *args, **kwargs)
 
         if created:
             obj.delete()
@@ -106,72 +138,7 @@ class FileUploadView(View):
         })
         return self.json_response(status)
 
-    def get(self, request, obj):
-        status = obj.smartfield_status(self.field_name)
-        if status['state'] == 'complete':
-            return self.complete(obj, status)
-        return self.json_response(status)
 
-
-class FileQueueUploadView(View):
-    model_form = None
-
-    @method_decorator(login_required)
-    @method_decorator(csrf_protect)
-    def dispatch(self, *args, **kwargs):
-        return super(FileQueueUploadView, self).dispatch(*args, **kwargs)
-
-    def pre_valid(request, plupload_form, *args, **kwargs):
-        return None
-
-    def pre_save(request, obj, *args, **kwargs):
-        return None
-
-    def delete(request, obj, *args, **kwargs):
-        return None
-
-    def post(self, request, *args, **kwargs):
-        task = request.POST.get('task', 'uploading')
-        context = {'task': task, 'task_name': task.title()}
-        errors = []
-        plupload_form = self.model_form(data=request.POST, files=request.FILES)
-        if task == "delete":
-            pk = request.POST.get('pk', None)
-            custom_errors = []
-            try:
-                obj = get_object_or_404(self.model_form._meta.model, pk=pk)
-                custom_errors = self.delete(request, obj, *args, **kwargs)
-            except Http404, e:
-                custom_errors.append(e.message)
-            if custom_errors:
-                errors.extend(custom_errors)
-            else:
-                context.update({'status': 'complete',
-                                 'file_elem_id': plupload_form.get_file_elem_id(
-                            plupload_form.file_field_name, pk)
-                                 })
-                return self.json_response(context)
-        if errors:
-            context.update({'status': 'failed',
-                            'errors': errors})
-            return self.json_response(context)
-        custom_errors = self.pre_valid(request, plupload_form, *args, **kwargs)
-        if custom_errors:
-            errors.extend(custom_errors)
-        if not errors and plupload_form.is_valid():
-            obj = plupload_form.save(commit=False)
-            custom_errors = self.pre_save(request, obj, *args, **kwargs)
-            if custom_errors:
-                errors.extend(custom_errors)
-            else:
-                obj.save()
-                context.update({
-                        'status': 'complete',
-                        'file_elem_id': plupload_form.get_file_elem_id(
-                            plupload_form.file_field_name, obj.pk),
-                        'rendered_result': plupload_form.get_file_elem_rendered(obj)})
-                return self.json_response(context)
-        for key, e in plupload_form.errors.iteritems():
-            errors.extend(e)
-        context.update({'status': 'failed', 'errors': errors})
-        return self.json_response(context)
+    def delete(self, request, obj, *args, **kwargs):
+        obj.delete()
+        return self.json_response({'task': 'delete', 'result': 'success'})

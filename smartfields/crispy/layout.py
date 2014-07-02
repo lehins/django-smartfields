@@ -2,8 +2,9 @@ import json
 from crispy_forms.layout import Field, TEMPLATE_PACK
 from crispy_forms.utils import render_field
 from django import forms
+from django.conf import settings
 
-from smartfields import settings
+from smartfields.settings import PLUPLOAD_OPTIONS
 
 
 class FileField(Field):
@@ -11,10 +12,11 @@ class FileField(Field):
     template = "%s/filefield.html" % TEMPLATE_PACK
 
     def __init__(self, *args, **kwargs):
-        options = settings.PLUPLOAD_OPTIONS.copy()
+        options = PLUPLOAD_OPTIONS.copy()
         options.update(kwargs.pop('plupload_options', {}))
         options['multi_selection'] = False
-        kwargs['data_plupload'] = json.dumps(options)
+        kwargs['data_plupload_options'] = json.dumps(options)
+        kwargs['data_csrf_cookie_name'] = settings.CSRF_COOKIE_NAME
         kwargs['wrapper_class'] = kwargs.get('wrapper_class', 'smartfields-filefield')
         super(FileField, self).__init__(*args, **kwargs)
 
