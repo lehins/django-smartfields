@@ -186,7 +186,7 @@ class WEBMDependency(FileDependency):
             'vbitrate': '1M',
             'maxrate': '1M',
             'bufsize': '2M',
-            'width': 'trunc(oh/a/2)*2', # make sure width is divisible by 2
+            'width': 'trunc(oh*a/2)*2', # make sure width is divisible by 2
             'height': 720,
             'threads': 4,
             'acodec': 'libvorbis',
@@ -212,7 +212,7 @@ class MP4Dependency(FileDependency):
             'vbitrate': '1M',
             'maxrate': '1M',
             'bufsize': '2M',
-            'width': 'trunc(oh/a/2)*2', # make sure width is divisible by 2
+            'width': 'trunc(oh*a/2)*2', # make sure width is divisible by 2
             'height': 720,
             'threads': 0,
             'acodec': 'libfdk_aac',
