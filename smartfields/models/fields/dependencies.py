@@ -187,7 +187,7 @@ class WEBMDependency(FileDependency):
             'maxrate': '1M',
             'bufsize': '2M',
             'width': 'trunc(oh*a/2)*2', # make sure width is divisible by 2
-            'height': 720,
+            'height': 720,              # http://ffmpeg.org/ffmpeg-all.html#scale
             'threads': 4,
             'acodec': 'libvorbis',
             'abitrate': '96k'
