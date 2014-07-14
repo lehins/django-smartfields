@@ -53,13 +53,21 @@ class FileField(Field, models.FileField):
     attr_class = FieldFile
     manager_class = FileFieldManager
     keep_orphans = getattr(settings, 'SMARTFIELDS_KEEP_ORPHANS', False)
+    crop_filename = getattr(settings, 'SMARTFIELDS_CROP_FILENAMES', False)
     html_tag_getter = None
+    _generate_filename = None
 
-    def __init__(self, keep_orphans=None, html_tag_getter=None, **kwargs):
+    def __init__(self, keep_orphans=None, crop_filename=None, html_tag_getter=None, 
+                 upload_to='', **kwargs):
         if keep_orphans is not None:
             self.keep_orphans = keep_orphans
+        if crop_filename is not None:
+            self.crop_filename = crop_filename
         self.html_tag_getter = html_tag_getter or self.html_tag_getter
         super(FileField, self).__init__(**kwargs)
+        self.upload_to = upload_to
+        if callable(upload_to):
+            self._generate_filename = upload_to
 
 
     def save_form_data(self, instance, data):
@@ -92,6 +100,21 @@ class FileField(Field, models.FileField):
             if field_file:
                 field_file.delete()
 
+
+    def generate_filename(self, *args):
+        if self._generate_filename is not None:
+            filename = self._generate_filename(*args)
+        else:
+            filename = super(FileField, self).generate_filename(*args)
+        if self.crop_filename and len(filename) > self.max_length:
+            path, fullname = os.path.split(filename)
+            name, ext = os.path.splitext(fullname)
+            new_name_len = self.max_length - (len(path) + len(ext) + 1)
+            if new_name_len > 0:
+                name = name[:new_name_len]
+                filename = os.path.join(path, name + ext)
+        return filename
+                
 
 
 class ImageFieldFile(FieldFile, files.ImageFieldFile):
