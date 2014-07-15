@@ -51,14 +51,17 @@ class SlugField(Field, models.SlugField):
     def generate_slug(instance, field, value):
         current_value = getattr(instance, field.name)
         if not current_value and value:
-            slug = slugify(value)
+            slug = slugify(value)[:field.max_length]
             if field._unique:
                 manager = instance.__class__._default_manager
                 unique_slug = slug
                 existing = manager.filter(**{field.name: unique_slug})
                 # making sure slug is unique by adding a random number
                 while existing.exists():
-                    unique_slug = "%s-%s" % (slug, random.randint(0, int(time.time())))
+                    r_str = str(random.randint(0, int(time.time())))
+                    l = field.max_length - (len(slug) + len(r_str) + 1)
+                    l_slug = slug[:l] if l < 0 else slug
+                    unique_slug = "%s-%s" % (l_slug, r_str)
                     existing = manager.filter(**{field.name: unique_slug})
                 slug = unique_slug
             return slug
