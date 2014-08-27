@@ -45,7 +45,7 @@ class LimitedField(Field):
         self.minimum = kwargs.pop('minimum', None)
         self.maximum = kwargs.pop('maximum', None)
         self.feedback_text = feedback_text
-        kwargs['css_class'] = "smartfield"
+        kwargs['css_class'] = kwargs.get('css_class', "") + " smartfield"
         super(LimitedField, self).__init__(field, *args, **kwargs)
 
 
