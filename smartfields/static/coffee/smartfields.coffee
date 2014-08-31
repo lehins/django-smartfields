@@ -81,6 +81,7 @@ class smartfields.FileField
             @$delete_btn.hide()
             @$current_btn.parent().hide()
         @$delete_btn.click =>
+            post_data = {}
             post_data["#{@$browse_btn.attr('name')}-clear"] = "on"
             $.post(@options.url, post_data, (data, textStatus, jqXHR) =>
                 if data.state == 'ready'
