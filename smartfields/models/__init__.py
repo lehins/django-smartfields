@@ -44,10 +44,13 @@ class ModelMixin(object):
                 manager.handle(self)
 
 
-    def smartfields_update(self):
+    def smartfields_update(self, field_names=None):
         if self.smartfields_managers is not None:
+            if field_names is not None:
+                field_names = set(field_names)
             for manager in self.smartfields_managers:
-                manager.update(self)
+                if not field_names or manager.field.name in field_names:
+                    manager.update(self)
 
 
     def smartfield_status(self, field_name):
