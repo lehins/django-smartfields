@@ -16,7 +16,8 @@ class FileField(Field):
         options.update(kwargs.pop('plupload_options', {}))
         options['multi_selection'] = False
         kwargs['data_plupload_options'] = json.dumps(options)
-        kwargs['data_csrf_cookie_name'] = settings.CSRF_COOKIE_NAME
+        if not settings.CSRF_COOKIE_HTTPONLY:
+            kwargs['data_csrf_cookie_name'] = settings.CSRF_COOKIE_NAME
         kwargs['wrapper_class'] = kwargs.get('wrapper_class', 'smartfields-filefield')
         super(FileField, self).__init__(*args, **kwargs)
 

@@ -24,6 +24,9 @@ window.smartfields =
         else
             throw TypeError("#{typeof func} is incorrect. Has to be a string or function")
 
+    isSafeMethod: (method) ->
+        /^(GET|HEAD|OPTIONS|TRACE)$/.test(method)
+
     getCookie: (name) ->
         cookieValue = null
         if document.cookie and document.cookie != ''
@@ -35,24 +38,29 @@ window.smartfields =
                     break
         cookieValue
 
-    isSafeMethod: (method) ->
-        /^(GET|HEAD|OPTIONS|TRACE)$/.test(method)
-
+    getCsrfToken: (field, csrfCookieName) ->
+        # try to get csrftoken from the field, fallback to getting it from a cookie
+        csrftoken = field.val()
+        if not csrftoken? and csrfCookieName
+            csrftoken = @getCookie(csrfCookieName)
+        return csrftoken
+        
     csrfAjaxSetup: (csrftoken) ->
         if !@isCsrfAjaxSetup
             $.ajaxSetup(
                 beforeSend: (xhr, settings) ->
-                    if (!smartfields.isSafeMethod(settings.type) && !this.crossDomain)
+                    if not smartfields.isSafeMethod(settings.type) and not @crossDomain
                         xhr.setRequestHeader("X-CSRFToken", csrftoken)
             )
             @isCsrfAjaxSetup = true
 
 class smartfields.FileField
     constructor: (@$elem) ->
+        @$form = @$elem.closest('form')
         @$browse_btn = @$elem.find('.smartfields-btn-browse')
-        csrftoken = smartfields.getCookie(@$browse_btn.data('csrfCookieName'))
-        if !csrftoken?
-            console.error("'#{@$browse_btn.data('csrfCookieName')}' cookie is not found")
+        csrftoken = smartfields.getCsrfToken(
+            @$form.find("input[name='csrfmiddlewaretoken']"),
+            @$browse_btn.data('csrfCookieName'))
         smartfields.csrfAjaxSetup(csrftoken)
         @id = @$browse_btn.attr('id')
         @$delete_btn = $("##{@id}_delete")
@@ -94,8 +102,6 @@ class smartfields.FileField
             browse_button: @id,
             container: @$elem[0],
             file_data_name: @$browse_btn.attr('name'),
-            headers:
-                'X-CSRFToken': csrftoken
             init: {
                 Init:           $.proxy(@Init, @),
                 PostInit:       $.proxy(@PostInit, @),
@@ -116,11 +122,13 @@ class smartfields.FileField
                 Destroy:        $.proxy(@Destroy, @)
             }
         }
+        if csrftoken
+            @options.headers = 'X-CSRFToken': csrftoken
         $.extend(@options, @$browse_btn.data('pluploadOptions'))
         @uploader = new plupload.Uploader(@options)
         @uploader.init()
         @form_submitted = false
-        @$form = @$elem.closest('form').submit( =>
+        @$form.submit( =>
             if !@form_submitted and @uploader.files.length > 0
                 @form_submitted = true
                 @uploader.start()
