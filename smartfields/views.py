@@ -69,10 +69,12 @@ class FileUploadView(View):
         return obj
 
 
-    def json_response(self, context, status_code=200):
-        return HttpResponse(json.dumps(context), 
-                            content_type="application/json; charset=utf-8",
-                            status=status_code)
+    def json_response(self, context, status=200):
+        response = HttpResponse(json.dumps(context), 
+                                content_type="application/json; charset=utf-8",
+                                status=status)
+        response['Cache-Control'] = 'no-cache'
+        return response
 
 
     @method_decorator(csrf_protect)
