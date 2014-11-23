@@ -31,8 +31,8 @@ class Field(models.Field):
 
     def get_status(self, instance):
         current_status = {
-            'app': instance._meta.app_label,
-            'model': instance._meta.model_name,
+            'app_label': instance._meta.app_label,
+            'model_name': instance._meta.model_name,
             'pk': instance.pk,
             'field_name': self.name,
             'state': 'ready'
