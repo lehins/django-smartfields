@@ -18,3 +18,17 @@ class BaseProcessor(object):
         
     def process(self, **kwargs):
         return self.data
+
+
+
+class Processor(object):
+    task = 'process'
+    task_name = 'Processing'
+    progress_setter = None
+
+    def __call__(self, value, **kwargs):
+        return value
+
+    def set_progress(self, progress):
+        if callable(self.progress_setter):
+            self.progress_setter(self, progress)
