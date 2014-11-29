@@ -30,14 +30,21 @@ class Dependency(object):
 
     def handle(self, instance, field, field_value, event):
         if self._field_name is not None:
-            value = getattr(instance, self._field_name)
+            # in case of pre_init it will be None
+            value = getattr(instance, self._field_name, None)
         else:
             value = field_value
         custom_event_handler = getattr(self, "_%s" % event, None)
         if callable(custom_event_handler):
-            new_value = custom_event_handler(value, instance, field, field_value)
+            new_value = custom_event_handler(instance, value, field, field_value)
             if new_value is not None:
                 value = new_value
+        elif isinstance(custom_event_handler, basestring):
+            custom_event_handler = getattr(instance, custom_event_handler, None)
+            if callable(custom_event_handler):
+                new_value = custom_event_handler(value, field, field_value)
+                if new_value is not None:
+                    value = new_value
         event_handler = getattr(self, event, None)
         if callable(event_handler):
             event_handler(value, instance, field, field_value)
@@ -45,21 +52,12 @@ class Dependency(object):
 
     def attach_dependency(self, value, instance, field, field_value, attname=None):
         attname = attname or self._attname
-        if not attname and self._suffix:
-            attname = "%s_%s" % (field.name, self._suffix)
-        else:
-            attname = field.attname
+        if not attname:
+            if self._suffix:
+                attname = "%s_%s" % (field.name, self._suffix)
+            else:
+                attname = field.attname
         setattr(instance, attname, value)
-
-
-    def post_init(self, value, instance, field, field_value):
-        # make sure all dependencies are initialized together with the model
-        self.attach_dependency(value, instance, field, field_value)
-
-
-    def pre_save(self, value, instance, field, field_value):
-        # make sure all dependencies are attached before saving the model
-        self.attach_dependency(value, instance, field, field_value)
 
 
     def process(self, instance, field, field_value, progress_setter=None):

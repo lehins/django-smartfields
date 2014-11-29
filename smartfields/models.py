@@ -28,17 +28,30 @@ class SmartfieldsModelMixin(object):
     delete.alters_data = True                    
 
 
+    def _smartfields_get_managers(self):
+        if hasattr(self, 'smartfields_order'):
+            managers = []
+            for field_name in self.smartfields_order:
+                managers.append(self._smartfields_managers[field_name])
+            for field_name, manager in self._smartfields_managers.items():
+                if field_name not in self.smartfields_order:
+                    managers.append(manager)
+        else:
+            managers = self._smartfields_managers.values()
+        return managers
+
+
     def smartfields_handle(self, event):
-        for manager in self.smartfields_managers:
+        for manager in self._smartfields_get_managers():
             manager.handle(self, event)
 
 
     def smartfields_process(self, field_names=None):
         if field_names is not None:
             field_names = set(field_names)
-        for manager in self.smartfields_managers:
+        for manager in self._smartfields_get_managers():
             if not field_names or manager.field.name in field_names:
-                manager.update(self)
+                manager.process(self)
 
 
     def smartfield_status(self, field_name):

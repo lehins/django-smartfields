@@ -1,5 +1,7 @@
+from django.utils.text import slugify
+
 __all__ = [
-    "ProcessingError", "BaseProcessor"
+    'ProcessingError', 'BaseProcessor', 'SlugProcessor'
 ]
 
 class ProcessingError(Exception):
@@ -7,21 +9,6 @@ class ProcessingError(Exception):
 
 
 class BaseProcessor(object):
-    task = 'process'
-    task_name = 'Processing'
-    responsive = False
-
-    def __init__(self, data, field=None, instance=None):
-        self.data = data
-        self.field = field
-        self.instance = instance
-        
-    def process(self, **kwargs):
-        return self.data
-
-
-
-class Processor(object):
     task = 'process'
     task_name = 'Processing'
     progress_setter = None
@@ -32,3 +19,10 @@ class Processor(object):
     def set_progress(self, progress):
         if callable(self.progress_setter):
             self.progress_setter(self, progress)
+
+
+
+class SlugProcessor(BaseProcessor):
+
+    def __call__(self, value, instance=None, field=None, field_value=None, **kwargs):
+        return slugify(value)

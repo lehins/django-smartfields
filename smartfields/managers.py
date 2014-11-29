@@ -47,14 +47,19 @@ class AsyncHandler(threading.Thread):
 
 class FieldManager(object):
     
-    def __init__(self, field, dependencies=None):
+    def __init__(self, field, dependencies):
         self.field = field
-        self.dependencies = dependencies or []
+        self.dependencies = dependencies
         self.async = bool([d for d in self.dependencies if d.async])
 
     
     def handle(self, instance, event):
-        field_value = self.field.value_from_object(instance)
+        try:
+            field_value = self.field.value_from_object(instance)
+        except AttributeError:
+            if event != 'pre_init':
+                raise
+            field_value = None
         for d in self.dependencies:
             d.handle(instance, self.field, field_value, event)
 
@@ -74,7 +79,7 @@ class FieldManager(object):
 
 
     def process(self, instance):
-        self.set_status({'state': 'busy'})
+        self.set_status(instance, {'state': 'busy'})
         try:
             if self.async:
                 for d in filter(lambda d: not d.async, self.dependencies):
@@ -84,7 +89,7 @@ class FieldManager(object):
             else:
                 for d in self.dependencies:
                     self._process(instance, d)
-                self.set_status({'state': 'ready'})
+                self.set_status(instance, {'state': 'ready'})
         except ProcessingError: pass
 
 
@@ -116,6 +121,12 @@ class FieldManager(object):
             if status['state'] in ['complete', 'error']:
                 cache.delete(status_key)
         return status
+
+
+    def set_status(self, instance, status):
+        """Sets the field status for up to 5 minutes."""
+        status_key = self.get_status_key(instance)
+        cache.set(status_key, status, timeout=300)
 
 
     def set_error_status(self, instance, error):
