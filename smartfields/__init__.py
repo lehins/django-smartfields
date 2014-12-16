@@ -1,5 +1,5 @@
 from smartfields.fields import *
-from smartfields.dependencies import Dependency
+from smartfields.dependencies import *
 
 # Major, minor, revision
 

@@ -1,5 +1,5 @@
--smart-fields
-###################
+django-smartfields
+##################
 
 Django Model Fields that are actaully smart.
 --------------------------------------------

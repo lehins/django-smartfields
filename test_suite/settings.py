@@ -1,9 +1,9 @@
 from django.conf.global_settings import *
 import os, sys
 
-BASE_PATH = os.path.join(os.path.dirname(__file__), '..')
+BASE_PATH = os.path.dirname(__file__)
 
-sys.path.insert(0, BASE_PATH)
+sys.path.insert(0, os.path.join(BASE_PATH, '..'))
 
 DEBUG = False
 SECRET_KEY = 'django-smartfields'
@@ -27,3 +27,11 @@ INSTALLED_APPS = (
 )
 
 SITE_ID = 1
+
+MEDIA_ROOT = os.path.join(BASE_PATH, 'media/')
+
+MEDIA_URL = '/media/'
+
+STATIC_ROOT = os.path.join(BASE_PATH, 'static/')
+
+STATIC_URL = '/static/'

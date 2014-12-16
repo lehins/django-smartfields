@@ -1,116 +1,295 @@
+from PIL import Image
+from django.conf import settings
 from django.core.files.base import ContentFile
-from django.utils.image import Image
-from django.utils.six import StringIO
+from django.utils import six
 
-from smartfields.processors.base import BaseProcessor, ProcessingError
+from smartfields.fields import ImageFieldFile
+from smartfields.processors.base import BaseFileProcessor
+from smartfields.utils import ProcessingError
 
 __all__ = [
-    "ImageConverter"
+    'ImageProcessor', 'ImageFormat', 'supported_formats'
 ]
 
-# syntax
-# pattern: ([extensions], [read_modes], [write_modes])
-SUPPORTED_IMAGE_FORMATS = {
-    "BMP": (['bmp', 'dib'], ['1', 'L', 'P', 'RGB'], ['1', 'L', 'P', 'RGB']),
-    #"DCX": (['dcx'], ['1', 'L', 'P', 'RGB'], None), - Intel fax format
-    #"EPS": (['eps', 'ps'], None, ['L', 'RGB']), - No read support
-    "GIF": (['gif'], ['P', 'L'], ['P', 'L']),
-    "IM": (['im'], [], []),
-    "JPEG": (['jpg', 'jpe', 'jpeg'], ['L', 'RGB', 'CMYK'], ['L', 'RGB', 'CMYK']),
-    #"PCD": (['pcd'], ['RGB'], None), # segfaults
-    "PCX": (['pcx'], ['1', 'L', 'P', 'RGB'], ['1', 'L', 'P', 'RGB']),
-    # "PDF": (['pdf'], None, ['1', 'RGB']), - No read support
-    "PNG": (['png'], ['1', 'L', 'P', 'RGB', 'RGBA'], ['1', 'L', 'P', 'RGB', 'RGBA']),
-    "PPM": (['pbm', 'pgm', 'ppm'], ['1', 'L', 'RGB'], ['1', 'L', 'RGB']),
-    "PSD": (['psd'], ['P'], None),
-    "TIFF": (['tif', 'tiff'], ['1', 'L', 'RGB', 'CMYK'], ['1', 'L', 'RGB', 'CMYK']),
-    "XBM": (['xbm'], ['1'], ['1']),
-    "XPM": (['xpm'], ['P'], None),
-    "SGI": (['sgi'], ['L', 'RGB'], None),
-    "TGA": (['tga', 'tpic'], ['RGB', 'RGBA'], None)
+PILLOW_MODES = [
+    '1',      # (1-bit pixels, black and white, stored with one pixel per byte)
+    'L',      # (8-bit pixels, black and white)
+    'LA',     # greyscale with alpha
+    'P',      # (8-bit pixels, mapped to any other mode using a color palette)
+    'RGB',    # (3x8-bit pixels, true color)
+    'RGBA',   # (4x8-bit pixels, true color with transparency mask)
+    'CMYK',   # (4x8-bit pixels, color separation)
+    'YCbCr',  # (3x8-bit pixels, color video format)
+    'LAB',    # (3x8-bit pixels, the L*a*b color space)
+    'HSV',    # (3x8-bit pixels, Hue, Saturation, Value color space)
+    'I',      # (32-bit signed integer pixels)
+    'F',      # (32-bit floating point pixels)
+]
+
+PILLOW_IMAGE_SUPPORT = {
+    'BMP': (
+        ['bmp', 'dib'], ['RGB', 'P', 'L', '1'],  ['RGB', 'P', 'L', '1']),
+    'EPS': (
+        ['eps', 'ps'], ['RGB', 'LAB', 'L'], ['CMYK', 'RGB', 'L']), # - No read support
+    'GIF': (
+        ['gif'], ['P', 'L'], ['P', 'L', '1']),
+    'IM': (
+        ['im'], ['YCbCr', 'CMYK', 'RGBA', 'RGB', 'P', 'LA', 'L', '1'],
+        ['F', 'I', 'YCbCr', 'CMYK', 'RGBA', 'RGB', 'P', 'LA', 'L', '1']),
+    'JPEG': (
+        ['jpg', 'jpe', 'jpeg', 'jfif'], ['CMYK', 'RGB', 'L'], ['CMYK', 'RGB', 'L']),
+    'JPEG2000': (
+        ['jp2', 'j2k', 'jpc', 'jpf', 'jpx', 'j2c'], 
+        ['RGBA', 'RGB', 'LA', 'L'], ['RGBA', 'RGB', 'LA', 'L']),
+    'MSP': (
+        ['msp'], ['1'], ['1']),
+    'PCX': (['pcx'], ['RGB', 'P', 'L', '1'], ['RGB', 'P', 'L', '1']),
+    'PNG': (['png'], ['RGBA', 'RGB', 'P', 'L', '1'], ['RGBA', 'RGB', 'P', 'L', '1']),
+    'PPM': (['ppm', 'pgm', 'pbm'], ['RGB', 'L', '1'], ['RGB', 'L', '1']),
+    'SPIDER': (['spi'], ['F;32F'], ['F;32F']),
+    'TIFF': (['tif', 'tiff'], 
+        ['F', 'I', 'YCbCr', 'CMYK', 'RGBA', 'RGB', 'P', 'LA', 'L', '1'],
+        ['F', 'I', 'LAB', 'YCbCr', 'CMYK', 'RGBA', 'RGB', 'P', 'LA', 'L', '1']),
+    'WEBP': (['webp'], ['RGBA', 'RGB'], ['RGBA', 'RGB']),
+    'XBM': (['xbm'], ['1'], ['1']),
+
+    'DCX': (['dcx'], ['1', 'L', 'P', 'RGB'], None), # - Intel fax format
+    # PCD format segfaults: https://github.com/python-pillow/Pillow/issues/568
+    'PCD': (['pcd'], ['RGB'], None),
+    'PDF': (['pdf'], None, ['1', 'RGB']),
+    'PSD': (['psd'], ['P'], None),
+    'XPM': (['xpm'], ['P'], None),
+    'SGI': (['sgi'], ['L', 'RGB'], None),
+    'TGA': (['tga', 'tpic'], ['RGB', 'RGBA'], None)
 }
 
-class ImageConverter(BaseProcessor):
-    preference_mode_list = ['RGBA', 'RGB', 'P', 'CMYK', 'L', '1']
-    browser_format_support = ['JPEG', 'GIF', 'PNG']
-    responsive = True
 
-    @classmethod
-    def browser_exts(cls):
-        supported = []
-        for format in cls.browser_format_support:
-            supported.extend(SUPPORTED_IMAGE_FORMATS.get(format)[0])
-        return supported
+def _round(val):
+    # emulate python3 way of rounding toward the even choice
+    new_val = int(round(val))
+    if abs(val - new_val) == 0.5 and new_val % 2 == 1:
+        return new_val - 1
+    return new_val
 
 
-    @classmethod
-    def input_exts(cls):
-        supported = []
-        for format, support in SUPPORTED_IMAGE_FORMATS.iteritems():
-            supported.extend(support[0])
-        return supported
+class ImageFormat(object):
 
+    def __init__(self, format, mode=None, ext=None, save_kwargs=None):
+        self.format = format
+        self.mode = mode
+        self.ext = ext
+        self.exts, self.input_modes, self.output_modes = PILLOW_IMAGE_SUPPORT[format]
+        assert mode is None or (self.can_write and mode in self.output_modes), \
+            "Pillow cannot write \"%s\" in this mode: \"%s\"" % (self.format, mode)
+        self.save_kwargs = save_kwargs or {}
+        
+    def __str__(self):
+        return self.format
 
-    def process(self, max_dim=None, format=None, mode=None, progress_setter=None, **kwargs):
+    def __eq__(self, other):
+        return str(self) == str(other)
+
+    @property
+    def can_read(self):
+        return self.input_modes is not None
+
+    @property
+    def can_write(self):
+        return self.output_modes is not None
+
+    def get_ext(self):
+        if self.ext is not None:
+            return self.ext
+        return self.exts[0]
+
+    def get_exts(self):
+        """Returns a string of comma separated known extensions for this format"""
+        return ','.join(self.exts)
+
+    def get_mode(self, old_mode=None):
+        """Returns output mode. If `mode` not set it will try to guess best
+        mode, or next best mode comparing to old mode
+
         """
-        Resize image to fit it into (width, height) box.
-        """
-        set_progress = progress_setter or (lambda x: x)
-        set_progress(0)
-        cur_pos = self.data.tell()
-        self.data.seek(0)
-        string = StringIO(self.data.read())
-        self.data.seek(cur_pos)
-        if not (max_dim or format or mode):
-            # nothing to do, just return copy of the data
-            set_progress(1)
-            return ContentFile(string.getvalue())
-        image = Image.open(string)
-        # decide output format
-        format = format or image.format
-        support = SUPPORTED_IMAGE_FORMATS.get(format, None)
-        if support is None or support[2] is None:
-            raise TypeError("Unsupported output format: '%s'" % format)
-        supported_modes = support[2]
-        # decide output color mode
-        if mode and mode not in supported_modes:
-            raise TypeError("Unsupported output color mode: '%s' for format: '%s'" %
-                            (mode, formt))
+        if self.mode is not None:
+            return self.mode
+        assert self.can_write, "This format does not have a supported output mode."
+        if old_mode is None:
+            return self.output_modes[0]
+        if old_mode in self.output_modes:
+            return old_mode
+        # now let's get best mode available from supported
         try:
-            if mode:
-                image = image.convert(mode)
-            elif not image.mode in supported_modes:
-                for mode in self.preference_mode_list:
-                    if mode in supported_modes:
-                        image = image.convert(mode)
-                    break;
-            # decide output dimensions
-            new_dim = self.get_dimensions(image.size, max_dim)
-            if new_dim is not None:
-                image = image.resize(new_dim, resample=Image.ANTIALIAS)
-            if format == image.format:
-                set_progress(1)
-                return ContentFile(string.getvalue())
-            string = StringIO()
-            image.save(string, format=format)
-            set_progress(1)
-            return ContentFile(string.getvalue())
-        except IOError, e:
-            raise ProcessingError(
-                "There was a problem with image conversion: %s" % str(e))
+            idx = PILLOW_MODES.index(old_mode)
+        except ValueError:
+            # maybe some unknown or uncommon mode
+            return self.output_modes[0]
+        for mode in PILLOW_MODES[idx+1:]:
+            if mode in self.output_modes:
+                return mode
+        # since there is no better one, lets' look for closest one in opposite direction
+        opposite = PILLOW_MODES[:idx]
+        opposite.reverse()
+        for mode in opposite:
+            if mode in self.output_modes:
+                return mode
 
-    def get_dimensions(self, original, maximum):
-        if maximum is None or \
-           (original[0] <= maximum[0] and original[1] <= maximum[1]) or \
-           (maximum[0] == 0 and original[1] <= maximum[1]) or \
-           (maximum[1] == 0 and original[0] <= maximum[0]):
-            return None
-        maximum = (original[0] if maximum[0] == 0 else maximum[0],
-                   original[1] if maximum[1] == 0 else maximum[1])
-        requested_ratio = float(maximum[0])/float(maximum[1])
-        original_ratio = float(original[0])/float(original[1])
-        if original_ratio > requested_ratio:
-            return (maximum[0], int(round(maximum[0]*(1/original_ratio))))
-        elif original_ratio < requested_ratio:
-            return (int(round(maximum[1]*original_ratio)), maximum[1])
-        return maximum
+
+
+class ImageFormats(dict):
+
+    def __init__(self, formats):
+        super(ImageFormats, self).__init__([(f, ImageFormat(f)) for f in formats])
+
+    @property
+    def input_exts(self):
+        return ','.join([f.get_exts() for n, f in six.iteritems(self) if f.can_read])
+
+
+supported_formats = ImageFormats(getattr(settings, 'SMARTFIELDS_IMAGE_FORMATS', [
+    'PCX', 'XPM', 'TIFF', 'JPEG', 'XBM', 'GIF', 'IM', 'PSD', 'PPM', 'SGI', 'BMP', 
+    'TGA', 'PNG', # 'DCX', 'EPS', 'PCD', 'PDF' - not useful or buggy formats
+]))
+
+
+class ImageProcessor(BaseFileProcessor):
+    field_file_class = ImageFieldFile
+    # resampling was renamed from Image.ANTIALIAS to Image.LANCZOS
+    if hasattr(Image, 'LANCZOS'):
+        resample = Image.LANCZOS
+    else:
+        resample = Image.ANTIALIAS 
+    supported_formats = supported_formats
+
+    def get_params(self, **kwargs):
+        params = super(ImageProcessor, self).get_params(**kwargs)
+        if 'format' in params:
+            format = params['format']
+            if not isinstance(format, ImageFormat):
+                format = ImageFormat(format)
+            assert format.can_write, \
+                "This format: \"%s\" is not supported for output." % format
+            params['format'] = format
+        return params
+
+    def check_params(self, **kwargs):
+        params = self.get_params(**kwargs)
+        scale = params.get('scale', None)
+        if scale is not None:
+            self._check_scale_params(**scale)
+
+    def get_ext(self, **kwargs):
+        try:
+            format = self.get_params(**kwargs)['format']
+            ext = format.get_ext()
+            if ext:
+                return ".%s" % ext
+            elif ext is not None:
+                return ext
+        except KeyError: pass
+
+    def _check_scale_params(self, width=None, height=None, min_width=None, min_height=None, 
+                            max_width=None, max_height=None, preserve=True):
+        assert width is None or (min_width is None and max_width is None), \
+            "min_width or max_width don't make sence if width cannot be changed"
+        assert height is None or (min_height is None and max_height is None), \
+            "min_height or max_height don't make sence if height cannot be changed"
+        assert min_width is None or max_width is None or min_width < max_width, \
+            "min_width should be smaller than max_width"
+        assert min_height is None or max_height is None or min_height < max_height, \
+            "min_height should be smaller than max_height"
+        if preserve:
+            assert width is None or height is None, \
+                "cannot preserve ratio when both width and height are set"
+            assert width is None or (min_height is None and max_height is None), \
+                "cannot preserve ratio when width is set and there are restriction on height"
+            assert height is None or (min_width is None and max_width is None), \
+                "cannot preserve ratio when height is set and there are restriction on width"
+            assert min_width is None or max_height is None
+            assert max_width is None or min_height is None
+            
+    def get_dimensions(self, old_width, old_height, width=None, height=None, 
+                       min_width=None, min_height=None, 
+                       max_width=None, max_height=None, preserve=True):
+        self._check_scale_params(
+            width, height, min_width, min_height, max_width, max_height, preserve)
+        ratio = float(old_width)/old_height
+        new_width, new_height = old_width, old_height
+        if width is not None:
+            new_width = width
+            if preserve:
+                new_height = _round(new_width/ratio)
+        if height is not None:
+            new_height = height
+            if preserve:
+                new_width = _round(new_height*ratio)
+        if min_width and min_width > new_width:
+            new_width = min_width
+            if preserve:
+                new_height = _round(new_width/ratio)
+        if min_height and min_height > new_height:
+            new_height = min_height
+            if preserve:
+                new_width = _round(new_height*ratio)
+        if max_width and max_width < new_width:
+            new_width = max_width
+            if preserve:
+                new_height = _round(new_width/ratio)
+        if max_height and max_height < new_height:
+            new_height = max_height
+            if preserve:
+                new_width = _round(new_height*ratio)
+        return new_width, new_height
+
+    def resize(self, image, scale):
+        if scale is not None:
+            new_size = self.get_dimensions(*image.size, **scale)
+            if image.size != new_size:
+                return image.resize(new_size, resample=self.resample)
+        return image
+
+    def convert(self, image, format):
+        if format is None:
+            return image
+        new_mode = format.get_mode(old_mode=image.mode)
+        if new_mode != image.mode:
+            if new_mode == 'P':
+                # TODO: expiremental, need some serious testing
+                palette_size = 256
+                if image.palette:
+                    palette_size = len(image.palette.getdata()[1]) // 3
+                image = image.convert(
+                    new_mode, palette=Image.ADAPTIVE, colors=palette_size)
+            else:
+                image = image.convert(new_mode)
+        return image
+
+    def process(self, value, instance, field, field_value, scale=None, format=None, **kwargs):
+        cur_pos = value.tell()
+        value.seek(0)
+        stream = six.BytesIO(value.read())
+        stream_out = None
+        value.seek(cur_pos)
+        if scale is not None or format is not None:
+            # nothing to do, just return copy of the file
+            try:
+                image = Image.open(stream)
+            except OSError as e:
+                raise ProcessingError(
+                    "There was a problem with image conversion: %s" % e)
+            image = self.resize(image, scale)
+            image = self.convert(image, format)
+            if format != image.format:
+                stream_out = six.BytesIO()
+                try:
+                    image.save(stream_out, format=str(format), **format.save_kwargs)
+                except IOError as e:
+                    raise ProcessingError(
+                        "There was a problem with image conversion: %s" % e)
+        if stream_out is not None:
+            content = stream_out.getvalue()
+            stream_out.close()
+        else:
+            content = stream.getvalue()
+        stream.close()
+        return ContentFile(content)
