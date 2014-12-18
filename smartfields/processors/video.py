@@ -2,6 +2,7 @@ import re
 from django.utils import six
 
 from smartfields.processors.base import ExternalFileProcessor
+from smartfields.utils import ProcessingError
 
 __all__ = [
     'FFMPEGProcessor'
@@ -10,6 +11,7 @@ __all__ = [
 class FFMPEGProcessor(ExternalFileProcessor):
     duration_re = re.compile(r'Duration: (?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+)')
     progress_re = re.compile(r'time=(?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+)')
+    error_re = re.compile(r'Invalid data found when processing input')
     cmd_template = "ffmpeg -i {input} -y -codec:v {vcodec} -b:v {vbitrate} " \
                    "-maxrate {maxrate} -bufsize {bufsize} -vf " \
                    "scale={width}:{height} -threads {threads} -c:a {acodec} {output}"
@@ -26,6 +28,8 @@ class FFMPEGProcessor(ExternalFileProcessor):
                 progress = float(seconds)/duration
                 progress = progress if progress < 1 else 0.99
                 self.set_progress(progress)
+        elif self.error_re.search(line):
+            raise ProcessingError("Invalid video file or unknown video format.")
         return (duration,)
 
     def timedict_to_seconds(self, timedict):

@@ -1,10 +1,9 @@
 import subprocess, time
-from django.utils import six
 from django.utils.deconstruct import deconstructible
 from django.utils.text import slugify
-from django.utils import six
+from django.utils.six.moves import queue
 
-from smartfields.utils import NamedTemporaryFile, AsynchronousFileReader
+from smartfields.utils import NamedTemporaryFile, AsynchronousFileReader, ProcessingError
 
 __all__ = [
     'BaseProcessor', 'BaseFileProcessor', 'ExternalFileProcessor', 'SlugProcessor'
@@ -43,11 +42,6 @@ class BaseProcessor(object):
 
 class BaseFileProcessor(BaseProcessor):
 
-    #def __call__(self, file, *args, **kwargs):
-    #    if file:
-    #        return super(BaseFileProcessor, self).__call__(file, *args, **kwargs)
-
-
     def get_ext(self, format=None, **kwargs):
         """Returns new file extension based on a processor's `format` parameter.
         Overwrite if different extension should be set ex: `'.txt'` or `None` if this 
@@ -81,24 +75,35 @@ class ExternalFileProcessor(BaseFileProcessor):
         self.sleep_time = sleep_time
         super(ExternalFileProcessor, self).__init__(**kwargs)
 
-    def get_out_file(self, in_file, instance, field, field_value, **kwargs):
+    def get_input_path(self, in_file):
+        return in_file.path
+
+    def get_output_path(self, out_file):
+        return out_file.name
+
+    def get_output_file(self, in_file, instance, field, field_value, **kwargs):
+        """Creates a temporary file. With regular `FileSystemStorage` it does not 
+        need to be deleted, instaed file is safely moved over. With other cloud
+        based storage it is a good idea to set `delete=True`."""
         return NamedTemporaryFile(mode='rb', suffix='_%s_%s%s' % (
-            instance._meta.model_name, field.name, self.get_ext()))
+            instance._meta.model_name, field.name, self.get_ext()), delete=False)
 
     def process(self, in_file, instance, field, field_value, **kwargs):
-        out_file = self.get_out_file(in_file, instance, field, field_value, **kwargs)
+        out_file = self.get_output_file(in_file, instance, field, field_value, **kwargs)
         cmd = self.cmd_template.format(
-            input=in_file.path, output=out_file.name, **kwargs).split()
+            input=self.get_input_path(in_file), output=self.get_output_path(out_file),
+            **kwargs
+        ).split()
         stdout_pipe, stdout_queue, stdout_reader = None, None, None
         stderr_pipe, stderr_queue, stderr_reader = None, None, None
         if callable(self.stdout_handler):
             stdout_pipe = subprocess.PIPE
-            stdout_queue = six.moves.queue.Queue()
+            stdout_queue = queue.Queue()
         if self.stderr_handler is True:
             stderr_pipe = subprocess.STDOUT
         elif callable(self.stderr_handler):
             stderr_pipe = subprocess.PIPE
-            stderr_queue = six.moves.queue.Queue()
+            stderr_queue = queue.Queue()
         _subprocess = subprocess.Popen(
             cmd, stdout=stdout_pipe, stderr=stderr_pipe, universal_newlines=True)
         if stdout_queue is not None:
@@ -111,23 +116,34 @@ class ExternalFileProcessor(BaseFileProcessor):
             _subprocess.wait()
         else:
             stdout_args, stderr_args = () , ()
-            while not (stdout_reader is None or stdout_reader.eof()) or \
-                  not (stderr_reader is None or stderr_reader.eof()):
-                if stdout_queue is not None:
-                    while not stdout_queue.empty():
-                        stdout_args = self.stdout_handler(
-                            stdout_queue.get(), *stdout_args) or ()
-                if stderr_queue is not None:
-                    while not stderr_queue.empty():
-                        stderr_args = self.stderr_handler(
-                            stderr_queue.get(), *stderr_args) or ()
-                time.sleep(self.sleep_time)
-            if stdout_reader is not None:
-                stdout_reader.join()
-                _subprocess.stdout.close()
-            if stderr_reader is not None:
-                stderr_reader.join()
-                _subprocess.stderr.close()
+            try:
+                while not (stdout_reader is None or stdout_reader.eof()) or \
+                      not (stderr_reader is None or stderr_reader.eof()):
+                    if stdout_queue is not None:
+                        while not stdout_queue.empty():
+                            stdout_args = self.stdout_handler(
+                                stdout_queue.get(), *stdout_args) or ()
+                    if stderr_queue is not None:
+                        while not stderr_queue.empty():
+                            stderr_args = self.stderr_handler(
+                                stderr_queue.get(), *stderr_args) or ()
+                    time.sleep(self.sleep_time)
+            except ProcessingError:
+                if _subprocess.poll() is None:
+                    _subprocess.terminate()
+                raise
+            finally:
+                # wait for process to finish, so we can check the return value
+                if _subprocess.poll() is None:
+                    _subprocess.wait()
+                if stdout_reader is not None:
+                    stdout_reader.join()
+                    _subprocess.stdout.close()
+                if stderr_reader is not None:
+                    stderr_reader.join()
+                    _subprocess.stderr.close()
+        if _subprocess.returncode < 0:
+            raise ProcessingError("There was a problem processing this video file")
         return out_file
 
 

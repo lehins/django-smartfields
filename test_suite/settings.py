@@ -15,16 +15,22 @@ DATABASES = {
     }
 }
 
-
 INSTALLED_APPS = (
     'django.contrib.auth',
+    'django.contrib.sessions',
     'django.contrib.contenttypes',
-    'django.contrib.admin',
     'django.contrib.sites',
     
     'smartfields',
     'sample_app',
 )
+
+MIDDLEWARE_CLASSES = (
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+)
+
+ATOMIC_REQUESTS = True
 
 SITE_ID = 1
 
@@ -35,3 +41,5 @@ MEDIA_URL = '/media/'
 STATIC_ROOT = os.path.join(BASE_PATH, 'static/')
 
 STATIC_URL = '/static/'
+
+ROOT_URLCONF = 'sample_app.urls'

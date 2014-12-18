@@ -1,4 +1,4 @@
-import os, shutil, time
+import os, time
 from django.core.files.base import File
 from django.db.models.fields.files import FileDescriptor
 from django.db.utils import ProgrammingError
@@ -7,7 +7,8 @@ from django.test import TestCase
 from smartfields.models import SmartfieldsModelMixin
 
 from sample_app.models import ProcessorTestingModel, FilesTestingModel, ImageTestingModel, \
-    VideoTestingModel, DependencyTestingModel
+    DependencyTestingModel
+from sample_app.utils import remove_folder_content
 
 
 class ProcessingTestCase(TestCase):
@@ -166,6 +167,7 @@ class ProcessingTestCase(TestCase):
         self.assertIs(instance.image_1, image_1)
         self.assertIs(instance.image_1_gif, image_1_gif)
         instance.delete()
+        text_file.close()
 
     def test_value_restoration_2(self):
         lenna_rect = File(open("static/images/lenna_rect.jpg", 'rb'))
@@ -176,11 +178,16 @@ class ProcessingTestCase(TestCase):
         lenna_rect.close()
         image_3 = instance.image_3
         image_4 = instance.image_4
+        image_3_path = instance.image_3.path
+        image_4_path = instance.image_4.path
         instance.image_2 = text_file
         instance.save()
-        self.assertIs(instance.image_3, image_3)
-        self.assertIs(instance.image_4, image_4)
+        self.assertEqual(instance.image_3, image_3)
+        self.assertEqual(instance.image_4, image_4)
+        self.assertEqual(instance.image_3.path, image_3.path)
+        self.assertEqual(instance.image_4.path, image_4.path)
         instance.delete()
+        text_file.close()
 
     def test_forward_dependency(self):
         instance = DependencyTestingModel.objects.create()
@@ -214,46 +221,8 @@ class ProcessingTestCase(TestCase):
         image_2 = instance._meta.get_field('image_2')
         self.assertRaises(ProgrammingError, image_2.manager.dependencies[0].set_field, image_1)
 
-    def test_video_processor(self):
-        badday = File(open("static/videos/badday.wmv", 'rb'))
-        instance = VideoTestingModel.objects.create(video_1=badday)
-        status = instance.smartfields_get_field_status('video_1')
-        progress = []
-        while status['state'] != 'ready':
-            print(status)
-            if status['state'] == 'processing':
-                progress.append(status['progress'])
-            time.sleep(1)
-            status = instance.smartfields_get_field_status('video_1')
-        self.assertTrue(progress)
-        self.assertEqual(progress, sorted(progress))
-        self.assertFalse(list(filter(lambda x: x < 0 or x > 1, progress)))
-        instance = VideoTestingModel.objects.get(pk=instance.pk)
-        self.assertEqual(instance.video_1_mp4.url,
-                        "/media/sample_app/videotestingmodel/video_1_mp4.mp4")
-        self.assertEqual(instance.video_1_webm.url,
-                        "/media/sample_app/videotestingmodel/video_1_webm.webm")
-        # make sure files actually exist and they are nonempty
-        self.assertTrue(os.path.isfile(instance.video_1_mp4.path))
-        self.assertTrue(os.path.isfile(instance.video_1_webm.path))
-        self.assertTrue(instance.video_1_mp4.size != 0)
-        self.assertTrue(instance.video_1_webm.size != 0)
-        badday.close()
-        instance.delete()
-
     def tearDown(self):
         remove_folder_content("media")
         pass
 
 
-def remove_folder_content(folder):
-    # removes all of the content, but not the folder itself.
-    for file in os.listdir(folder):
-        file_path = os.path.join("media", file)
-        try:
-            if os.path.isfile(file_path):
-                os.unlink(file_path)
-            else:
-                shutil.rmtree(file_path)
-        except Exception as e:
-            print(e)

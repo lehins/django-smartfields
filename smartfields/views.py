@@ -1,28 +1,34 @@
-import json, types
+import json
 
+from django.apps import apps
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.http import Http404, HttpResponse
-from django.forms import ModelForm
 from django.forms.models import modelform_factory
-from django.shortcuts import get_object_or_404
-from django.template.response import TemplateResponse
 from django.utils.decorators import method_decorator
+from django.utils.six import text_type
 from django.views.decorators.csrf import csrf_protect
+from django.views.decorators.cache import never_cache
 from django.views.generic import View
 
 __all__ = (
     "FileUploadView",
 )
 
-
 class FileUploadView(View):
     _model = None
     _field_name = None
-    parent_field_name = None
+    _parent_field_name = None
+    instance_method_name = 'has_upload_permission'
 
     @property
     def model(self):
+        if self._model is None:
+            app_label = self.kwargs.get('app_label', None)
+            model = self.kwargs.get('model', None)
+            if app_label and model:
+                app = apps.get_app_config(app_label)
+                self._model = app.get_model(model)
         if self._model is not None:
             return self._model
         raise ImproperlyConfigured("'model' is a required property")
@@ -33,6 +39,8 @@ class FileUploadView(View):
 
     @property
     def field_name(self):
+        if self._field_name is None:
+            self._field_name = self.kwargs.get('field_name', None)
         if self._field_name is not None:
             return self._field_name
         raise ImproperlyConfigured("'field_name' is a required property")
@@ -41,24 +49,35 @@ class FileUploadView(View):
     def field_name(self, value):
         self._field_name = value
 
+    @property
+    def parent_field_name(self):
+        if self._parent_field_name is None:
+            self._parennt_field_name = self.kwargs.get('parent_field_name', None)
+        if self._parent_field_name is not None:
+            return self._parent_field_name
+
+    @parent_field_name.setter
+    def parent_field_name(self, value):
+        self._parent_field_name = value
+
     def has_permission(self, obj, user):
         raise ImproperlyConfigured("'has_permission' is a required method")
 
-
-    def get_form(self):
+    def get_form_class(self):
         return modelform_factory(self.model, fields=(self.field_name,))
-
 
     def get_object(self, pk=None, parent_pk=None):
         kwargs = {}
-        manager = self.model.objects
+        manager = self.model._default_manager
         if parent_pk is not None and self.parent_field_name is not None:
-            parent_field = self.model._meta.get_field_by_name(self.parent_field_name)[0]
+            parent_field = self.model._meta.get_field(self.parent_field_name)
             parent_model = parent_field.rel.to
             parent_pk_field_name = "%s_%s" % (
                 self.parent_field_name, parent_model._meta.pk.name)
             kwargs = {parent_pk_field_name: parent_pk}
             manager = manager.select_related(self.parent_field_name)
+        if pk is None and self.request.method == 'GET':
+            pk = self.request.GET.get('pk', None)
         if pk is None:
             obj = self.model(**kwargs)
         else:
@@ -68,71 +87,54 @@ class FileUploadView(View):
                 raise Http404
         return obj
 
-
     def json_response(self, context, status=200):
         response = HttpResponse(json.dumps(context), 
                                 content_type="application/json; charset=utf-8",
                                 status=status)
-        response['Cache-Control'] = 'no-cache'
         return response
 
-
+    @method_decorator(never_cache)
     @method_decorator(csrf_protect)
     @method_decorator(login_required)
-    def dispatch(self, request, pk=None, parent_pk=None, *args, **kwargs):
-        obj = self.get_object(pk=pk, parent_pk=parent_pk)
-        if not self.has_permission(obj, request.user):
+    def dispatch(self, request, *args, **kwargs):
+        obj = self.get_object(pk=kwargs.get('pk', None),
+                              parent_pk=kwargs.get('parent_pk', None))
+        has_permission = None if self.instance_method_name is None else \
+                         getattr(obj, self.instance_method_name, None)
+        if (callable(has_permission) and \
+            not has_permission(request.user, field_name=self.field_name)) or \
+            (has_permission is None and not self.has_permission(obj, request.user)):
             raise PermissionDenied
-        return super(FileUploadView, self).dispatch(
-            request, obj, pk=pk, parent_pk=parent_pk, *args, **kwargs)
-
+        return super(FileUploadView, self).dispatch(request, obj, *args, **kwargs)
 
     def complete(self, obj, status):
         field_file = getattr(obj, self.field_name)
         if field_file:
             status.update({
                 'file_name': field_file.name_base,
-                'file_url': field_file.url,
-                'html_tag': field_file.html_tag
+                'file_url': field_file.url
             })
-            if field_file.field.manager and field_file.field.manager.dependencies:
-                dependencies = {}
-                for dep in field_file.field.manager.dependencies:
-                    name = dep.get_name(field_file.field)
-                    dependencies[name] = getattr(obj, name).url
-                status['dependencies'] = dependencies
+            html_tag = getattr(obj, "%s_html_tag" % self.field_name, None)
+            if html_tag is not None:
+                status['html_tag'] = text_type(html_tag)
         return self.json_response(status)
 
-
     def get(self, request, obj, *args, **kwargs):
-        status = obj.smartfield_status(self.field_name)
+        status = obj.smartfields_get_field_status(self.field_name)
         if status['state'] == 'complete':
             return self.complete(obj, status)
         return self.json_response(status)
 
-
     def post(self, request, obj, *args, **kwargs):
-        status = obj.smartfield_status(self.field_name)
+        status = obj.smartfields_get_field_status(self.field_name)
         if status['state'] != 'ready':
             return self.json_response(status)
-
-        # TODO: figure out field key for new objects, so progress reporting would work
-        # since urls are preconfigured, when pk is None, maybe use uuid in request.GET
-        created = False # necessary hack for status
-        if not obj.pk:
-            created = True
-            obj.save()
-
-        form_class = self.get_form()
+        form_class = self.get_form_class()
         form = form_class(
             instance=obj, data=request.POST, files=request.FILES)
         if form.is_valid():
             obj = form.save()
             return self.get(request, obj, *args, **kwargs)
-
-        if created:
-            obj.delete()
-
         status.update({
             'task': 'uploading',
             'task_name': "Uploading",
@@ -141,7 +143,6 @@ class FileUploadView(View):
         })
         return self.json_response(status)
 
-
     def delete(self, request, obj, *args, **kwargs):
         obj.delete()
-        return self.json_response({'task': 'delete', 'result': 'success'})
+        return self.json_response({'task': 'delete', 'state': 'complete'})

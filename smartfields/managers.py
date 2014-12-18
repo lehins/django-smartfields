@@ -32,17 +32,16 @@ class AsyncHandler(threading.Thread):
         dependencies = list(filter(lambda d: d.async, self.manager.dependencies))
         multiplier = 1.0/len(dependencies)
         try:
-            should_save = False
             for idx, d in enumerate(dependencies):
-                should_save = should_save or d._dependee is not None
                 self.manager._process(
                     self.instance, d, 
                     progress_setter=self.get_progress_setter(multiplier, idx)
                 )
-            if should_save:
-                self.instance.save()
-            self.manager.set_status(self.instance, {'state': 'ready'})
-        except ProcessingError: pass
+            self.manager.finished_processing(self.instance)
+        except BaseException as e:
+            self.manager.failed_processing(self.instance, error=e)
+            if not isinstance(e, ProcessingError):
+                raise
 
 
 class FieldManager(object):
@@ -83,23 +82,21 @@ class FieldManager(object):
 
     def _process(self, instance, dependency, progress_setter=None):
         # process single dependency
-        try:
-            field_value = self.field.value_from_object(instance)
-            dependency.process(
-                instance, field_value, progress_setter=progress_setter)
-        except BaseException as e:
-            self.failed_processing(instance, e)
-            raise
+        field_value = self.field.value_from_object(instance)
+        dependency.process(
+            instance, field_value, progress_setter=progress_setter)
 
-    def failed_processing(self, instance, error=None):
+    def failed_processing(self, instance, error=None, is_async=False):
         self.restore_stash(instance)
+        if is_async:
+            instance.save()
         if error is not None:
             self.set_error_status(instance, "%s: %s" % (type(error).__name__, str(error)))
 
     def finished_processing(self, instance):
         if self.has_stashed_value:
             self.cleanup_stash()
-        self.set_status(instance, {'state': 'ready'})
+        self.set_status(instance, {'state': 'complete'})
         
     def cleanup(self, instance):
         for d in self.dependencies:
@@ -121,7 +118,7 @@ class FieldManager(object):
         if self.has_stashed_value:
             self.delete_value(self.field.value_from_object(instance))
             instance.__dict__[self.field.name] = self._stashed_value
-            self._stashed_value =  VALUE_NOT_SET
+            self._stashed_value = VALUE_NOT_SET
         for d in self.dependencies:
             if d.has_stashed_value:
                 d.restore_stash(instance)
@@ -133,6 +130,8 @@ class FieldManager(object):
         that field was initialized through model's `__init__`, hence no value was stashed."""
         if self.has_processors and (force or self.has_stashed_value):
             self.set_status(instance, {'state': 'busy'})
+            for d in filter(lambda d: d._processor, self.dependencies):
+                d.stash_previous_value(instance, d.get_value(instance))
             try:
                 if self.has_async:
                     for d in filter(lambda d: not d.async, self.dependencies):
@@ -143,7 +142,11 @@ class FieldManager(object):
                     for d in self.dependencies:
                         self._process(instance, d)
                     self.finished_processing(instance)
-            except ProcessingError: pass
+            except BaseException as e:
+                self.failed_processing(instance, e)
+                if not isinstance(e, ProcessingError):
+                    raise
+                
 
     def get_status_key(self, instance):
         """Generates a key used to set a status on a field"""

@@ -1,0 +1,13 @@
+[
+		{
+				"pk": 1,
+				"model": "auth.User",
+				"fields": {
+						"username": "test_user",
+						"password": "pbkdf2_sha256$12000$clOF1oePCyiC$hPY54RV/7wwbupX2rHRGDcQ4wriNvPGmKK0SSkojIL8=",
+						"first_name": "Ivan",
+						"last_name": "Susanin",
+						"email": "ivan.susanin@dominino.ru"
+				}
+		}
+]

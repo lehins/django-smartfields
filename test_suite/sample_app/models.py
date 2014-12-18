@@ -7,8 +7,8 @@ from django.core.files.base import ContentFile
 from django.utils.text import slugify
 
 from smartfields import processors, Dependency, FileDependency
-from smartfields.managers import VALUE_NOT_SET
-from smartfields.utils import UploadTo
+from smartfields.handlers import HTMLTagHandler
+from smartfields.utils import UploadTo, VALUE_NOT_SET
 
 
 def _slugify(v, **kwargs): return slugify(v)
@@ -192,12 +192,19 @@ class InstanceHandlersTestingModel(models.Model):
         return test_handler(value*10, self, *args, event=('post', 'delete'))
 
 
+video_tag_handler = HTMLTagHandler(template=
+    '<video id="video_{field.name}" controls="controls" preload="auto" width="320" height="240">'
+    '<source type="video/webm" src="{base_url}{instance.video_1_webm.url}"/>'
+    '<source type="video/mp4" src="{base_url}{instance.video_1_mp4.url}"/></video>')
+
+
 class VideoTestingModel(models.Model):
     
     video_1 = smartfields.FileField(
         upload_to=UploadTo(name='video_1'), dependencies=[
             # example of conversion to webm
-            FileDependency(suffix='webm', async=True, processor=processors.FFMPEGProcessor(
+            FileDependency(suffix='webm', async=True, post_init=video_tag_handler,
+                           processor=processors.FFMPEGProcessor(
                 format='webm', vcodec='libvpx', vbitrate='128k', maxrate='128k',
                 bufsize='256k', width='trunc(oh*a/2)*2', height=240,
                 threads=4, acodec='libvorbis', abitrate='96k')),
@@ -206,3 +213,6 @@ class VideoTestingModel(models.Model):
                 maxrate='128k', bufsize='256k', width='trunc(oh*a/2)*2',
                 height=240, threads=0, acodec='libfdk_aac', abitrate='96k'))
         ])
+
+    def has_upload_permission(self, user, field_name=None):
+        return True

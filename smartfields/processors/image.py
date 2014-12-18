@@ -270,26 +270,24 @@ class ImageProcessor(BaseFileProcessor):
         stream = six.BytesIO(value.read())
         stream_out = None
         value.seek(cur_pos)
-        if scale is not None or format is not None:
-            # nothing to do, just return copy of the file
-            try:
+        try:
+            if scale is not None or format is not None:
+                # nothing to do, just return copy of the file
                 image = Image.open(stream)
-            except OSError as e:
-                raise ProcessingError(
-                    "There was a problem with image conversion: %s" % e)
-            image = self.resize(image, scale)
-            image = self.convert(image, format)
-            if format != image.format:
-                stream_out = six.BytesIO()
-                try:
+                image = self.resize(image, scale)
+                image = self.convert(image, format)
+                if format != image.format:
+                    stream_out = six.BytesIO()
                     image.save(stream_out, format=str(format), **format.save_kwargs)
-                except IOError as e:
-                    raise ProcessingError(
-                        "There was a problem with image conversion: %s" % e)
-        if stream_out is not None:
-            content = stream_out.getvalue()
-            stream_out.close()
-        else:
-            content = stream.getvalue()
-        stream.close()
+            if stream_out is not None:
+                content = stream_out.getvalue()
+            else:
+                content = stream.getvalue()
+        except (IOError, OSError) as e:
+            raise ProcessingError(
+                "There was a problem with image conversion: %s" % e)
+        finally:
+            if stream_out is not None:
+                stream_out.close()
+            stream.close()
         return ContentFile(content)
