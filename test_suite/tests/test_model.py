@@ -3,6 +3,7 @@ from django.core.files.base import File
 from django.db.models.fields.files import FileDescriptor
 from django.db.utils import ProgrammingError
 from django.test import TestCase
+from django.utils import six
 
 from smartfields.models import SmartfieldsModelMixin
 
@@ -19,7 +20,7 @@ class ProcessingTestCase(TestCase):
         self.assertIsNotNone(getattr(instance, '_smartfields_managers', None))
 
     def test_individual_field_processing(self):
-        instance = ProcessorTestingModel(field_1='foo bar')
+        instance = ProcessorTestingModel(field_1=six.text_type('foo bar'))
         instance.smartfields_process(field_names=['field_3'])
         self.assertEqual(instance.field_2, "")
         self.assertEqual(instance.field_3, "foo-bar")
@@ -31,12 +32,12 @@ class ProcessingTestCase(TestCase):
         self.assertEqual(instance.field_3, "foo-bar")
 
     def test_processing_order(self):
-        instance = ProcessorTestingModel(field_1='foo bar')
+        instance = ProcessorTestingModel(field_1=six.text_type('foo bar'))
         instance.smartfields_process(field_names=['field_1', 'field_3'])
         self.assertEqual(instance.field_1, "Foo_Bar")
         self.assertEqual(instance.field_2, "foo-bar")
         self.assertEqual(instance.field_3, "foo_bar")
-        instance = ProcessorTestingModel(field_1='foo bar')
+        instance = ProcessorTestingModel(field_1=six.text_type('foo bar'))
         instance.smartfields_process(field_names=['field_3', 'field_1'])
         self.assertEqual(instance.field_1, "Foo_Bar")
         self.assertEqual(instance.field_2, "foo-bar")
