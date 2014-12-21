@@ -12,6 +12,7 @@ install:
   - pip install -q Pillow
   - pip install -q Django==$DJANGO_VERSION
 before_install:
+  - mkdir -p test_suite/media
   - ./test_suite/install_ffmpeg.sh
 script:
   cd test_suite && coverage run --source='smartfields' manage.py test && cd ..
