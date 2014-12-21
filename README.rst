@@ -9,6 +9,14 @@ django-smartfields
    :target: https://coveralls.io/r/lehins/django-smartfields?branch=master 
    :alt: Tests Coverage
 
+.. image:: https://landscape.io/github/lehins/django-smartfields/master/landscape.png
+   :target: https://landscape.io/github/lehins/django-smartfields/master
+   :alt: Code Health
+
+.. image:: https://pypip.in/download/django-smartfields/badge.svg
+    :target: https://pypi.python.org/pypi/django-smartfields/
+    :alt: Downloads
+
 Django Model Fields that are smart.
 -----------------------------------
 
@@ -16,7 +24,7 @@ This app introduces a declarative way of handling fields' values. It can be espe
 
 Best way to descibe is on a simple example. Let's say there is a field where you store a custom html page and you would like to have another field attached to the same model store the same page but with html tags stripped out, moreover you would like it to update whenever the first field changes it's value. A common way to handle that issue is to overwrite model's ``save`` method and put all the logic there, right? What if you could just give a field a function that does the stripping and everything else is taking care of? Wouldn't that be nice, huh? Well, that's one of many things this app let's you do. 
 
-Another great example is django's ``ImageField`` that can update ``width_field`` and ``height_field`` whenever image is changed. This app uses similar concepts to achive that functionality. But here is a more powerful example that demonstrates the value of this app. Let's say you would like to have a user be able to upload an image in any format and it being automatically converted to JPEG and shrunk to fit in a box size of 1024x768, while keeping the original version. Here is how it could look with utilization of `django-smartfields`:
+Another great example is django's ``ImageField`` that can update ``width_field`` and ``height_field`` whenever image is changed. This app uses similar concepts to achive that functionality. But here is a more powerful example that demonstrates the value of this app. Let's say you would like to have a user be able to upload an image in any format and automatically add another version of this image converted to JPEG and shrunk to fit in a box size of 1024x768. Here is how it could look with utilization of `django-smartfields`:
 
 .. code-block:: python
 

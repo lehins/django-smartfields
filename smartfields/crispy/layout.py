@@ -8,7 +8,6 @@ from smartfields.settings import PLUPLOAD_OPTIONS
 
 
 class FileField(Field):
-
     template = "%s/filefield.html" % TEMPLATE_PACK
 
     def __init__(self, *args, **kwargs):
@@ -39,9 +38,12 @@ class VideoField(ImageField):
 
 class LimitedField(Field):
     template = "%s/limitedfield.html" % TEMPLATE_PACK
+    wrapper_class = None
+    attrs = None
 
     def __init__(self, field, feedback_text=None, *args, **kwargs):
         self.field = field
+        self.attrs = self.attrs or {}
         kwargs['wrapper_class'] = kwargs.get('wrapper_class', '') + ' smartfields-limitedfield'
         self.minimum = kwargs.pop('minimum', None)
         self.maximum = kwargs.pop('maximum', None)
@@ -54,7 +56,7 @@ class LimitedField(Field):
         try:
             feedback_text = ''
             maximum, minimum = self.maximum, self.minimum
-            field_instance = form.fields[self.field]
+            field_instance = form.fields[self.field]0
             if isinstance(field_instance, forms.CharField):
                 maximum = field_instance.max_length or maximum
                 minimum = field_instance.min_length or minimum

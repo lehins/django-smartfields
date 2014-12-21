@@ -1,10 +1,9 @@
-import os
-from django.conf import settings
-from django.contrib.staticfiles.storage import staticfiles_storage
+import os, datetime
 from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.db.models.fields import files, NOT_PROVIDED, FieldDoesNotExist
 from django.db.utils import ProgrammingError
+from django.utils.encoding import force_text, force_str
 from django.utils.deconstruct import deconstructible
 from django.utils import six
 
@@ -141,7 +140,7 @@ class Dependency(object):
     def handle(self, instance, field_value, event, *args, **kwargs):
         try:
             value = self._dependor.value_from_object(instance)
-        except (KeyError, AttributeError) as e:
+        except KeyError, AttributeError:
             # necessary for pre_init
             value = None
         custom_event_handler = getattr(self, "_%s" % event, None)
@@ -193,18 +192,12 @@ class FileDependency(Dependency):
     `default` has to be a static file
     
     """
-    @property
-    def attr_class(self):
-        cls = getattr(self._processor, 'field_file_class', None)
-        if cls is None:
-            from smartfields.fields import FieldFile
-            cls = FieldFile
-        return cls
+    descriptor_class = files.FileDescriptor
 
     @property
-    def descriptor_class(self):
-        return getattr(self._processor, 'descriptor_class', files.FileDescriptor)
-    
+    def attr_class(self):
+        return getattr(self._processor, 'field_file_class', FieldFile)
+
     def __init__(self, upload_to='', storage=None, keep_orphans=KEEP_ORPHANS, **kwargs):
         self.storage = storage or default_storage
         self.upload_to = upload_to
@@ -298,8 +291,9 @@ class FileDependency(Dependency):
         return os.path.join(upload_to, self.get_filename(filename))
 
     def set_value(self, instance, value, is_default=False):
+        field_file_class = self.attr_class
         if is_default:
-            value = self.attr_class(instance, self, value, is_static=True)
+            value = field_file_class(instance, self, value, is_static=True)
         elif isinstance(value, File) and not isinstance(value, files.FieldFile):
             if isinstance(self._dependor, files.FileField):
                 field_file = self._dependor.value_from_object(instance)
@@ -309,7 +303,7 @@ class FileDependency(Dependency):
             else:
                 name = self.get_filename(self._dependor.name)
             if self._dependee is None:
-                field_file = self.attr_class(instance, self, name)
+                field_file = field_file_class(instance, self, name)
             else:
                 name = self.get_filename(name)
                 field_file = self._dependee.attr_class(instance, self._dependee, name)

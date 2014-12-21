@@ -2,7 +2,7 @@ import os
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.core import checks
 from django.db.models import fields
-from django.db.models.fields import files, NOT_PROVIDED, subclassing
+from django.db.models.fields import files, NOT_PROVIDED
 from django.utils.six import text_type
 
 from smartfields.settings import KEEP_ORPHANS
@@ -20,14 +20,18 @@ __all__ = [
     'UUIDField', 'FileField', 'ImageField',
 ]
 
-class SmartfieldsDescriptor(subclassing.Creator):
+class SmartfieldsDescriptor(object):
+    field = None
+
+    def __init__(self, field):
+        self.field = field
 
     def __set__(self, instance, value):
         if self.field.manager is not None and self.field.manager.has_processors:
             previous_value = instance.__dict__.get(self.field.name)
             if previous_value is not VALUE_NOT_SET:
                 self.field.manager.stash_previous(previous_value)
-        super(SmartfieldsDescriptor, self).__set__(instance, value)
+        instance.__dict__[self.field.name] = self.field.to_python(value)
 
     def __get__(self, instance=None, model=None):
         if instance is None:
