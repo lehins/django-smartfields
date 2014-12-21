@@ -36,9 +36,12 @@ class UploadingTestCase(TestCase):
         self.assertIsNotNone(pk)
         self.assertIsNotNone(status)
         progress = []
-        while status['state'] != 'complete':
+        while status['state'] != 'ready':
             if status['state'] == 'in_progress':
                 progress.append(status['progress'])
+            elif status['state'] == 'error':
+                print(status)
+                # shouldn't happen if ffmpeg is properly installed
             time.sleep(1)
             response = c.get(url, {'pk': pk},
                              HTTP_X_REQUESTED_WITH='XMLHttpRequest')
