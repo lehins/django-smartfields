@@ -2,10 +2,11 @@ import os, time, json
 from django.test import TestCase, Client
 from django.core.urlresolvers import reverse
 from django.contrib.auth.models import User
+from django.conf import settings
 from django.utils.encoding import force_text
 
 from sample_app.models import VideoTestingModel
-from sample_app.utils import remove_folder_content
+from sample_app.utils import add_base, remove_folder_content
 
 
 class UploadingTestCase(TestCase):
@@ -27,7 +28,7 @@ class UploadingTestCase(TestCase):
         })
         pk = None
         status = None
-        with open("static/videos/badday.wmv", 'rb') as fp:
+        with open(add_base("static/videos/badday.wmv"), 'rb') as fp:
             response = c.post(url, {'video_1': fp},
                               HTTP_X_REQUESTED_WITH='XMLHttpRequest')
             self.assertEqual(response.status_code, 200)
@@ -42,12 +43,14 @@ class UploadingTestCase(TestCase):
             elif status['state'] == 'error':
                 print(status)
                 # shouldn't happen if ffmpeg is properly installed
+            elif status['state'] == 'complete':
+                html_tag = status['html_tag']
             time.sleep(1)
             response = c.get(url, {'pk': pk},
                              HTTP_X_REQUESTED_WITH='XMLHttpRequest')
             status = json.loads(force_text(response.content))
         self.assertEqual(
-            status['html_tag'],
+            html_tag,
             '<video id="video_video_1" controls="controls" preload="auto" width="320" '
             'height="240"><source type="video/webm" '
             'src="//example.com/media/sample_app/videotestingmodel/video_1_webm.webm"/>'
@@ -79,5 +82,5 @@ class UploadingTestCase(TestCase):
         instance.delete()
 
     def tearDown(self):
-        remove_folder_content("media")
+        remove_folder_content(add_base("media"))
         pass

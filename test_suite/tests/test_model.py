@@ -8,7 +8,7 @@ from smartfields.models import SmartfieldsModelMixin
 
 from sample_app.models import ProcessorTestingModel, FilesTestingModel, ImageTestingModel, \
     DependencyTestingModel
-from sample_app.utils import remove_folder_content
+from sample_app.utils import add_base, remove_folder_content
 
 
 class ProcessingTestCase(TestCase):
@@ -49,7 +49,7 @@ class ProcessingTestCase(TestCase):
         self.assertEqual(instance.field_2_foo.url, "/static/defaults/foo.txt")
         self.assertEqual(instance.bar.url, "/static/defaults/bar.txt")
         # test assignment of file
-        file = open("media/foo.txt", 'w')
+        file = open(add_base("media/foo.txt"), 'w')
         file.write("foo bar")
         file.close()
         instance.field_1 = "foo.txt"
@@ -57,11 +57,11 @@ class ProcessingTestCase(TestCase):
         self.assertEqual(instance.field_1.url, "/media/foo.txt")
         # test deletion of file together with instance
         instance.delete()
-        self.assertRaises(IOError, open, "media/foo.txt")
+        self.assertRaises(IOError, open, add_base("media/foo.txt"))
 
     def test_image_field_mimic_django(self):
         instance = ImageTestingModel.objects.create()
-        lenna_rect = File(open("static/images/lenna_rect.jpg", 'rb'))
+        lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
         instance.image_1 = lenna_rect
         instance.image_2 = lenna_rect
         instance.save()
@@ -82,10 +82,10 @@ class ProcessingTestCase(TestCase):
         self.assertEqual(instance.image_2.url, "/media/image_2/lenna_rect.jpg")
         
         # test image replacing
-        lenna_square = File(open("static/images/lenna_square.png", 'rb'))
+        lenna_square = File(open(add_base("static/images/lenna_square.png"), 'rb'))
         instance.image_2 = lenna_square
         instance.save()
-        self.assertRaises(IOError, open, "media/image_2/lenna_rect.jpg")
+        self.assertRaises(IOError, open, add_base("media/image_2/lenna_rect.jpg"))
         self.assertEqual(instance.image_2.width, 512)
         self.assertEqual(instance.image_2.height, 512)
         instance.image_2 = None
@@ -95,11 +95,11 @@ class ProcessingTestCase(TestCase):
         # remove django's ImageFieldFile manually
         instance.image_1.delete()
         instance.delete()
-        self.assertRaises(IOError, open, "media/image_2/lenna_square.png")
+        self.assertRaises(IOError, open, add_base("media/image_2/lenna_square.png"))
 
     def test_image_processor(self):
         instance = ImageTestingModel.objects.create()
-        lenna_rect = File(open("static/images/lenna_rect.jpg", 'rb'))
+        lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
         instance.image_3 = lenna_rect
         instance.save()
         # make sure conversion went through properly
@@ -139,7 +139,7 @@ class ProcessingTestCase(TestCase):
 
     def test_self_dependency(self):
         instance = DependencyTestingModel.objects.create()
-        lenna_rect = File(open("static/images/lenna_rect.jpg", 'rb'))
+        lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
         instance.image_1 = lenna_rect
         instance.save()
         self.assertEqual(instance.image_1.width, 50)
@@ -154,8 +154,8 @@ class ProcessingTestCase(TestCase):
         lenna_rect.close()
 
     def test_value_restoration_1(self):
-        lenna_rect = File(open("static/images/lenna_rect.jpg", 'rb'))
-        text_file = File(open("static/defaults/foo.txt", 'rb'))
+        lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
+        text_file = File(open(add_base("static/defaults/foo.txt"), 'rb'))
         instance = DependencyTestingModel.objects.create()
         instance.image_1 = lenna_rect
         instance.save()
@@ -170,8 +170,8 @@ class ProcessingTestCase(TestCase):
         text_file.close()
 
     def test_value_restoration_2(self):
-        lenna_rect = File(open("static/images/lenna_rect.jpg", 'rb'))
-        text_file = File(open("static/defaults/foo.txt", 'rb'))
+        lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
+        text_file = File(open(add_base("static/defaults/foo.txt"), 'rb'))
         instance = DependencyTestingModel.objects.create()
         instance.image_2 = lenna_rect
         instance.save()
@@ -191,7 +191,7 @@ class ProcessingTestCase(TestCase):
 
     def test_forward_dependency(self):
         instance = DependencyTestingModel.objects.create()
-        lenna_rect = File(open("static/images/lenna_rect.jpg", 'rb'))
+        lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
         instance.image_3 = lenna_rect
         instance.image_4 = lenna_rect
         instance.save()
@@ -210,8 +210,8 @@ class ProcessingTestCase(TestCase):
         self.assertEqual(instance.image_3.width, 100)
         self.assertEqual(instance.image_4.width, 150)
         # forward dependencies on django's FileFields will also do the cleanup
-        self.assertTrue(not os.path.isfile(image_3_path))
-        self.assertTrue(not os.path.isfile(image_4_path))
+        self.assertTrue(not os.path.isfile(add_base(image_3_path)))
+        self.assertTrue(not os.path.isfile(add_base(image_4_path)))
         instance.delete()
         lenna_rect.close()
 
@@ -222,7 +222,7 @@ class ProcessingTestCase(TestCase):
         self.assertRaises(ProgrammingError, image_2.manager.dependencies[0].set_field, image_1)
 
     def tearDown(self):
-        remove_folder_content("media")
+        remove_folder_content(add_base("media"))
         pass
 
 

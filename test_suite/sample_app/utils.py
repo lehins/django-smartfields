@@ -1,4 +1,8 @@
 import os, shutil
+from django.conf import settings
+
+def add_base(path):
+    return os.path.join(settings.BASE_PATH, path)
 
 def remove_folder_content(folder):
     # removes all of the content, but not the folder itself.
