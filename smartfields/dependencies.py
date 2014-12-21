@@ -27,9 +27,9 @@ class Dependency(object):
                  processor_params=None, uid=None):
         """
         Every Dependency depends on a field, either itself or another field specified
-        by a `field_name`.
+        by a ``field_name``.
         if field_name is None and attname or suffix are also None, this
-        dependency becomes a forward dependency. All async=True will run last.
+        dependency becomes a forward dependency. All ``async=True`` will run last.
 
         """
         self._field_name = field_name
@@ -140,7 +140,7 @@ class Dependency(object):
     def handle(self, instance, field_value, event, *args, **kwargs):
         try:
             value = self._dependor.value_from_object(instance)
-        except KeyError, AttributeError:
+        except (KeyError, AttributeError):
             # necessary for pre_init
             value = None
         custom_event_handler = getattr(self, "_%s" % event, None)
@@ -188,10 +188,6 @@ class Dependency(object):
 
 
 class FileDependency(Dependency):
-    """
-    `default` has to be a static file
-    
-    """
     descriptor_class = files.FileDescriptor
 
     @property
@@ -199,6 +195,7 @@ class FileDependency(Dependency):
         return getattr(self._processor, 'field_file_class', FieldFile)
 
     def __init__(self, upload_to='', storage=None, keep_orphans=KEEP_ORPHANS, **kwargs):
+        # `default` has to be a static file
         self.storage = storage or default_storage
         self.upload_to = upload_to
         self.keep_orphans = keep_orphans
