@@ -7,16 +7,16 @@ mkdir ~/ffmpeg_sources
 cd ~/ffmpeg_sources
 
 # yasm 1.2.0
-# travis has too old of a version
+# travis has too old of a version, turning it off
 # sudo apt-get install yasm
-cd ~/ffmpeg_sources
-wget http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz
-tar xzf yasm-1.3.0.tar.gz
-cd yasm-1.3.0
-./configure --prefix="$HOME/ffmpeg_build" --bindir="$HOME/bin"
-make
-make install
-make distclean
+#cd ~/ffmpeg_sources
+#wget http://www.tortall.net/projects/yasm/releases/yasm-1.3.0.tar.gz
+#tar xzf yasm-1.3.0.tar.gz
+#cd yasm-1.3.0
+#./configure --prefix="$HOME/ffmpeg_build" --bindir="$HOME/bin"
+#make
+#make install
+#make distclean
 
 # libmp3lame 3.99.5
 sudo apt-get install libmp3lame-dev
