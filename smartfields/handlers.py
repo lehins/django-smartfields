@@ -8,11 +8,12 @@ __all__ = [
 
 class HTMLTagHandler(object):
     template = None
+    base_url = None
 
     def __init__(self, template=None, base_url=None, context=None):
         self.template = template or self.template
         assert self.template is not None, "template is required"
-        self.base_url = base_url
+        self.base_url = base_url or self.base_url
         self.context = context or {}
 
     def get_extra_context(self):

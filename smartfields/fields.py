@@ -1,8 +1,9 @@
 import os
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.core import checks
-from django.db import models
+from django.db.models import fields
 from django.db.models.fields import files, NOT_PROVIDED, subclassing
+from django.utils.six import text_type
 
 from smartfields.settings import KEEP_ORPHANS
 from smartfields.managers import FieldManager
@@ -10,8 +11,13 @@ from smartfields.models import SmartfieldsModelMixin
 from smartfields.utils import VALUE_NOT_SET
 
 __all__ = [
-    'Field', 'CharField', 'IntegerField', 'SlugField', 'FileField', 'ImageField',
-    'ImageFieldFile'
+    'BigIntegerField', 'BinaryField', 'BooleanField', 'CharField', 
+    'CommaSeparatedIntegerField', 'DateField', 'DateTimeField', 'DecimalField', 
+    'DurationField', 'EmailField', 'Field', 'FilePathField', 'FloatField', 
+    'GenericIPAddressField', 'IPAddressField', 'IntegerField', 
+    'NullBooleanField', 'PositiveIntegerField', 'PositiveSmallIntegerField',
+    'SlugField', 'SmallIntegerField', 'TextField', 'TimeField', 'URLField',
+    'UUIDField', 'FileField', 'ImageField',
 ]
 
 class SmartfieldsDescriptor(subclassing.Creator):
@@ -31,8 +37,7 @@ class SmartfieldsDescriptor(subclassing.Creator):
         return instance.__dict__[self.field.name]
 
 
-
-class Field(models.Field):
+class Field(fields.Field):
     descriptor_class = SmartfieldsDescriptor
     manager_class = FieldManager
     manager = None
@@ -66,22 +71,97 @@ class Field(models.Field):
         return value
 
 
-
-class CharField(Field, models.CharField):
+class BooleanField(Field, fields.BooleanField):
     pass
 
 
-class IntegerField(Field, models.IntegerField):
+class NullBooleanField(Field, fields.NullBooleanField):
     pass
 
 
-class SlugField(Field, models.SlugField):
+class SmallIntegerField(Field, fields.SmallIntegerField):
+    pass
+
+
+class IntegerField(Field, fields.IntegerField):
+    pass
+
+
+class BigIntegerField(Field, fields.BigIntegerField):
+    pass
+
+
+class PositiveIntegerField(Field, fields.PositiveIntegerField):
+    pass
+
+
+class PositiveSmallIntegerField(Field, fields.PositiveSmallIntegerField):
+    pass
+
+
+class FloatField(Field, fields.FloatField):
+    pass
+
+
+class DecimalField(Field, fields.DecimalField):
+    pass
+
+
+class BinaryField(Field, fields.BinaryField):
+    pass
+
+
+class CharField(Field, fields.CharField):
+    pass
+
+
+class TextField(Field, fields.TextField):
+    pass
+
+
+class CommaSeparatedIntegerField(Field, fields.CommaSeparatedIntegerField):
+    pass
+
+
+class DateField(Field, fields.DateField):
+    pass
+
+
+class DateTimeField(Field, fields.DateTimeField):
+    pass
+
+
+class TimeField(Field, fields.TimeField):
+    pass
+
+
+class IPAddressField(Field, fields.IPAddressField):
+    pass
+
+
+class GenericIPAddressField(Field, fields.GenericIPAddressField):
+    pass
+
+
+class EmailField(Field, fields.EmailField):
+    pass
+
+
+class URLField(Field, fields.URLField):
+    pass
+
+
+class SlugField(Field, fields.SlugField):
     pass
 
 
 ##################
 # FILES
 ##################
+
+
+class FilePathField(Field, fields.FilePathField):
+    pass
 
 
 class FieldFile(files.FieldFile):
@@ -111,7 +191,6 @@ class FieldFile(files.FieldFile):
         # prevent static files from being deleted
         if self.is_static or not self:
             return
-            blah
         if hasattr(self, '_file'):
             self.close()
             del self.file
@@ -123,16 +202,28 @@ class FieldFile(files.FieldFile):
         if hasattr(self, '_size'):
             del self._size
         self._committed = False
-        if getattr(self.field, 'manager', None) is not None:
+        if instance_update and getattr(self.field, 'manager', None) is not None:
             self.field.manager.cleanup(self.instance)
         if save and instance_update:
             self.instance.save()
     delete.alters_data = True
 
     @property
+    def state(self):
+        if getattr(self.field, 'manager', None) is not None:
+            return self.field.manager._get_status(self.instance)[1]['state']
+
+    @property
     def name_base(self):
-        self._require_file()
-        return os.path.split(self.name)[1]
+        if self:
+            return os.path.split(self.name)[1]
+        return ""
+
+    @property
+    def html_tag(self):
+        if self:
+            return text_type(getattr(self.instance, "%s_html_tag" % self.field.name, ""))
+        return ""
 
 
 class FileDescriptor(files.FileDescriptor):
@@ -231,3 +322,17 @@ class ImageField(FileField):
         if self.height_field:
             kwargs['height_field'] = self.height_field
         return name, path, args, kwargs
+
+
+
+try:
+    # future added fields
+    class DurationField(Field, fields.DurationField):
+        pass
+
+    class UUIDField(Field, fields.DurationField):
+        pass
+except AttributeError: 
+    DurationField = None
+    UUIDField = None
+

@@ -111,6 +111,8 @@ class FileUploadView(View):
         field_file = getattr(obj, self.field_name)
         if field_file:
             status.update({
+                'task': 'uploading',
+                'task_name': "Uploading",
                 'file_name': field_file.name_base,
                 'file_url': field_file.url
             })

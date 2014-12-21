@@ -23,7 +23,7 @@ class AsyncHandler(threading.Thread):
             self.manager.set_status(self.instance, {
                 'task': getattr(processor, 'task', 'processing'),
                 'task_name': getattr(processor, 'task_name', "Processing"),
-                'state': 'processing',
+                'state': 'in_progress',
                 'progress': progress
             })
         return progress_setter
@@ -158,13 +158,6 @@ class FieldManager(object):
 
     def _get_status(self, instance, status_key=None):
         status_key = status_key or self.get_status_key(instance)
-        return status_key, cache.get(status_key, None)
-
-    def get_status(self, instance):
-        """Retrives a status of a field from cache. Fields in state 'error' and
-        'complete' will not retain the status after the call.
-
-        """
         status = {
             'app_label': instance._meta.app_label,
             'model_name': instance._meta.model_name,
@@ -172,11 +165,19 @@ class FieldManager(object):
             'field_name': self.field.name,
             'state': 'ready'
         }
-        status_key, current_status = self._get_status(instance)
+        current_status = cache.get(status_key, None)
         if current_status is not None:
             status.update(current_status)
-            if status['state'] in ['complete', 'error']:
-                cache.delete(status_key)
+        return status_key, status
+
+    def get_status(self, instance):
+        """Retrives a status of a field from cache. Fields in state 'error' and
+        'complete' will not retain the status after the call.
+
+        """
+        status_key, status = self._get_status(instance)
+        if status['state'] in ['complete', 'error']:
+            cache.delete(status_key)
         return status
 
     def set_status(self, instance, status):

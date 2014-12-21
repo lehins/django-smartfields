@@ -11,7 +11,7 @@ __all__ = [
 
 @deconstructible
 class BaseProcessor(object):
-    task = 'process'
+    task = 'processing'
     task_name = 'Processing'
 
     def __init__(self, **kwargs):
@@ -74,6 +74,10 @@ class ExternalFileProcessor(BaseFileProcessor):
             raise ValueError('"cmd_template" is a required argument')
         self.sleep_time = sleep_time
         super(ExternalFileProcessor, self).__init__(**kwargs)
+
+    def __eq__(self, other):
+        return super(ExternalFileProcessor, self).__eq__(other) and \
+            self.cmd_template == other.cmd_template
 
     def get_input_path(self, in_file):
         return in_file.path

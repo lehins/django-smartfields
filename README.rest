@@ -1,134 +1,50 @@
 django-smartfields
 ##################
 
-Django Model Fields that are actaully smart.
---------------------------------------------
+.. image:: https://travis-ci.org/lehins/django-smartfields.svg?branch=master   
+   :target: https://travis-ci.org/lehins/django-smartfields
+   :alt: Travis-CI
 
-Main feature of this app is to allow handling of a field value depending on a
-Model instance it is attached to. So in some way it is similar to a
-ModelManager, but for fields. Basically, by specifying a field dependency you
-can provide an automatic control for a field and/or other model fields values.
+.. image:: https://coveralls.io/repos/lehins/django-smartfields/badge.png?branch=master 
+   :target: https://coveralls.io/r/lehins/django-smartfields?branch=master 
+   :alt: Tests Coverage
 
+Django Model Fields that are smart.
+-----------------------------------
 
-Features
---------
+This app introduces a declarative way of handling fields' values. It can be especially useful when one field depends on a value from another field, even if a field depends on itself. At first it might sound useless, but, as it turns out, it is an amazing concept that helps in writing clear, concise and DRY code.
 
-* Core features:
+Best way to descibe is on a simple example. Let's say there is a field where you store a custom html page and you would like to have another field attached to the same model store the same page but with html tags stripped out, moreover you would like it to update whenever the first field changes it's value. A common way to handle that issue is to overwrite model's ``save`` method and put all the logic there, right? What if you could just give a field a function that does the stripping and everything else is taking care of? Wouldn't that be nice, huh? Well, that's one of many things this app let's you do. 
 
-  * setting/modifying a field value depending on other fields attached to a model.
-  * setting/modifying other fields attached to to model, including model
-    instance itself, depending on a field
-  * setting a default field value depending on a Model instance state
-  * keeps a field state, in case processing takes time and it's useful to report
-    progress to the user
+Another great example is django's ``ImageField`` that can update ``width_field`` and ``height_field`` whenever image is changed. This app uses similar concepts to achive that functionality. But here is a more powerful example that demonstrates the value of this app. Let's say you would like to have a user be able to upload an image in any format and it being automatically converted to JPEG and shrunk to fit in a box size of 1024x768, while keeping the original version. Here is how it could look with utilization of `django-smartfields`:
 
-* FileField (and others inheriting from it):
+.. code-block:: python
 
-  * automatically removes files no longer stored in database, i.e. automatic
-    orphant file removal
-  * progresss report during an upload. (requires multithread capable cache
-    (ex. memcache) and Plupload)
+    from django.db import models
+    
+    from smartfields import fields, FileDependency
+    from smartfields.processors import ImageProcessor
 
-* ImageField:
+    class User(models.Model):
+        # ... more fields ....
+        avatar = fields.ImageField(upload_to='avatar', dependencies=[
+            attname='avatar_jpeg', FileDependency(processor=ImageProcessor(
+                format='JPEG', scale={'max_width': 1024, 'max_height': 768})),
+        ])
+        avatar_jpeg = fields.ImageField(upload_to='avatar')
+        # ... more fields ...
 
-  * automatic conversion to different formats and dimensions. While keeping the
-    originaly uploaded image intact it attaches other versions to the model.
+That's it. Did I mention that it will also clean up old files, when new ones are uploaded?
 
-* VideoField:
-
-  * conversion to other video formats using avconv (or other) upon upload.
-  * conversion progress report (requires multithread capable cache
-    (ex. memcache) and Plupload)
-
-* SlugField:
-
-  * ability to set a value depending on othe field. Guarantees uniqueness.
-
-* HTMLField:
-
-  * can strip HTML tags and save only text in another field
-  * can sanitize HTML by leaving only specified tags/attributes.
-
-* Much more (extremely customizable)
-  * It is possible to customize any other model field just by specifying the
-    dependency functionality. Just look for examples within existing
-    implementation.
+So hopefully I got you convinced to give this app a try. There is full documentation also on the way.
 
 
 Dependencies
 ------------
-* `Django <https://djangoproject.com/>`_ version >= 1.4
-* `Python Pillow <hhttps://pypi.python.org/pypi/Pillow/>`_ (optional) used
-  for image conversion/resizing
-* `avconv <http://libav.org/avconv.html>`_ (optional) for video conversion only
-* `BeautifulSoup4 <https://pypi.python.org/pypi/beautifulsoup4/>`_ (optional)
-  for HTML stripping/sanitizing
-* `Plupload <http://www.plupload.com/>`_ (optional) for reporting
-  upload/conversion progress.
+* `Django <https://djangoproject.com/>`_ (for now only version >= 1.7, will add support for earlier versions later).
+* `Python Pillow <hhttps://pypi.python.org/pypi/Pillow/>`_ - (optional) used for image conversion/resizing.
+* `ffmpeg <https://www.ffmpeg.org/>`_ - (optional) for video conversion. (could be easily adopted for libav).
+* `BeautifulSoup4 <https://pypi.python.org/pypi/beautifulsoup4/>`_ - (optional) for HTML stripping
+* `crispy-forms <https://readthedocs.org/projects/django-crispy-forms/>`_ - (optional) for ajax uploading.
+* `Plupload <http://www.plupload.com/>`_ - (optional) for ajax uploading.
 
-How to use it
--------------
-
-The best way to demonstrate features is through examples.
-For any of the features to work you have to extend the base abstract model ``smart_fields.models.SmartFieldsBaseModel``. If for some reason it is not feasible (lets say you are using GeoDjango or something) you can extend ``smart_fields.models.SmartFieldsHandler`` and add required methods. Here is an example::
-
-    class SmartFieldsModel(models.Model, smart_fields.models.SmartFieldsHandler):
-	...
-	fields
-	...
-
-	def __init__(self, *args, **kwargs):
-	    super(SmartFieldsModel, self).__init__(*args, **kwargs)
-	    self.smart_fields_init() ## !important. after the super call
-
-	def save(self, old=None, *args, **kwargs):
-	    if old is None:
-		try:
-		    old = self.__class__.objects.get(pk=self.pk)
-		except self.__class__.DoesNotExist: pass
-	    super(SmartFieldsModel, self).save(*args, **kwargs)
-	    self.smart_fields_save(old)  ## !important. after the super call
-
-	def delete(self, *args, **kwargs):
-	    self.smart_fields_delete()  ## !important. before the super call
-	    super(SmartFieldsModel, self).delete(*args, **kwargs)
-
-Now we need to specify what settings needs to be applied and to which fields. Here is an example::
-
-
-    class SmartFieldsModel(smart_fields.models.SmartFieldsBaseModel):
-	def image_upload_url(instance):
-	    return reverse("uploads:images", kwargs={'pk': instance.pk})
-
-	user = models.ForeignKey(User, editable=False)
-	image = models.CrowdSmartImageField(upload_to="place/for/images/", upload_url=image_upload_url, keep_orphans=True)
-	...
-
-	@property
-	def smart_fields_settings(self): # required
-	    return {
-		'image': { # <- name of the field. required
-		    'instance': self.image, # <- instance of the field. required
-		    'profile': { # settings for converting/resizing
-			'big': {
-			    'dimensions': (320, 200),
-			    'format': 'PNG',
-			    'default': "default/images/320_200.png"
-			    },
-			'small': {
-			    'dimensions': (160, 100),
-			    'format': 'JPG',
-			    'default': "default/images/160_100.jpg"
-			    },
-			},
-		    },
-
-In the example above each instance of SmartFieldsModel will have:
-* instance.image with an original file uploaded, or default image if no image has been uploaded
-* instance.image_big and instance.image_small which are instances of FileField, despite that there are no actual columns for them in the database, we can still use them as regular model fields. For instance we can use them in templates: ``{{ instance.image_big.url }}``. And as you would expect it will give you a url to a copy of an original image in png format with dimensions 320px by 200px.
-
-From now on I will refer to the above required property as <strong>smart_field_settings</strong>
-
-Above functionality is not limited to only one file field per model, more over it is possible to mix it with any fields that are derived from FileField (SmartImageField, SmartVideoField, ... more to come). Although, if any feature but orphan file cleanup is desired on the field, the have to be SmartFileField, SmartImageField or SmartVideoField types.
-
-Rest of the features usage and settings explanations hopefully is coming soon with documentation.

@@ -37,7 +37,7 @@ class UploadingTestCase(TestCase):
         self.assertIsNotNone(status)
         progress = []
         while status['state'] != 'complete':
-            if status['state'] == 'processing':
+            if status['state'] == 'in_progress':
                 progress.append(status['progress'])
             time.sleep(1)
             response = c.get(url, {'pk': pk},

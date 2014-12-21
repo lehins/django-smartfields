@@ -94,7 +94,8 @@ class Dependency(object):
     def stash_previous_value(self, instance, value):
         if self._stashed_value is VALUE_NOT_SET and self._dependee is not self.field:
             self._stashed_value = value
-            instance.__dict__[self.name] = None
+            self.set_value(instance, None)
+            #instance.__dict__[self.name] = None
 
     def restore_stash(self, instance):
         if self.has_stashed_value:
@@ -140,7 +141,7 @@ class Dependency(object):
     def handle(self, instance, field_value, event, *args, **kwargs):
         try:
             value = self._dependor.value_from_object(instance)
-        except KeyError:
+        except (KeyError, AttributeError) as e:
             # necessary for pre_init
             value = None
         custom_event_handler = getattr(self, "_%s" % event, None)
@@ -311,10 +312,6 @@ class FileDependency(Dependency):
                 field_file = self.attr_class(instance, self, name)
             else:
                 name = self.get_filename(name)
-                #if self.field is self._dependee:
-                #    cur_file = self.field.value_from_object(instance)
-                #    if cur_file:
-                #        cur_file.delete(save=False)
                 field_file = self._dependee.attr_class(instance, self._dependee, name)
             field_file.save(name, value, save=False)
             value = field_file
