@@ -28,7 +28,8 @@ cd ~/ffmpeg_sources
 wget http://7d64cbc4e99ce9788059-a127be7d9507d6d1187c85a377fe1ae1.r77.cf1.rackcdn.com/last_x264.tar.bz2
 tar xjf last_x264.tar.bz2
 cd x264-snapshot*
-./configure --prefix="$HOME/ffmpeg_build" --bindir="$HOME/bin" --enable-static
+./configure --prefix="$HOME/ffmpeg_build" --bindir="$HOME/bin" --enable-static \
+		--disable-asm # disable for tests
 make
 make install
 make distclean
@@ -56,7 +57,7 @@ sudo apt-get install libvpx-dev
 #make clean
 
 # liboupus 1.1
-# cannot install it on travis through apt-get
+# cannot install it on travis through apt-get, hence it is disabled
 # sudo apt-get install libopus-dev 
 
 # ffmpeg
@@ -70,7 +71,7 @@ export PKG_CONFIG_PATH
 		--extra-ldflags="-L$HOME/ffmpeg_build/lib" --bindir="$HOME/bin" --extra-libs="-ldl" \
 		--enable-gpl --enable-libass --enable-libfdk-aac --enable-libfreetype --enable-libmp3lame \
 		--enable-libtheora --enable-libvorbis --enable-libvpx --enable-libx264 --enable-nonfree \
-		--disable-yasm # disabled only for tests
+		--disable-asm # disabled only for tests
 make
 make install
 make distclean
