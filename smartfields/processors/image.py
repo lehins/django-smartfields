@@ -1,4 +1,3 @@
-from PIL import Image
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils import six
@@ -6,6 +5,11 @@ from django.utils import six
 from smartfields.fields import ImageFieldFile
 from smartfields.processors.base import BaseFileProcessor
 from smartfields.utils import ProcessingError
+
+try:
+    from PIL import Image
+except ImportError:
+    pass
 
 __all__ = [
     'ImageProcessor', 'ImageFormat', 'supported_formats'
@@ -264,7 +268,7 @@ class ImageProcessor(BaseFileProcessor):
                 image = image.convert(new_mode)
         return image
 
-    def process(self, value, instance, field, field_value, scale=None, format=None, **kwargs):
+    def process(self, value, scale=None, format=None, **kwargs):
         cur_pos = value.tell()
         value.seek(0)
         stream = six.BytesIO(value.read())

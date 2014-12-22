@@ -68,9 +68,10 @@ class FileUploadView(View):
 
     def get_object(self, pk=None, parent_pk=None):
         kwargs = {}
-        manager = self.model._default_manager
+        model = self.model
+        manager = model._default_manager
         if parent_pk is not None and self.parent_field_name is not None:
-            parent_field = self.model._meta.get_field(self.parent_field_name)
+            parent_field = model._meta.get_field(self.parent_field_name)
             parent_model = parent_field.rel.to
             parent_pk_field_name = "%s_%s" % (
                 self.parent_field_name, parent_model._meta.pk.name)
@@ -79,11 +80,11 @@ class FileUploadView(View):
         if pk is None and self.request.method == 'GET':
             pk = self.request.GET.get('pk', None)
         if pk is None:
-            obj = self.model(**kwargs)
+            obj = model(**kwargs)
         else:
             try:
                 obj = manager.get(pk=pk, **kwargs)
-            except self.model.DoesNotExist: 
+            except model.DoesNotExist: 
                 raise Http404
         return obj
 

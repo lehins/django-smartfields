@@ -6,7 +6,7 @@ django-smartfields
    :alt: Travis-CI
 
 .. image:: https://coveralls.io/repos/lehins/django-smartfields/badge.png?branch=master 
-   :target: https://coveralls.io/r/lehins/django-smartfields?branch=master 
+   :target: https://coveralls.io/r/lehins/django-smartfields
    :alt: Tests Coverage
 
 .. image:: https://landscape.io/github/lehins/django-smartfields/master/landscape.png
@@ -44,7 +44,7 @@ Another great example is django's ``ImageField`` that can update ``width_field``
 
 That's it. Did I mention that it will also clean up old files, when new ones are uploaded?
 
-So hopefully I got you convinced to give this app a try. There is full documentation also on the way.
+So hopefully I got you convinced to give this app a try. There is full documentation also on the way, but for now you can check out `test_suite/sample_app` folder for some examples.
 
 
 Dependencies

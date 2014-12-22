@@ -27,10 +27,10 @@ class SmartfieldsDescriptor(object):
         self.field = field
 
     def __set__(self, instance, value):
-        if self.field.manager is not None and self.field.manager.has_processors:
+        if self.field.manager is not None and self.field.manager.should_process:
             previous_value = instance.__dict__.get(self.field.name)
             if previous_value is not VALUE_NOT_SET:
-                self.field.manager.stash_previous(previous_value)
+                self.field.manager.stash_previous_value(previous_value)
         instance.__dict__[self.field.name] = self.field.to_python(value)
 
     def __get__(self, instance=None, model=None):
@@ -233,7 +233,7 @@ class FieldFile(files.FieldFile):
 class FileDescriptor(files.FileDescriptor):
 
     def __set__(self, instance, value):
-        if self.field.manager is not None and self.field.manager.has_processors:
+        if self.field.manager is not None and self.field.manager.should_process:
             previous_value = self.__get__(instance)
             if previous_value is not VALUE_NOT_SET and previous_value._committed:
                 self.field.manager.stash_previous_value(previous_value)
@@ -328,15 +328,17 @@ class ImageField(FileField):
         return name, path, args, kwargs
 
 
+# future added fields
 
-try:
-    # future added fields
+if hasattr(fields, 'DurationField'):
     class DurationField(Field, fields.DurationField):
         pass
-
-    class UUIDField(Field, fields.DurationField):
-        pass
-except AttributeError: 
+else:
     DurationField = None
+
+if hasattr(fields, 'UUIDField'):
+    class UUIDField(Field, fields.UUIDField):
+        pass
+else:
     UUIDField = None
 

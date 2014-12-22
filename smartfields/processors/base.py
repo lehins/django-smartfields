@@ -1,12 +1,11 @@
 import subprocess, time
 from django.utils.deconstruct import deconstructible
-from django.utils.text import slugify
 from django.utils.six.moves import queue
 
 from smartfields.utils import NamedTemporaryFile, AsynchronousFileReader, ProcessingError
 
 __all__ = [
-    'BaseProcessor', 'BaseFileProcessor', 'ExternalFileProcessor', 'SlugProcessor'
+    'BaseProcessor', 'BaseFileProcessor', 'ExternalFileProcessor'
 ]
 
 @deconstructible
@@ -17,9 +16,11 @@ class BaseProcessor(object):
     def __init__(self, **kwargs):
         self.default_params = kwargs
 
-    def __call__(self, value, instance=None, field=None, field_value=None, **kwargs):
-        return self.process(value, instance, field, field_value, 
-                            **self.get_params(**kwargs))
+    def __call__(self, value, 
+                 instance=None, field=None, field_value=None, dependee=None, **kwargs):
+        return self.process(
+            value, instance=instance, field=field, field_value=field_value, 
+            dependee=dependee, **self.get_params(**kwargs))
 
     def __eq__(self, other):
         return (type(self) is type(other) and 
@@ -36,7 +37,7 @@ class BaseProcessor(object):
             getattr(self, 'progress_setter')(self, progress)
         except AttributeError: pass
 
-    def process(self, value, instance, field, field_value, **params):
+    def process(self, value, instance, field, field_value, dependee, **params):
         raise NotImplementedError("process is a required method")
 
 
@@ -51,12 +52,6 @@ class BaseFileProcessor(BaseProcessor):
             format = format or self.default_params['format']
             return ".%s" % format.lower()
         except KeyError: pass
-
-
-class SlugProcessor(BaseProcessor):
-
-    def process(self, value, *args, **kwargs):
-        return slugify(value)
 
 
 class ExternalFileProcessor(BaseFileProcessor):
@@ -85,15 +80,15 @@ class ExternalFileProcessor(BaseFileProcessor):
     def get_output_path(self, out_file):
         return out_file.name
 
-    def get_output_file(self, in_file, instance, field, field_value, **kwargs):
+    def get_output_file(self, in_file, instance, field, **kwargs):
         """Creates a temporary file. With regular `FileSystemStorage` it does not 
         need to be deleted, instaed file is safely moved over. With other cloud
         based storage it is a good idea to set `delete=True`."""
         return NamedTemporaryFile(mode='rb', suffix='_%s_%s%s' % (
             instance._meta.model_name, field.name, self.get_ext()), delete=False)
 
-    def process(self, in_file, instance, field, field_value, **kwargs):
-        out_file = self.get_output_file(in_file, instance, field, field_value, **kwargs)
+    def process(self, in_file, **kwargs):
+        out_file = self.get_output_file(in_file, **kwargs)
         cmd = self.cmd_template.format(
             input=self.get_input_path(in_file), output=self.get_output_path(out_file),
             **kwargs

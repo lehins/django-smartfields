@@ -34,7 +34,7 @@ class AsyncHandler(threading.Thread):
         try:
             for idx, d in enumerate(dependencies):
                 self.manager._process(
-                    self.instance, d, 
+                    d, self.instance, 
                     progress_setter=self.get_progress_setter(multiplier, idx)
                 )
             self.manager.finished_processing(self.instance)
@@ -51,11 +51,13 @@ class FieldManager(object):
         self.field = field
         self.dependencies = dependencies
         self.has_async = False
-        self.has_processors = False
+        self.should_process = False
         for d in self.dependencies:
             d.set_field(self.field)
-            self.has_async = self.has_async or d.async
-            self.has_processors = self.has_processors or bool(d._processor)
+            if not self.has_async:
+                self.has_async = d.async
+            if not self.should_process:
+                self.should_process = d.should_process()
 
     @property
     def has_stashed_value(self):
@@ -78,13 +80,7 @@ class FieldManager(object):
             elif event == 'post_delete' and field_value:
                 self.delete_value(field_value)
         for d in self.dependencies:
-            d.handle(instance, field_value, event, *args, **kwargs)
-
-    def _process(self, instance, dependency, progress_setter=None):
-        # process single dependency
-        field_value = self.field.value_from_object(instance)
-        dependency.process(
-            instance, field_value, progress_setter=progress_setter)
+            d.handle(instance, event, *args, **kwargs)
 
     def failed_processing(self, instance, error=None, is_async=False):
         self.restore_stash(instance)
@@ -123,24 +119,33 @@ class FieldManager(object):
             if d.has_stashed_value:
                 d.restore_stash(instance)
 
+    def _process(self, dependency, instance, progress_setter=None):
+        # process single dependency
+        value = self.field.value_from_object(instance)
+        dependency.process(value, instance, progress_setter=progress_setter)
+
     def process(self, instance, force=False):
-        """ Processing is triggered by field's pre_save method. It will be executed if field's
-        value has been changed (known through descriptor and stashing logic) or if model 
-        instance has never been saved before, i.e. no pk set, because there is a chance
-        that field was initialized through model's `__init__`, hence no value was stashed."""
-        if self.has_processors and (force or self.has_stashed_value):
+        """Processing is triggered by field's pre_save method. It will be
+        executed if field's value has been changed (known through descriptor and
+        stashing logic) or if model instance has never been saved before,
+        i.e. no pk set, because there is a chance that field was initialized
+        through model's `__init__`, hence default value was stashed with
+        pre_init handler.
+
+        """
+        if self.should_process and (force or self.has_stashed_value):
             self.set_status(instance, {'state': 'busy'})
-            for d in filter(lambda d: d._processor, self.dependencies):
+            for d in filter(lambda d: d.has_processor(), self.dependencies):
                 d.stash_previous_value(instance, d.get_value(instance))
             try:
                 if self.has_async:
                     for d in filter(lambda d: not d.async, self.dependencies):
-                        self._process(instance, d)
+                        self._process(d, instance)
                     async_handler = AsyncHandler(self, instance)
                     async_handler.start()
                 else:
                     for d in self.dependencies:
-                        self._process(instance, d)
+                        self._process(d, instance)
                     self.finished_processing(instance)
             except BaseException as e:
                 self.failed_processing(instance, e)

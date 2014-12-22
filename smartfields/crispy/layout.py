@@ -56,7 +56,7 @@ class LimitedField(Field):
         try:
             feedback_text = ''
             maximum, minimum = self.maximum, self.minimum
-            field_instance = form.fields[self.field]0
+            field_instance = form.fields[self.field]
             if isinstance(field_instance, forms.CharField):
                 maximum = field_instance.max_length or maximum
                 minimum = field_instance.min_length or minimum
