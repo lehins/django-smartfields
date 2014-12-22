@@ -4,14 +4,14 @@ class SmartfieldsModelMixin(object):
 
     @property
     def smartfields_managers(self):
-        if hasattr(self, '_smartfiels_managers_list'):
-            return self._smartfiels_managers_list
+        if hasattr(self, '_smartfields_managers_list'):
+            return getattr(self, '_smartfields_managers_list')
         managers = []
         for field in self._meta.local_concrete_fields:
             if field.name in self._smartfields_managers:
                 managers.append(self._smartfields_managers[field.name])
-        self._smartfiels_managers_list = managers
-        return self._smartfiels_managers_list
+        self._smartfields_managers_list = managers
+        return self._smartfields_managers_list
 
     def __init__(self, *args, **kwargs):
         self.smartfields_handle('pre_init', *args, **kwargs)

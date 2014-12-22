@@ -331,13 +331,13 @@ class ImageField(FileField):
 # future added fields
 
 if hasattr(fields, 'DurationField'):
-    class DurationField(Field, fields.DurationField):
+    class DurationField(Field, getattr(fields, 'DurationField')):
         pass
 else:
     DurationField = None
 
 if hasattr(fields, 'UUIDField'):
-    class UUIDField(Field, fields.UUIDField):
+    class UUIDField(Field, getattr(fields, 'UUIDField')):
         pass
 else:
     UUIDField = None
