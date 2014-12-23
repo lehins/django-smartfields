@@ -15,7 +15,7 @@ install:
 before_install:
   - ./test_suite/install_ffmpeg.sh
 script:
-  cd test_suite && coverage run --source='smartfields' manage.py test && cd ..
+  coverage run --source='smartfields' setup.py test
 after_success:
   coveralls
 notifications:

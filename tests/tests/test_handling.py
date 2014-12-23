@@ -1,7 +1,8 @@
 from django.test import TestCase
-from sample_app.models import HandlingTesting, InstanceHandlingTesting
 
 from smartfields.managers import VALUE_NOT_SET
+
+from tests.models import HandlingTesting, InstanceHandlingTesting
 
 
 class HandlingTestCase(TestCase):

@@ -7,7 +7,7 @@ from django.utils.encoding import force_bytes
 
 from smartfields.models import SmartfieldsModelMixin
 
-from sample_app.models import FileTesting, ImageTesting, DependencyTesting
+from tests.models import FileTesting, ImageTesting, DependencyTesting
 
 
 def add_base(path):
@@ -138,7 +138,7 @@ class ImageTestCase(FileBaseTestCase):
                 'ProcessingError: There was a problem with image conversion: encoder '
                 'jpeg2k not available'
             ], 
-            'app_label': 'sample_app', 
+            'app_label': 'tests', 
             'pk': 1, 
             'field_name': 'image_4', 
             'model_name': 'imagetesting'
@@ -157,11 +157,11 @@ class ImageTestCase(FileBaseTestCase):
         self.assertEqual(instance.image_1.width, 50)
         self.assertEqual(
             instance.image_1.url,
-            "/media/sample_app/dependencytesting/%s/image_1.bmp" % instance.pk)
+            "/media/tests/dependencytesting/%s/image_1.bmp" % instance.pk)
         self.assertEqual(instance.image_1_gif.width, 50)
         self.assertEqual(
             instance.image_1_gif.url,
-            "/media/sample_app/dependencytesting/%s/image_1_gif.gif" % instance.pk)
+            "/media/tests/dependencytesting/%s/image_1_gif.gif" % instance.pk)
         instance.delete()
         lenna_rect.close()
 
@@ -213,10 +213,10 @@ class ImageTestCase(FileBaseTestCase):
         self.assertEqual(instance.image_4.width, 400)
         self.assertEqual(
             instance.image_3.url,
-            "/media/sample_app/dependencytesting/%s/image_3.jpg" % instance.pk)
+            "/media/tests/dependencytesting/%s/image_3.jpg" % instance.pk)
         self.assertEqual(
             instance.image_4.url,
-            "/media/sample_app/dependencytesting/%s/image_4.jpg" % instance.pk)
+            "/media/tests/dependencytesting/%s/image_4.jpg" % instance.pk)
         instance.image_2 = lenna_rect
         self.assertTrue(os.path.isfile(image_3_path))
         self.assertTrue(os.path.isfile(image_4_path))

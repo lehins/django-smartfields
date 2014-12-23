@@ -5,8 +5,8 @@ from django.contrib.auth.models import User
 from django.conf import settings
 from django.utils.encoding import force_text
 
-from sample_app.models import VideoTesting
-from tests.test_files import add_base, FileBaseTestCase
+from tests.models import VideoTesting
+from tests.tests.test_files import add_base, FileBaseTestCase
 
 class UploadingTestCase(FileBaseTestCase):
     fixtures = ['users.json']
@@ -21,7 +21,7 @@ class UploadingTestCase(FileBaseTestCase):
         c = Client()
         c.login(username='test_user', password='test_password')
         url = reverse('smartfields:upload', kwargs={
-            'app_label': 'sample_app',
+            'app_label': 'tests',
             'model': 'videotesting',
             'field_name': 'video_1'
         })
@@ -52,9 +52,9 @@ class UploadingTestCase(FileBaseTestCase):
             html_tag,
             '<video id="video_video_1" controls="controls" preload="auto" width="320" '
             'height="240"><source type="video/webm" '
-            'src="//example.com/media/sample_app/videotesting/video_1_webm.webm"/>'
+            'src="//example.com/media/tests/videotesting/video_1_webm.webm"/>'
             '<source type="video/mp4" '
-            'src="//example.com/media/sample_app/videotesting/video_1_mp4.mp4"/>'
+            'src="//example.com/media/tests/videotesting/video_1_mp4.mp4"/>'
             '</video>')
         # make sure progress is within correct bounds [0,1]
         self.assertFalse(list(filter(lambda x: x < 0 or x > 1, progress)))
@@ -66,11 +66,11 @@ class UploadingTestCase(FileBaseTestCase):
         # uploading and processing complete, let's verify it's correctness
         instance = VideoTesting.objects.get(pk=pk)
         self.assertEqual(instance.video_1.url,
-                        "/media/sample_app/videotesting/video_1.wmv")
+                        "/media/tests/videotesting/video_1.wmv")
         self.assertEqual(instance.video_1_mp4.url,
-                        "/media/sample_app/videotesting/video_1_mp4.mp4")
+                        "/media/tests/videotesting/video_1_mp4.mp4")
         self.assertEqual(instance.video_1_webm.url,
-                        "/media/sample_app/videotesting/video_1_webm.webm")
+                        "/media/tests/videotesting/video_1_webm.webm")
         # make sure files actually exist and they are nonempty
         self.assertTrue(os.path.isfile(instance.video_1.path))
         self.assertTrue(os.path.isfile(instance.video_1_mp4.path))

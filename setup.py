@@ -1,4 +1,10 @@
-from setuptools import setup, find_packages
+try:
+    from setuptools import setup, find_packages
+except ImportError:
+    from ez_setup import use_setuptools
+    use_setuptools()
+    from setuptools import setup, find_packages
+
 import smartfields
 import os, sys
 
@@ -18,7 +24,7 @@ setup(
     author='Alexey Kuleshevich',
     author_email='lehins@yandex.ru',
     license='GNU GPL v2.0',
-    url='https://github.com/lehins/python-wepay',
+    url='https://github.com/lehins/django-smartfields',
     platforms=["any"],
     classifiers=[
         'Development Status :: 4 - Beta',
@@ -37,7 +43,17 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
     keywords=[
-        "django", "model fields", "declarative", "file cleanup", "file conversion"
+        "django", "model fields", "declarative", "FileField cleanup", "FileField conversion",
+        "ajax uploading"
     ],
-    install_requires=['django']
+    install_requires=[
+        'Django>=1.7.0'
+    ],
+    tests_require=[
+        'Django>=1.7.0',
+        'beautifulsoup4',
+        'Pillow',
+        'django-crispy-forms'
+    ],
+    test_suite='runtests.runtests'
 )

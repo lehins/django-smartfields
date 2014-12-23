@@ -1,9 +1,7 @@
 from django.conf.global_settings import *
-import os, sys
+import os
 
 BASE_PATH = os.path.dirname(__file__)
-
-sys.path.insert(0, os.path.join(BASE_PATH, '..'))
 
 DEBUG = False
 SECRET_KEY = 'django-smartfields'
@@ -22,15 +20,13 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     
     'smartfields',
-    'sample_app',
+    'tests',
 )
 
 MIDDLEWARE_CLASSES = (
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
 )
-
-ATOMIC_REQUESTS = True
 
 SITE_ID = 1
 
@@ -42,4 +38,4 @@ STATIC_ROOT = os.path.join(BASE_PATH, 'static/')
 
 STATIC_URL = '/static/'
 
-ROOT_URLCONF = 'sample_app.urls'
+ROOT_URLCONF = 'tests.urls'

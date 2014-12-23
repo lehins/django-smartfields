@@ -1,12 +1,9 @@
-import os, time
-from django.core.files.base import File
-from django.db.models.fields.files import FileDescriptor
 from django.test import TestCase
 from django.utils import six
 
 from smartfields.models import SmartfieldsModelMixin
 
-from sample_app.models import ProcessingTesting
+from tests.models import ProcessingTesting
 
 
 class ProcessingTestCase(TestCase):
@@ -15,6 +12,7 @@ class ProcessingTestCase(TestCase):
         instance = ProcessingTesting()
         self.assertIsInstance(instance, SmartfieldsModelMixin)
         self.assertIsNotNone(getattr(instance, '_smartfields_managers', None))
+        self.assertTrue(getattr(instance, 'smartfields_managers', None))
 
     def _test_individual_field_processing(self):
         instance = ProcessingTesting(field_1=six.text_type('foo bar'))

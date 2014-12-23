@@ -1,7 +1,6 @@
 from django.templatetags.static import static
 from django.conf import settings
 
-import os
 
 KEEP_ORPHANS = getattr(settings, 'SMARTFIELDS_KEEP_ORPHANS', False)
 

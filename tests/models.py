@@ -3,7 +3,8 @@ from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.utils.text import slugify
 
-from smartfields import fields, processors, Dependency, FileDependency
+from smartfields import fields, processors
+from smartfields.dependencies import Dependency, FileDependency
 from smartfields.utils import UploadTo, VALUE_NOT_SET
 
 
