@@ -10,6 +10,9 @@ from tests.tests.test_files import add_base
 
 class TextTestCase(TestCase):
 
+    def strip(self, text):
+        return re.sub('( +|\t+|\n+)', ' ', text)
+
     def setUp(self):
         descr = open(add_base("static/defaults/snatch.html"), 'r')
         TextTesting.objects.create(title='Snatch', summary=descr.read())
@@ -27,11 +30,11 @@ class TextTestCase(TestCase):
     def test_html(self):
         instance = TextTesting.objects.get(title='Snatch')
         descr_plain = open(add_base("static/defaults/snatch.txt"), 'r')
-        self.assertEqual(instance.summary_plain, descr_plain.read())
+        self.assertEqual(self.strip(instance.summary_plain), self.strip(descr_plain.read()))
         descr_plain.close()
         instance = TextTesting.objects.get(title='Lord of War')
         descr_plain = open(add_base("static/defaults/lord_of_war.txt"), 'r')
-        self.assertEqual(instance.summary_plain, descr_plain.read())
+        self.assertEqual(self.strip(instance.summary_plain), self.strip(descr_plain.read()))
         descr_plain.close()
 
     def test_cropping(self):

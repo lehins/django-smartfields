@@ -95,13 +95,12 @@ class ExternalFileProcessor(BaseFileProcessor):
         ).split()
         stdout_pipe, stdout_queue, stdout_reader = None, None, None
         stderr_pipe, stderr_queue, stderr_reader = None, None, None
-        stdout_handler, stderr_handler = self.stdout_handler, self.stderr_handler
-        if callable(stdout_handler):
+        if callable(self.stdout_handler):
             stdout_pipe = subprocess.PIPE
             stdout_queue = queue.Queue()
-        if stderr_handler is True:
+        if self.stderr_handler is True:
             stderr_pipe = subprocess.STDOUT
-        elif callable(stderr_handler):
+        elif callable(self.stderr_handler):
             stderr_pipe = subprocess.PIPE
             stderr_queue = queue.Queue()
         proc = subprocess.Popen(
@@ -121,11 +120,11 @@ class ExternalFileProcessor(BaseFileProcessor):
                       not (stderr_reader is None or stderr_reader.eof()):
                     if stdout_queue is not None:
                         while not stdout_queue.empty():
-                            stdout_args = stdout_handler(
+                            stdout_args = self.stdout_handler(
                                 stdout_queue.get(), *stdout_args) or ()
                     if stderr_queue is not None:
                         while not stderr_queue.empty():
-                            stderr_args = stderr_handler(
+                            stderr_args = self.stderr_handler(
                                 stderr_queue.get(), *stderr_args) or ()
                     time.sleep(self.sleep_time)
             except ProcessingError:
