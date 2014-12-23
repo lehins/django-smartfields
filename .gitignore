@@ -1,9 +1,10 @@
 *.pyc
 *.pyo
 
+/.eggs
+/django_smartfields.egg-info
 /docs/build
 /dist
-/python_wepay.egg-info
 
 .coverage
 __pycache__
