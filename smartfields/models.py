@@ -6,7 +6,7 @@ class SmartfieldsModelMixin(object):
         if hasattr(self, '_smartfields_managers_list'):
             return getattr(self, '_smartfields_managers_list')
         managers = []
-        for field in self._meta.local_concrete_fields:
+        for field in self._meta.fields:
             if field.name in self._smartfields_managers:
                 managers.append(self._smartfields_managers[field.name])
         self._smartfields_managers_list = managers
