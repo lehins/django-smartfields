@@ -30,7 +30,8 @@ Another great example is django's ``ImageField`` that can update ``width_field``
 
     from django.db import models
     
-    from smartfields import fields, FileDependency
+    from smartfields import fields
+    from smartfields.dependencies import FileDependency
     from smartfields.processors import ImageProcessor
 
     class User(models.Model):
@@ -50,9 +51,9 @@ So hopefully I got you convinced to give this app a try. There is full documenta
 Dependencies
 ------------
 * `Django <https://djangoproject.com/>`_ (for now only version >= 1.7, will add support for earlier versions later).
-* `Python Pillow <hhttps://pypi.python.org/pypi/Pillow/>`_ - (optional) used for image conversion/resizing.
+* `Python Pillow <https://pypi.python.org/pypi/Pillow/>`_ - (optional) used for image conversion/resizing.
 * `ffmpeg <https://www.ffmpeg.org/>`_ - (optional) for video conversion. (could be easily adopted for libav).
 * `BeautifulSoup4 <https://pypi.python.org/pypi/beautifulsoup4/>`_ - (optional) for HTML stripping
-* `crispy-forms <https://readthedocs.org/projects/django-crispy-forms/>`_ - (optional) for ajax uploading.
+* `django-crispy-forms <https://readthedocs.org/projects/django-crispy-forms/>`_ - (optional) for ajax uploading.
 * `Plupload <http://www.plupload.com/>`_ - (optional) for ajax uploading.
 
