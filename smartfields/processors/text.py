@@ -16,6 +16,7 @@ __all__ = [
     'CropProcessor', 'UniqueProcessor', 'SlugProcessor', 'HTMLProcessor', 'HTMLTagProcessor'
 ]
 
+
 class CropProcessor(BaseProcessor):
     padding = 0
 
@@ -25,12 +26,12 @@ class CropProcessor(BaseProcessor):
         super(CropProcessor, self).__init__(**kwargs)
 
     def process(self, value, dependee=None, padding=None, **kwargs):
-        if not value or dependee is None or dependee.max_length is None:
+        if dependee is None or dependee.max_length is None:
             return value
         padding = padding or self.padding
         assert padding < dependee.max_length, "padding is set too high."
-        if len(value) > (dependee.max_length + padding):
-            return value[:dependee.max_length + padding]
+        if len(value) > (dependee.max_length - padding):
+            return value[:dependee.max_length - padding]
         return value
 
 
@@ -48,18 +49,21 @@ class UniqueProcessor(CropProcessor):
     def get_padding(self, max_length):
         if max_length is not None:
             # use at least 10% of max_length at most 5 chars for random number
-            return min(5, max_length/10 or 1) + len(self.separator)
+            return min(5, int(max_length/10) or 1) + len(self.separator)
 
     def process(self, value, instance, field, dependee=None, iexact=False, **kwargs):
+        # make sure value can at least fit in
+        value = super(UniqueProcessor, self).process(
+            value, instance=instance, field=field, dependee=dependee, **kwargs)
         if dependee is None or not dependee._unique:
-            return super(UniqueProcessor, self).process(
-                value, instance=instance, field=field, dependee=dependee, **kwargs)
+            return value
         manager = instance.__class__._default_manager
         unique_value = value or ""
         filter_key = "%s__iexact" % field.name if iexact else field.name
         existing = manager.filter(**{filter_key: unique_value})
         padding = self.get_padding(dependee.max_length)
-        if padding is not None:
+        if padding is not None and existing.exists():
+            # if value exists already, crop it more so we can add some random numbers
             value = super(UniqueProcessor, self).process(
                 value, instance=instance, field=field, dependee=dependee, 
                 padding=padding, **kwargs)
@@ -76,10 +80,8 @@ class SlugProcessor(UniqueProcessor):
 
     def process(self, value, **kwargs):
         kwargs.setdefault('iexact', True)
-        if value:
-            value = slugify(force_text(value).lower())
+        value = slugify(force_text(value).lower())
         return super(SlugProcessor, self).process(value, **kwargs)
-
 
 class HTMLProcessor(CropProcessor):
     """Basic HTML processor that stripps out all the tags."""
@@ -112,8 +114,6 @@ class HTMLTagProcessor(BaseProcessor):
         
     def process(self, value, instance, field, **kwargs):
         def renderer():
-            if not value:
-                return ""
             context = {
                 'value': value,
                 'instance': instance,

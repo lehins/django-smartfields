@@ -95,24 +95,25 @@ class ExternalFileProcessor(BaseFileProcessor):
         ).split()
         stdout_pipe, stdout_queue, stdout_reader = None, None, None
         stderr_pipe, stderr_queue, stderr_reader = None, None, None
-        if callable(self.stdout_handler):
+        stdout_handler, stderr_handler = self.stdout_handler, self.stderr_handler
+        if callable(stdout_handler):
             stdout_pipe = subprocess.PIPE
             stdout_queue = queue.Queue()
-        if self.stderr_handler is True:
+        if stderr_handler is True:
             stderr_pipe = subprocess.STDOUT
-        elif callable(self.stderr_handler):
+        elif callable(stderr_handler):
             stderr_pipe = subprocess.PIPE
             stderr_queue = queue.Queue()
-        _subprocess = subprocess.Popen(
+        proc = subprocess.Popen(
             cmd, stdout=stdout_pipe, stderr=stderr_pipe, universal_newlines=True)
         if stdout_queue is not None:
-            stdout_reader = AsynchronousFileReader(_subprocess.stdout, stdout_queue)
+            stdout_reader = AsynchronousFileReader(proc.stdout, stdout_queue)
             stdout_reader.start()
         if stderr_queue is not None:
-            stderr_reader = AsynchronousFileReader(_subprocess.stderr, stderr_queue)
+            stderr_reader = AsynchronousFileReader(proc.stderr, stderr_queue)
             stderr_reader.start()
         if stdout_reader is None and stderr_reader is None:
-            _subprocess.wait()
+            proc.wait()
         else:
             stdout_args, stderr_args = () , ()
             try:
@@ -120,28 +121,28 @@ class ExternalFileProcessor(BaseFileProcessor):
                       not (stderr_reader is None or stderr_reader.eof()):
                     if stdout_queue is not None:
                         while not stdout_queue.empty():
-                            stdout_args = self.stdout_handler(
+                            stdout_args = stdout_handler(
                                 stdout_queue.get(), *stdout_args) or ()
                     if stderr_queue is not None:
                         while not stderr_queue.empty():
-                            stderr_args = self.stderr_handler(
+                            stderr_args = stderr_handler(
                                 stderr_queue.get(), *stderr_args) or ()
                     time.sleep(self.sleep_time)
             except ProcessingError:
-                if _subprocess.poll() is None:
-                    _subprocess.terminate()
+                if proc.poll() is None:
+                    proc.terminate()
                 raise
             finally:
                 # wait for process to finish, so we can check the return value
-                if _subprocess.poll() is None:
-                    _subprocess.wait()
+                if proc.poll() is None:
+                    proc.wait()
                 if stdout_reader is not None:
                     stdout_reader.join()
-                    _subprocess.stdout.close()
+                    proc.stdout.close()
                 if stderr_reader is not None:
                     stderr_reader.join()
-                    _subprocess.stderr.close()
-        if _subprocess.returncode < 0:
+                    proc.stderr.close()
+        if proc.returncode < 0:
             raise ProcessingError("There was a problem processing this video file")
         return out_file
 

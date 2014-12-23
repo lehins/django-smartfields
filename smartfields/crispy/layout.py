@@ -10,7 +10,7 @@ from smartfields.settings import PLUPLOAD_OPTIONS
 class FileField(Field):
     template = "%s/filefield.html" % TEMPLATE_PACK
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs): # pylint: disable=E1002
         options = PLUPLOAD_OPTIONS.copy()
         options.update(kwargs.pop('plupload_options', {}))
         options['multi_selection'] = False
@@ -25,7 +25,7 @@ class FileField(Field):
 class ImageField(FileField):
     template = "%s/imagefield.html" % TEMPLATE_PACK
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs): # pylint: disable=E1002
         kwargs['wrapper_class'] = kwargs.get('wrapper_class', 'smartfields-mediafield')
         super(ImageField, self).__init__(*args, **kwargs)
 
@@ -41,7 +41,7 @@ class LimitedField(Field):
     wrapper_class = None
     attrs = None
 
-    def __init__(self, field, feedback_text=None, *args, **kwargs):
+    def __init__(self, field, feedback_text=None, *args, **kwargs): # pylint: disable=E1002
         self.field = field
         self.attrs = self.attrs or {}
         kwargs['wrapper_class'] = kwargs.get('wrapper_class', '') + ' smartfields-limitedfield'

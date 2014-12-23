@@ -1,4 +1,5 @@
 import os
+from django import forms
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.core import checks
 from django.db.models import fields
@@ -72,6 +73,7 @@ class Field(fields.Field):
         value = super(Field, self).pre_save(model_instance, add)
         if self.manager is not None:
             self.manager.process(model_instance)
+            value = getattr(model_instance, self.attname)
         return value
 
 
@@ -233,7 +235,7 @@ class FieldFile(files.FieldFile):
 class FileDescriptor(files.FileDescriptor):
 
     def __set__(self, instance, value):
-        if self.field.manager is not None and self.field.manager.should_process:
+        if self.field.manager is not None: # and self.field.manager.should_process:
             previous_value = self.__get__(instance)
             if previous_value is not VALUE_NOT_SET and previous_value._committed:
                 self.field.manager.stash_previous_value(previous_value)
@@ -246,9 +248,13 @@ class FileField(Field, files.FileField):
     descriptor_class = FileDescriptor
 
     def __init__(self, verbose_name=None, name=None, keep_orphans=KEEP_ORPHANS, 
-                 **kwargs):
+                 dependencies=None, **kwargs):
         self.keep_orphans = keep_orphans
-        super(FileField, self).__init__(verbose_name, name, **kwargs)
+        if not keep_orphans and dependencies is None:
+            # make sure there is a manger so orphans will get cleaned up
+            self.manager = self.manager_class(self, [])
+        super(FileField, self).__init__(verbose_name, name, 
+                                        dependencies=dependencies, **kwargs)
 
     def deconstruct(self):
         name, path, args, kwargs = super(FileField, self).deconstruct()
@@ -326,6 +332,11 @@ class ImageField(FileField):
         if self.height_field:
             kwargs['height_field'] = self.height_field
         return name, path, args, kwargs
+
+    def formfield(self, **kwargs):
+        defaults = {'form_class': forms.ImageField}
+        defaults.update(kwargs)
+        return super(ImageField, self).formfield(**defaults)
 
 
 # future added fields

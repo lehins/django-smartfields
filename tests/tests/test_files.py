@@ -67,6 +67,44 @@ class FileTestCase(FileBaseTestCase):
         self.assertFalse(os.path.isfile(field_1_foo_path))
         self.assertFalse(os.path.isfile(field_2_path))
         
+    def test_file_cleanup_after_delete(self):
+        instance = FileTesting.objects.create()
+        foo_bar = File(open(add_base("static/defaults/foo-bar.txt"), 'r'))
+        instance.field_3 = foo_bar
+        instance.field_4 = foo_bar
+        instance.save()
+        foo_bar.close()
+        field_3_path = instance.field_3.path
+        field_4_path = instance.field_4.path
+        self.assertTrue(os.path.isfile(field_3_path))
+        self.assertTrue(os.path.isfile(field_4_path))
+        instance.delete()
+        # testing cleanup without dependencies
+        self.assertFalse(os.path.isfile(field_3_path))
+        # testing keep_orphans=True
+        self.assertTrue(os.path.isfile(field_4_path))
+
+    def test_file_cleanup_after_replace(self):
+        instance = FileTesting.objects.create()
+        foo_bar = File(open(add_base("static/defaults/foo-bar.txt"), 'r'))
+        instance.field_3 = foo_bar
+        instance.field_4 = foo_bar
+        instance.save()
+        foo_bar.close()
+        field_3_path = instance.field_3.path
+        field_4_path = instance.field_4.path
+        self.assertTrue(os.path.isfile(field_3_path))
+        self.assertTrue(os.path.isfile(field_4_path))
+        foo = File(open(add_base("static/defaults/foo.txt"), 'r'))
+        instance.field_3 = foo
+        instance.field_4 = foo
+        instance.save()
+        foo.close()
+        # testing cleanup without dependencies
+        self.assertFalse(os.path.isfile(field_3_path))
+        # testing keep_orphans=True
+        self.assertTrue(os.path.isfile(field_4_path))
+
 
 class ImageTestCase(FileBaseTestCase):
 
@@ -154,6 +192,7 @@ class ImageTestCase(FileBaseTestCase):
         lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
         instance.image_1 = lenna_rect
         instance.save()
+        lenna_rect.close()
         self.assertEqual(instance.image_1.width, 50)
         self.assertEqual(
             instance.image_1.url,
@@ -163,7 +202,6 @@ class ImageTestCase(FileBaseTestCase):
             instance.image_1_gif.url,
             "/media/tests/dependencytesting/%s/image_1_gif.gif" % instance.pk)
         instance.delete()
-        lenna_rect.close()
 
     def test_value_restoration_1(self):
         lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
@@ -176,10 +214,10 @@ class ImageTestCase(FileBaseTestCase):
         image_1_gif = instance.image_1_gif
         instance.image_1 = text_file
         instance.save()
+        text_file.close()
         self.assertIs(instance.image_1, image_1)
         self.assertIs(instance.image_1_gif, image_1_gif)
         instance.delete()
-        text_file.close()
 
     def test_value_restoration_2(self):
         lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
@@ -192,14 +230,15 @@ class ImageTestCase(FileBaseTestCase):
         image_4 = instance.image_4
         image_3_path = instance.image_3.path
         image_4_path = instance.image_4.path
+        # restores values since new file is a text file that cannot be processed
         instance.image_2 = text_file
         instance.save()
+        text_file.close()
         self.assertEqual(instance.image_3, image_3)
         self.assertEqual(instance.image_4, image_4)
         self.assertEqual(instance.image_3.path, image_3.path)
         self.assertEqual(instance.image_4.path, image_4.path)
         instance.delete()
-        text_file.close()
 
     def test_forward_dependency(self):
         instance = DependencyTesting.objects.create()

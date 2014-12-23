@@ -88,31 +88,28 @@ class InstanceHandlingTesting(models.Model):
     def post_delete(self, value, *args, **kwargs):
         return _test_handler(value*10, self, *args, event=('post', 'delete'))
 
-# PROCESSING TESTING
 
-def _slugify(v, **kwargs): return slugify(v)
+# TEXT PROCESSING TESTING
 
-def _to_title_underscores(v, **kwargs): return v.title().replace(" ", "_")
+def _title_getter(value, instance, **kwargs):
+    return instance.title
 
-class ProcessingTesting(models.Model):
 
-    field_1 = fields.CharField(max_length=15, dependencies=[
-        # testing forward dependency
-        Dependency(attname='field_2', processor=_slugify),
-        # testing self dependency
-        Dependency(processor=_to_title_underscores)
+class TextTesting(models.Model):
+    
+    title = fields.CharField(max_length=11, unique=True, dependencies=[
+        Dependency(processor=processors.UniqueProcessor())
     ])
-    # testing with no direct dependencies
-    field_2 = fields.SlugField(max_length=15)
-    field_3 = fields.SlugField(max_length=15, unique=True, dependencies=[
-        # testing regular dependency and SlugProcessor
-        Dependency('field_1', processor=processors.SlugProcessor())
+    slug = fields.SlugField(max_length=9, unique=True, dependencies=[
+        Dependency(default=_title_getter, processor=processors.SlugProcessor())
     ])
-    field_4 = fields.SlugField(max_length=15, unique=True, dependencies=[
-        # testing default dependency
-        Dependency('field_1', default=processors.SlugProcessor())
+    summary = fields.TextField(dependencies=[
+        Dependency(suffix='plain', processor=processors.HTMLProcessor())
     ])
-
+    summary_plain = fields.TextField(dependencies=[
+        Dependency(attname='summary_beginning', processor=processors.CropProcessor())
+    ])
+    summary_beginning = models.CharField(max_length=100)
 
 
 # FILE TESTING
@@ -142,6 +139,10 @@ class FileTesting(models.Model):
     field_2 = fields.FileField(dependencies=[
         FileDependency(default=_get_foo, processor=_file_to_lower)
     ])
+    # test cleanup without dependencies
+    field_3 = fields.FileField()
+    # test no cleanup
+    field_4 = fields.FileField(keep_orphans=True)
 
 
 
@@ -204,7 +205,6 @@ class DependencyTesting(models.Model):
         FileDependency(attname='image_4', processor=processors.ImageProcessor(
             format=processors.ImageFormat('PNG'), scale={'width':150})),
     ])
-    # TODO: make sure regular ImageField doesn't get it's first file removed
     image_3 = models.ImageField(upload_to=UploadTo(name='image_3'))
     image_4 = fields.ImageField(upload_to=UploadTo(name='image_4'))
     
@@ -234,39 +234,11 @@ class VideoTesting(models.Model):
                 format='mp4', vcodec='libx264', vbitrate='128k',
                 maxrate='128k', bufsize='256k', width='trunc(oh*a/2)*2',
                 height=240, threads=0, acodec='libfdk_aac', abitrate='96k')),
-            # testing html tag setter
-            #Dependency(suffix='html_tag', async=True, default=video_tag_processor,
-            #           processor=video_tag_processor),
         ])
 
     def has_upload_permission(self, user, field_name=None):
-        return True
+        return (field_name == 'video_1' and 
+                user.is_authenticated() and 
+                user.username == 'test_user')
 
 
-class TextProcessorsTesting(models.Model):
-    
-    title = fields.CharField(max_length=9, unique=True, dependencies=[
-        Dependency(processor=processors.UniqueProcessor())
-    ])
-    slug = fields.SlugField(max_length=8, unique=True, dependencies=[
-        Dependency(default=lambda v, i, **kwargs: i.title, processor=processors.SlugProcessor())
-    ])
-    description = fields.TextField(dependencies=[
-        Dependency(suffix='plain', processor=processors.HTMLProcessor())
-    ])
-    description_plain = fields.TextField(dependencies=[
-        Dependency(attname='description_beginning', processor=processors.CropProcessor())
-    ])
-    description_beginning = models.CharField(max_length=150)
-
-
-class DefaultTestingModel(models.Model):
-    # default makes sense for:
-    field_1 = fields.CharField(max_length=10, dependencies=[
-        # self dependencies only make sense if the can get value from other field
-        Dependency(default=lambda x, **kwargs: x.title())
-    ])
-
-# trigger default:
-# * post_init
-# * after cleanup

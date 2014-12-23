@@ -14,8 +14,12 @@ django-smartfields
    :alt: Code Health
 
 .. image:: https://pypip.in/download/django-smartfields/badge.svg
-    :target: https://pypi.python.org/pypi/django-smartfields/
-    :alt: Downloads
+   :target: https://pypi.python.org/pypi/django-smartfields/
+   :alt: Downloads
+
+.. image:: https://readthedocs.org/projects/django-smartfields/badge/?version=latest
+   :target: https://readthedocs.org/projects/django-smartfields/?badge=latest
+   :alt: Documentation Status
 
 Django Model Fields that are smart.
 -----------------------------------
@@ -45,7 +49,7 @@ Another great example is django's ``ImageField`` that can update ``width_field``
 
 That's it. Did I mention that it will also clean up old files, when new ones are uploaded?
 
-So hopefully I got you convinced to give this app a try. There is full documentation also on the way, but for now you can check out `test_suite/sample_app` folder for some examples.
+So hopefully I got you convinced to give this app a try. There is full documentation also on the way, but for now you can check out 'tests' folder for some examples.
 
 
 Dependencies

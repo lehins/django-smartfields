@@ -20,6 +20,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     
     'smartfields',
+    'crispy_forms',
     'tests',
 )
 
@@ -39,3 +40,5 @@ STATIC_ROOT = os.path.join(BASE_PATH, 'static/')
 STATIC_URL = '/static/'
 
 ROOT_URLCONF = 'tests.urls'
+
+CRISPY_TEMPLATE_PACK = 'bootstrap3'

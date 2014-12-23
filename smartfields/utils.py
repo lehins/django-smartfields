@@ -1,14 +1,14 @@
 import os, errno, importlib, uuid, threading
 
 from django.core.files import base, temp
-from django.utils.six import moves
+from django.utils.six.moves import queue as six_queue
 
 __all__ = [
     'VALUE_NOT_SET', 'ProcessingError', 'NamedTemporaryFile', 'UploadTo', 
     'AsynchronousFileReader'
 ]
 
-class VALUE_NOT_SET:
+class VALUE_NOT_SET(object):
     pass
 
 
@@ -158,7 +158,7 @@ class AsynchronousFileReader(threading.Thread):
     '''
 
     def __init__(self, fd, queue):
-        assert isinstance(queue, moves.queue.Queue)
+        assert isinstance(queue, six_queue.Queue)
         assert callable(fd.readline)
         super(AsynchronousFileReader, self).__init__()
         self._fd = fd

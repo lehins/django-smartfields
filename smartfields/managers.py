@@ -101,7 +101,7 @@ class FieldManager(object):
     def delete_value(self, value):
         if hasattr(value, 'delete') and hasattr(value, 'field') \
            and value and not value.field.keep_orphans:
-                value.delete(instance_update=False)
+            value.delete(instance_update=False)
     
     def cleanup_stash(self):
         self.delete_value(self._stashed_value)
@@ -151,6 +151,8 @@ class FieldManager(object):
                 self.failed_processing(instance, e)
                 if not isinstance(e, ProcessingError):
                     raise
+        elif self.has_stashed_value:
+            self.cleanup_stash()
                 
 
     def get_status_key(self, instance):

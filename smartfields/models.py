@@ -1,4 +1,3 @@
-from django.utils import six
 
 class SmartfieldsModelMixin(object):
 
@@ -56,6 +55,6 @@ class SmartfieldsModelMixin(object):
 
     def smartfields_get_field_status(self, field_name):
         """A way to find out a status of a filed."""
-        field = self._meta.get_field(field_name)
-        if hasattr(field, 'get_status'):
-            return field.get_status(self)
+        manager = self._smartfields_managers.get(field_name, None)
+        if manager is not None:
+            return manager.get_status(self)

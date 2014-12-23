@@ -147,7 +147,7 @@ class ImageFormats(dict):
 
     @property
     def input_exts(self):
-        return ','.join([f.get_exts() for n, f in six.iteritems(self) if f.can_read])
+        return ','.join([f.get_exts() for _, f in six.iteritems(self) if f.can_read])
 
 
 supported_formats = ImageFormats(getattr(settings, 'SMARTFIELDS_IMAGE_FORMATS', [

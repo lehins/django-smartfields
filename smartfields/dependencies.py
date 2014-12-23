@@ -86,13 +86,11 @@ class Dependency(object):
     def stash_previous_value(self, instance, value):
         if self._stashed_value is VALUE_NOT_SET and self._dependee is not self.field:
             self._stashed_value = value
-            #self.set_value(instance, None)
             instance.__dict__[self.name] = None
 
     def restore_stash(self, instance):
         if self.has_stashed_value:
             instance.__dict__[self.name] = self._stashed_value
-            #self.set_value(instance, self._stashed_value)
             self._stashed_value =  VALUE_NOT_SET
 
     def cleanup(self, instance):
@@ -234,17 +232,17 @@ class FileDependency(Dependency):
         super(FileDependency, self).cleanup_stash()
 
     def restore_stash(self, instance):
-        file = self.get_value(instance)
-        if file and file._committed:
-            file.delete(instance_update=False)
+        field_file = self.get_value(instance)
+        if field_file and field_file._committed:
+            field_file.delete(instance_update=False)
         super(FileDependency, self).restore_stash(instance)
             
     def cleanup(self, instance):
         # do not cleanup self dependency, it will be cleaned up by the manager
         if self._dependee is not self.field:
-            file = self.get_value(instance)
-            if file and not getattr(file.field, 'keep_orphans', KEEP_ORPHANS):
-                file.delete(save=False)
+            field_file = self.get_value(instance)
+            if field_file and not getattr(field_file.field, 'keep_orphans', KEEP_ORPHANS):
+                field_file.delete(save=False)
 
     def contribute_to_model(self, model):
         super(FileDependency, self).contribute_to_model(model)
@@ -268,12 +266,6 @@ class FileDependency(Dependency):
 
     def post_delete(self, value, instance, *args, **kwargs):
         self.cleanup(instance)
-
-    #def process(self, file, instance, *args, **kwargs):
-    #    if file and not file._committed:
-    #        # commit the file, in case processing was invoked from model instance
-    #        file.save(file.name, file, save=False)
-    #    super(FileDependency, self).process(file, instance, *args, **kwargs)
 
     def get_directory_name(self, upload_to):
         return os.path.normpath(
@@ -333,7 +325,10 @@ class FileDependency(Dependency):
                 field_file = dependee.attr_class(instance, dependee, name)
             cur_pos = value.tell()
             value.seek(0)
-            field_file.save(name, value, save=False)
+            if isinstance(self._dependee, FileField):
+                field_file.save(name, value, instance_update=False)
+            else:
+                field_file.save(name, value, save=False)
             value.seek(cur_pos)
             value = field_file
         super(FileDependency, self).set_value(instance, value, is_default=is_default)
