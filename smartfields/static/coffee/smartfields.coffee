@@ -64,6 +64,7 @@ class smartfields.FileField
         smartfields.csrfAjaxSetup(csrftoken)
         @id = @$browse_btn.attr('id')
         @$delete_btn = $("##{@id}_delete")
+        @deleting = false
         @$upload_btn = $("##{@id}_upload")
         @$progress = $("##{@id}_progress").hide()
         @$current = $("##{@id}_current")
@@ -89,15 +90,23 @@ class smartfields.FileField
             @$delete_btn.hide()
             @$current_btn.parent().hide()
         @$delete_btn.click =>
-            post_data = {}
-            post_data["#{@$browse_btn.attr('name')}-clear"] = "on"
-            $.post(@options.url, post_data, (data, textStatus, jqXHR) =>
-                if data.state == 'ready'
+            if @deleting
+                return false
+            @deleting = true
+            $.ajax(@options.url, type: 'DELETE', success: (data, textStatus, jqXHR) =>
+                if data.state == 'complete'
                     @$current.val('')
                     @$current_btn.data('href', "").hide()
                     @$delete_btn.hide()
                     @fileDeleted(data, textStatus, jqXHR)
-                )
+                else
+                    extra = ""
+                    if data.task_name
+                        extra = " , it is #{data.task_name}"
+                    bootbox.alert(
+                        "Cannot delete this file right now#{extra}. Please try again later.")
+                @deleting = false
+            )
         @options = {
             browse_button: @id,
             container: @$elem[0],
@@ -298,6 +307,7 @@ class smartfields.MediaField extends smartfields.FileField
         @$current_preview = $("##{@id}_preview")
 
     fileDeleted: (data, textStatus, jqXHR) ->
+        console.log("foo")
         @$current_preview.empty()
 
     handleResponse: (data, complete, error) ->

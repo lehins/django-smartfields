@@ -147,5 +147,7 @@ class FileUploadView(View):
         return self.json_response(status)
 
     def delete(self, request, obj, *args, **kwargs):
-        obj.delete()
+        field_file = getattr(obj, self.field_name)
+        if field_file:
+            field_file.delete()
         return self.json_response({'task': 'delete', 'state': 'complete'})
