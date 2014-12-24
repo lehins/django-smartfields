@@ -58,3 +58,4 @@ class SmartfieldsModelMixin(object):
         manager = self._smartfields_managers.get(field_name, None)
         if manager is not None:
             return manager.get_status(self)
+        return {'state': 'ready'}

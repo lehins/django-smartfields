@@ -2,6 +2,7 @@ import json
 
 from django.apps import apps
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.http import Http404, HttpResponse
 from django.forms.models import modelform_factory
@@ -50,6 +51,10 @@ class FileUploadView(View):
         self._field_name = value
 
     @property
+    def field(self):
+        return self.model._meta.get_field(self.field_name)
+
+    @property
     def parent_field_name(self):
         if self._parent_field_name is None:
             self._parennt_field_name = self.kwargs.get('parent_field_name', None)
@@ -61,7 +66,14 @@ class FileUploadView(View):
         self._parent_field_name = value
 
     def has_permission(self, obj, user):
-        raise ImproperlyConfigured("'has_permission' is a required method")
+        # by raising 404 we make sure that fields that haven't been configured for 
+        # uploading look like the don't have an uploading url
+        if not settings.DEBUG:
+            raise Http404
+        raise ImproperlyConfigured(
+            "'has_permission' is a required method. You can also add '%s' method "
+            "to the model directly, instead of to this view." % 
+            self.instance_method_name)
 
     def get_form_class(self):
         return modelform_factory(self.model, fields=(self.field_name,))
@@ -137,6 +149,11 @@ class FileUploadView(View):
             instance=obj, data=request.POST, files=request.FILES)
         if form.is_valid():
             obj = form.save()
+            field = self.field
+            if field.manager is None or not field.manager.should_process:
+                status = obj.smartfields_get_field_status(self.field_name)
+                status['state'] = 'complete'
+                return self.complete(obj, status)
             return self.get(request, obj, *args, **kwargs)
         status.update({
             'task': 'uploading',

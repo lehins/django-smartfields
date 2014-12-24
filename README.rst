@@ -1,6 +1,10 @@
 django-smartfields
 ##################
 
+.. image:: https://readthedocs.org/projects/django-smartfields/badge/?version=latest
+   :target: https://readthedocs.org/projects/django-smartfields/?badge=latest
+   :alt: Documentation Status
+
 .. image:: https://travis-ci.org/lehins/django-smartfields.svg?branch=master   
    :target: https://travis-ci.org/lehins/django-smartfields
    :alt: Travis-CI
@@ -16,10 +20,6 @@ django-smartfields
 .. image:: https://pypip.in/download/django-smartfields/badge.svg
    :target: https://pypi.python.org/pypi/django-smartfields/
    :alt: Downloads
-
-.. image:: https://readthedocs.org/projects/django-smartfields/badge/?version=latest
-   :target: https://readthedocs.org/projects/django-smartfields/?badge=latest
-   :alt: Documentation Status
 
 Django Model Fields that are smart.
 -----------------------------------

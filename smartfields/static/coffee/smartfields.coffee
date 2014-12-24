@@ -68,7 +68,7 @@ class smartfields.FileField
         @$upload_btn = $("##{@id}_upload")
         @$progress = $("##{@id}_progress").hide()
         @$current = $("##{@id}_current")
-        @$errors = $("##{@id}_errors")
+        @$errors = $("##{@id}_errors_extra")
         @callbacks =
             onError: smartfields.getFunction(@$browse_btn.data('onError'))
             onComplete: smartfields.getFunction(@$browse_btn.data('onComplete'))
@@ -171,7 +171,10 @@ class smartfields.FileField
             $(bar).attr('aria-valuenow', percent)
                 .width("#{percent}%")
                 .find('span').html("#{percent}% #{task_name}")
-            @$current.val("#{task_name}... #{percent}%")
+            if percent == 100
+                @$current.val("#{task_name} Complete.")
+            else
+                @$current.val("#{task_name}... #{percent}%")
 
 
     handleResponse: (data, complete, error) ->
@@ -190,7 +193,6 @@ class smartfields.FileField
                     if @form_submitted and data.state != 'error'
                         @form_submitted = false
                         @$form.submit()
-
             @setProgress(1, 100, data.task_name)
             @$progress.one(transitionEnd, => delayedComplete)
             #transitionEnd is not guaranteed to fire. setTimeout as a fallback
@@ -217,7 +219,7 @@ class smartfields.FileField
 
     setErrors: (errors) ->
         @$errors.empty()
-        if errors?
+        if errors
             @$progress.hide()
             @setProgress()
             @$elem.addClass('has-error')
@@ -254,11 +256,19 @@ class smartfields.FileField
     UploadComplete: ->
 
     Error: (up, error) ->
-        console.log("pluplod error:")
-        console.log(error)
         switch error.code
             when plupload.FILE_EXTENSION_ERROR
                 @setErrors(["Unsupported file type: #{error.file.name}"])
+                up.splice(0, up.files.length) # remove unsupported file
+            when plupload.FILE_SIZE_ERROR
+                size = plupload.formatSize(error.file.size)
+                maxSize = @options.filters?.max_file_size
+                maxSizeMessage = ""
+                if maxSize
+                    maxSize = plupload.parseSize(maxSize)
+                    maxSize = plupload.formatSize(maxSize)
+                    maxSizeMessage = " Maximum size is: #{maxSize}"
+                @setErrors(["File is too big: #{size}.#{maxSizeMessage}"])
                 up.splice(0, up.files.length) # remove unsupported file
             else @setErrors([error.message])
 
@@ -307,7 +317,6 @@ class smartfields.MediaField extends smartfields.FileField
         @$current_preview = $("##{@id}_preview")
 
     fileDeleted: (data, textStatus, jqXHR) ->
-        console.log("foo")
         @$current_preview.empty()
 
     handleResponse: (data, complete, error) ->

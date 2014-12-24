@@ -5,6 +5,7 @@
 /django_smartfields.egg-info
 /docs/build
 /dist
+/tests/migrations
 
 .coverage
 __pycache__

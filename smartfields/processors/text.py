@@ -83,6 +83,7 @@ class SlugProcessor(UniqueProcessor):
         value = slugify(force_text(value).lower())
         return super(SlugProcessor, self).process(value, **kwargs)
 
+
 class HTMLProcessor(CropProcessor):
     """Basic HTML processor that stripps out all the tags."""
 
