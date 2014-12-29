@@ -61,6 +61,8 @@ class UniqueProcessor(CropProcessor):
         unique_value = value or ""
         filter_key = "%s__iexact" % field.name if iexact else field.name
         existing = manager.filter(**{filter_key: unique_value})
+        if instance.pk is not None:
+            existing = existing.exclude(pk=instance.pk)
         padding = self.get_padding(dependee.max_length)
         if padding is not None and existing.exists():
             # if value exists already, crop it more so we can add some random numbers
@@ -71,6 +73,8 @@ class UniqueProcessor(CropProcessor):
         while existing.exists() and attempt < self.max_attempts:
             unique_value = "%s%s%s" % (value, self.separator, self.get_random(padding))
             existing = manager.filter(**{filter_key: unique_value})
+            if instance.pk is not None:
+                existing = existing.exclude(pk=instance.pk)
             attempt+= 1
         return unique_value
 
@@ -99,8 +103,8 @@ class HTMLProcessor(CropProcessor):
         self.remove_comments(soup)
         for tag in soup.findAll(True):
             self.process_tag(tag)
-        return super(HTMLProcessor, self).process(
-            soup.renderContents().decode('utf8'), **kwargs)
+        value = soup.renderContents().decode('utf8')
+        return super(HTMLProcessor, self).process(value, **kwargs)
 
 
 class HTMLTagProcessor(BaseProcessor):

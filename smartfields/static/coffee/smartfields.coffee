@@ -171,10 +171,7 @@ class smartfields.FileField
             $(bar).attr('aria-valuenow', percent)
                 .width("#{percent}%")
                 .find('span').html("#{percent}% #{task_name}")
-            if percent == 100
-                @$current.val("#{task_name} Complete.")
-            else
-                @$current.val("#{task_name}... #{percent}%")
+            @$current.val("#{task_name}... #{percent}%")
 
 
     handleResponse: (data, complete, error) ->

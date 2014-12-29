@@ -1,4 +1,4 @@
-import os, datetime
+import os, datetime, inspect
 from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.db.models.fields import files, NOT_PROVIDED, FieldDoesNotExist
@@ -8,6 +8,7 @@ from django.utils import six
 
 from smartfields.fields import FieldFile, FileField
 from smartfields.settings import KEEP_ORPHANS
+from smartfields.processors.base import BaseProcessor
 from smartfields.utils import VALUE_NOT_SET
 
 __all__ = [
@@ -43,6 +44,8 @@ class Dependency(object):
         self._processor_params = processor_params or {}
         if self.has_processor():
             assert callable(self._processor), "processor has to be a function"
+            if inspect.isclass(processor) and issubclass(processor, BaseProcessor):
+                self._processor = processor()
             if hasattr(self._processor, 'check_params'):
                 self._processor.check_params(**self._processor_params)
         self.async = async

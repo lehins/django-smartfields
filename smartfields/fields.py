@@ -235,9 +235,11 @@ class FieldFile(files.FieldFile):
 class FileDescriptor(files.FileDescriptor):
 
     def __set__(self, instance, value):
-        if self.field.manager is not None: # and self.field.manager.should_process:
+        if self.field.manager is not None:
             previous_value = self.__get__(instance)
-            if previous_value is not VALUE_NOT_SET and previous_value._committed:
+            if previous_value is not VALUE_NOT_SET and previous_value._committed and \
+               previous_value != value:
+                # make sure form saving doesn't replace current file with itself
                 self.field.manager.stash_previous_value(previous_value)
         super(FileDescriptor, self).__set__(instance, value)
 
