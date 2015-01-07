@@ -56,10 +56,13 @@ class FileUploadView(View):
 
     @property
     def parent_field_name(self):
-        if self._parent_field_name is None:
-            self._parennt_field_name = self.kwargs.get('parent_field_name', None)
         if self._parent_field_name is not None:
             return self._parent_field_name
+        if self._parent_field_name is None:
+            self._parent_field_name = self.kwargs.get('parent_field_name', None)
+        if self._parent_field_name is None and hasattr(self.model, 'parent_field_name'):
+            self._parent_field_name = getattr(self.model, 'parent_field_name')
+        return self._parent_field_name
 
     @parent_field_name.setter
     def parent_field_name(self, value):
