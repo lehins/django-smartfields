@@ -27,6 +27,31 @@ class TextTestCase(TestCase):
         self.assertIsNotNone(getattr(instance, '_smartfields_managers', None))
         self.assertTrue(getattr(instance, 'smartfields_managers', None))
 
+    def test_manual_processing(self):
+        instance = TextTesting(title='Snatch')
+        descr_file = open(add_base("static/defaults/snatch.html"), 'r')
+        descr = descr_file.read()
+        descr_file.close()
+        descr_plain_file = open(add_base("static/defaults/snatch.txt"), 'r')
+        descr_plain = descr_plain_file.read()
+        descr_plain_file.close()
+        instance.summary = descr 
+        self.assertEqual(instance.summary, descr)
+        self.assertFalse(instance.summary_plain)
+        self.assertFalse(instance.summary_beginning)
+        instance.smartfields_process(field_names=['summary'])
+        self.assertEqual(instance.summary, descr)
+        self.assertEqual(self.strip(instance.summary_plain), self.strip(descr_plain))
+        self.assertFalse(instance.summary_beginning)
+        instance = TextTesting(title='Snatch')
+        instance.summary = descr 
+        instance.smartfields_process()
+        self.assertEqual(instance.summary, descr)
+        self.assertEqual(self.strip(instance.summary_plain), self.strip(descr_plain))
+        self.assertEqual(instance.summary_beginning, instance.summary_plain[:100])
+        self.assertEqual(instance.smartfields_get_field_status('summary_beginning'),
+                         {'state': 'ready'})
+
     def test_html(self):
         instance = TextTesting.objects.get(title='Snatch')
         descr_plain = open(add_base("static/defaults/snatch.txt"), 'r')

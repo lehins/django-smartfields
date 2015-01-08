@@ -26,6 +26,9 @@ class BaseProcessor(object):
         return (type(self) is type(other) and 
                 self.default_params == other.default_params)
 
+    def check_params(self, **kwargs):
+        pass
+
     def get_params(self, **kwargs):
         params = self.default_params.copy()
         params.update(kwargs)

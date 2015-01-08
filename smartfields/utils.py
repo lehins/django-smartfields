@@ -20,7 +20,8 @@ class ProcessingError(Exception):
 
 class NamedTemporaryFile(base.File):
     """This class is required for FileStorage to make an attempt in moving the
-    file, instead of copying it by chunks in memory
+    file, instead of copying it by chunks in memory. Borrowed implementation from
+    `django.core.files.uploadedfile.TemporaryUploadedFile`
 
     """
     def __init__(self, **kwargs):
@@ -34,15 +35,11 @@ class NamedTemporaryFile(base.File):
         return self.file.name
 
     def close(self):
-        # caching the size before closing for proper file moving and saving
         self._size = self._get_size()
         try:
             return self.file.close()
         except OSError as e:
             if e.errno != errno.ENOENT:
-                # Means the file was moved or deleted before the tempfile
-                # could unlink it.  Still sets self.file.close_called and
-                # calls self.file.file.close() before the exception
                 raise
 
 @deconstructible
@@ -110,15 +107,15 @@ class UploadTo(object):
     def __eq__(self, other):
         return (type(self) is type(other) and
                 self.basefolder == other.basefolder and
-                self.subfolder == subfolder and
-                self.filename == filename and
-                self.name == name and
-                self.ext == ext and
-                self.app_label == app_label and
-                self.model_name == model_name and
-                self.parent_field_name == parent_field_name and
-                self.field_name == field_name and
-                self.generator is generator)
+                self.subfolder == other.subfolder and
+                self.filename == other.filename and
+                self.name == other.name and
+                self.ext == other.ext and
+                self.app_label == other.app_label and
+                self.model_name == other.model_name and
+                self.parent_field_name == other.parent_field_name and
+                self.field_name == other.field_name and
+                self.generator is other.generator)
         
     def __call__(self, instance, filename):
         structure = []

@@ -3,91 +3,38 @@ from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from django.utils.text import slugify
 
+from decimal import Decimal, InvalidOperation
+
 from smartfields import fields, processors
 from smartfields.dependencies import Dependency, FileDependency
 from smartfields.utils import UploadTo, VALUE_NOT_SET
 
+# PRE PROCESSING
 
-def _test_handler(value, instance, field, event):
-    setattr(instance, "%s_event" % event[0], 
-            "%s_%s.%s=%s" % (event[0], event[1], field.name, value))
-    if value is VALUE_NOT_SET:
-        return
-    value+= 1
-    setattr(instance, field.name, value)
+def _decimal_pre_processor(value):
+    try:
+        return Decimal(value)
+    except (TypeError, InvalidOperation):
+        return Decimal('0')
+
+def _incrementer(value):
+    try:
+        return value+1
+    except (TypeError, ValueError): pass
     
-def pre_init_handler(*args, **kwargs):
-    return _test_handler(*args, event=('pre', 'init'))
 
-def post_init_handler(*args, **kwargs):
-    return _test_handler(*args, event=('post', 'init'))
-
-def pre_save_handler(*args, **kwargs):
-    return _test_handler(*args, event=('pre', 'save'))
-
-def post_save_handler(*args, **kwargs):
-    return _test_handler(*args, event=('post', 'save'))
-
-def pre_delete_handler(*args, **kwargs):
-    return _test_handler(*args, event=('pre', 'delete'))
-
-def post_delete_handler(*args, **kwargs):
-    return _test_handler(*args, event=('post', 'delete'))
-
-
-class HandlingTesting(models.Model):
-    pre_event = None
-    post_event = None
-
-    field_1 = fields.IntegerField(null=True, dependencies=[
-        Dependency(pre_init=pre_init_handler,
-                   post_init=post_init_handler,
-                   pre_save=pre_save_handler,
-                   post_save=post_save_handler,
-                   pre_delete=pre_delete_handler,
-                   post_delete=post_delete_handler)
+class PreProcessorTesting(models.Model):
+    
+    field_1 = fields.DecimalField(decimal_places=1, max_digits=4, dependencies=[
+        Dependency(pre_processor=_decimal_pre_processor, processor=_incrementer),
+        Dependency(attname='field_2', pre_processor=int)
     ])
-
-    def save(self):
-        self.field_1 = 117
-        super(HandlingTesting, self).save()
-
-    def delete(self):
-        self.field_1 = 217
-        super(HandlingTesting, self).delete()
-
-
-class InstanceHandlingTesting(models.Model):
-    pre_event = None
-    post_event = None
-
-    field_1 = fields.IntegerField(null=True, dependencies=[
-        Dependency(pre_init='pre_init',
-                   post_init='post_init',
-                   pre_save='pre_save',
-                   post_save='post_save',
-                   pre_delete='pre_delete',
-                   post_delete='post_delete')
+    field_2 = fields.IntegerField(dependencies=[
+        Dependency(pre_processor=_incrementer)
     ])
-
-    def pre_init(self, value, *args, **kwargs):
-        return _test_handler(value, self, *args, event=('pre', 'init'))
-
-    def post_init(self, value, *args, **kwargs):
-        return _test_handler(value*10, self, *args, event=('post', 'init'))
-
-    def pre_save(self, value, *args, **kwargs):
-        return _test_handler(value*10, self, *args, event=('pre', 'save'))
-
-    def post_save(self, value, *args, **kwargs):
-        return _test_handler(value*10, self, *args, event=('post', 'save'))
-
-    def pre_delete(self, value, *args, **kwargs):
-        return _test_handler(value*10, self, *args, event=('pre', 'delete'))
-
-    def post_delete(self, value, *args, **kwargs):
-        return _test_handler(value*10, self, *args, event=('post', 'delete'))
-
+    field_3 = fields.SlugField(dependencies=[
+        Dependency(pre_processor=processors.SlugProcessor)
+    ])
 
 # TEXT PROCESSING TESTING
 
@@ -101,7 +48,7 @@ class TextTesting(models.Model):
         Dependency(processor=processors.UniqueProcessor())
     ])
     slug = fields.SlugField(max_length=9, unique=True, dependencies=[
-        Dependency(default=_title_getter, processor=processors.SlugProcessor())
+        Dependency(default=_title_getter, processor=processors.SlugProcessor)
     ])
     summary = fields.TextField(dependencies=[
         Dependency(suffix='plain', processor=processors.HTMLProcessor())
@@ -109,19 +56,19 @@ class TextTesting(models.Model):
     summary_plain = fields.TextField(dependencies=[
         Dependency(attname='summary_beginning', processor=processors.CropProcessor())
     ])
-    summary_beginning = models.CharField(max_length=100)
+    summary_beginning = fields.CharField(max_length=100)
 
 
 # FILE TESTING
 
 
-def _id(value, **kwargs):
+def _id(value):
     return value
 
 def _get_foo(value, instance, field, **kwargs):
     return instance.field_1_foo
 
-def _file_to_lower(f, **kwargs): 
+def _file_to_lower(f): 
     pos = f.tell()
     f.seek(0)
     new_f = ContentFile(f.read().lower())

@@ -23,9 +23,7 @@ class Dependency(object):
     model = None
 
     def __init__(self, attname=None, suffix=None, processor=None, pre_processor=None,
-                 async=False, default=NOT_PROVIDED, pre_init=None, post_init=None, 
-                 pre_save=None, post_save=None, pre_delete=None, post_delete=None, 
-                 processor_params=None, uid=None):
+                 async=False, default=NOT_PROVIDED, processor_params=None, uid=None):
         """
         Every Dependency depends on a field, either itself or another field specified
         by a ``field_name``.
@@ -40,9 +38,6 @@ class Dependency(object):
         self._processor = processor
         self._pre_processor = pre_processor
         self._default = default
-        self._pre_init, self._post_init = pre_init, post_init
-        self._pre_save, self._post_save = pre_save, post_save
-        self._pre_delete, self._post_delete = pre_delete, post_delete
         self._processor_params = processor_params or {}
         if self.has_pre_processor():
             if inspect.isclass(pre_processor) and issubclass(pre_processor, BaseProcessor):
@@ -67,12 +62,6 @@ class Dependency(object):
                 self._suffix == other._suffix and
                 self._processor == other._processor and
                 self._default == other._default and
-                self._pre_init == other._pre_init and 
-                self._post_init == other._post_init and
-                self._pre_save == other._pre_save and
-                self._post_save == other._post_save and 
-                self._pre_delete == other._pre_delete and
-                self._post_delete == other._post_delete and
                 self._processor_params == other._processor_params and
                 self._uid == other._uid)
 
@@ -154,25 +143,28 @@ class Dependency(object):
                 return True
         return False
 
-    def post_init(self, value, instance, *args, **kwargs):
+    def pre_init(self, instance, value, *args, **kwargs):
+        pass
+
+    def post_init(self, instance, value, *args, **kwargs):
         self.set_default(instance, value)
 
+    def pre_save(self, instance, value, *args, **kwargs):
+        pass
+
+    def post_save(self, instance, value, *args, **kwargs):
+        pass
+
+    def pre_delete(self, instance, value, *args, **kwargs):
+        pass
+
+    def post_delete(self, instance, value, *args, **kwargs):
+        self.cleanup(instance)
+
     def handle(self, instance, event, *args, **kwargs):
-        try:
-            value = self.field.value_from_object(instance)
-        except (KeyError, AttributeError):
-            # necessary for pre_init
-            value = None
-        custom_event_handler = getattr(self, "_%s" % event, None)
-        if callable(custom_event_handler):
-            custom_event_handler(value, instance, self.field, *args, **kwargs)
-        elif isinstance(custom_event_handler, six.string_types):
-            custom_event_handler = getattr(instance, custom_event_handler, None)
-            if callable(custom_event_handler):
-                custom_event_handler(value, self.field, *args, **kwargs)
-        event_handler = getattr(self, event, None)
-        if callable(event_handler):
-            event_handler(value, instance, *args, **kwargs)
+        value = self.field.value_from_object(instance)
+        event_handler = getattr(self, event)
+        event_handler(instance, value, *args, **kwargs)
 
     def set_value(self, instance, value, is_default=False):
         if not is_default and self._dependee is self.field:
@@ -193,16 +185,17 @@ class Dependency(object):
                 value = self.get_value(instance)
                 field = self._dependee
         if (field is None or value not in field.empty_values) and self.has_processor():
-            if isinstance(value, FieldFile) and not value._committed:
-                value.save(value.name, value, save=False)
             if self.async:
                 self._processor.progress_setter = progress_setter
                 progress_setter(self._processor, 0)
             try:
-                new_value = self._processor(
-                    value, instance=instance, field=self.field, 
-                    dependee=self._dependee, **self._processor_params
-                )
+                if isinstance(self._processor, BaseProcessor):
+                    new_value = self._processor(
+                        value, instance=instance, field=self.field, 
+                        dependee=self._dependee, **self._processor_params
+                    )
+                else:
+                    new_value = self._processor(value)
             finally:
                 if self.async:
                     delattr(self._processor, 'progress_setter')
@@ -213,10 +206,13 @@ class Dependency(object):
 
     def pre_process(self, instance, value):
         if self.has_pre_processor():
-            new_value = self._pre_processor(
-                value, instance=instance, field=self.field, 
-                dependee=self._dependee, **self._processor_params
-            )
+            if isinstance(self._pre_processor, BaseProcessor):
+                new_value = self._pre_processor(
+                    value, instance=instance, field=self.field, 
+                    dependee=self._dependee, **self._processor_params
+                )
+            else:
+                new_value = self._pre_processor(value)
             if self._dependee is self.field:
                 return new_value
             else:
@@ -224,6 +220,7 @@ class Dependency(object):
         return VALUE_NOT_SET
 
 
+@deconstructible
 class FileDependency(Dependency):
     descriptor_class = files.FileDescriptor
 
@@ -280,7 +277,7 @@ class FileDependency(Dependency):
             assert isinstance(self._dependee, files.FileField), \
                 "FileDependency can not set file like attributes on non file like fields."
 
-    def post_init(self, value, instance, *args, **kwargs):
+    def post_init(self, instance, value, *args, **kwargs):
         if self._dependee is None and self._processor and \
             value not in self.field.empty_values and isinstance(value, files.FieldFile):
             # regenerate the dependent filename and reattach it.
@@ -288,10 +285,7 @@ class FileDependency(Dependency):
         else:
             if self._dependee is None:
                 self.set_value(instance, None)
-            super(FileDependency, self).post_init(value, instance, *args, **kwargs)
-
-    def post_delete(self, value, instance, *args, **kwargs):
-        self.cleanup(instance)
+            super(FileDependency, self).post_init(instance, value, *args, **kwargs)
 
     def get_directory_name(self, upload_to):
         return os.path.normpath(
