@@ -64,7 +64,7 @@ class FieldManager(object):
         return self._stashed_value is not VALUE_NOT_SET
 
     def stash_previous_value(self, value):
-        if self._stashed_value is VALUE_NOT_SET:
+        if not self.has_stashed_value:
             self._stashed_value = value
 
     def handle(self, instance, event, *args, **kwargs):
@@ -122,7 +122,7 @@ class FieldManager(object):
     def _process(self, dependency, instance, progress_setter=None):
         # process single dependency
         value = self.field.value_from_object(instance)
-        dependency.process(value, instance, progress_setter=progress_setter)
+        dependency.process(instance, value, progress_setter=progress_setter)
 
     def process(self, instance, force=False):
         """Processing is triggered by field's pre_save method. It will be
@@ -139,12 +139,13 @@ class FieldManager(object):
                 d.stash_previous_value(instance, d.get_value(instance))
             try:
                 if self.has_async:
-                    for d in filter(lambda d: not d.async, self.dependencies):
+                    for d in filter(lambda d: not d.async and d.should_process(), 
+                                    self.dependencies):
                         self._process(d, instance)
                     async_handler = AsyncHandler(self, instance)
                     async_handler.start()
                 else:
-                    for d in self.dependencies:
+                    for d in filter(lambda d: d.should_process(), self.dependencies):
                         self._process(d, instance)
                     self.finished_processing(instance)
             except BaseException as e:
@@ -153,6 +154,13 @@ class FieldManager(object):
                     raise
         elif self.has_stashed_value:
             self.cleanup_stash()
+
+    def pre_process(self, instance, value):
+        for d in filter(lambda d: d.has_pre_processor(), self.dependencies):
+            new_value = d.pre_process(instance, value)
+            if new_value is not VALUE_NOT_SET:
+                value = new_value
+        return value
                 
 
     def get_status_key(self, instance):

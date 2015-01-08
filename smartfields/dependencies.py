@@ -15,15 +15,16 @@ __all__ = [
     'Dependency', 'FileDependency'
 ]
 
+
 @deconstructible
 class Dependency(object):
     _stashed_value = VALUE_NOT_SET
     field = None
     model = None
 
-    def __init__(self, attname=None, suffix=None, processor=None, async=False, 
-                 default=NOT_PROVIDED, pre_init=None, post_init=None, pre_save=None, 
-                 post_save=None, pre_delete=None, post_delete=None, 
+    def __init__(self, attname=None, suffix=None, processor=None, pre_processor=None,
+                 async=False, default=NOT_PROVIDED, pre_init=None, post_init=None, 
+                 pre_save=None, post_save=None, pre_delete=None, post_delete=None, 
                  processor_params=None, uid=None):
         """
         Every Dependency depends on a field, either itself or another field specified
@@ -37,15 +38,22 @@ class Dependency(object):
         self._attname = attname
         self._suffix = suffix
         self._processor = processor
+        self._pre_processor = pre_processor
         self._default = default
         self._pre_init, self._post_init = pre_init, post_init
         self._pre_save, self._post_save = pre_save, post_save
         self._pre_delete, self._post_delete = pre_delete, post_delete
         self._processor_params = processor_params or {}
+        if self.has_pre_processor():
+            if inspect.isclass(pre_processor) and issubclass(pre_processor, BaseProcessor):
+                self._pre_processor = pre_processor()
+            assert callable(self._pre_processor), "pre_processor has to be a function"
+            if hasattr(self._pre_processor, 'check_params'):
+                self._pre_processor.check_params(**self._processor_params)
         if self.has_processor():
-            assert callable(self._processor), "processor has to be a function"
             if inspect.isclass(processor) and issubclass(processor, BaseProcessor):
                 self._processor = processor()
+            assert callable(self._processor), "processor has to be a function"
             if hasattr(self._processor, 'check_params'):
                 self._processor.check_params(**self._processor_params)
         self.async = async
@@ -120,10 +128,13 @@ class Dependency(object):
     def has_processor(self):
         return self._processor is not None
 
+    def has_pre_processor(self):
+        return self._pre_processor is not None
+
     def has_default(self):
         return self._default is not NOT_PROVIDED
         
-    def get_default(self, value, instance):
+    def get_default(self, instance, value):
         if self.has_default():
             if callable(self._default):
                 return self._default(
@@ -133,18 +144,18 @@ class Dependency(object):
             return self._default
         return VALUE_NOT_SET
 
-    def set_default(self, value, instance):
+    def set_default(self, instance, value):
         dependee = self._dependee
         if dependee is None or \
            dependee.value_from_object(instance) in dependee.empty_values:
-            default_value = self.get_default(value, instance)
+            default_value = self.get_default(instance, value)
             if default_value is not VALUE_NOT_SET:
                 self.set_value(instance, default_value, is_default=True)
                 return True
         return False
 
     def post_init(self, value, instance, *args, **kwargs):
-        self.set_default(value, instance)
+        self.set_default(instance, value)
 
     def handle(self, instance, event, *args, **kwargs):
         try:
@@ -175,10 +186,10 @@ class Dependency(object):
     def get_value(self, instance):
         return getattr(instance, self.name)
 
-    def process(self, value, instance, progress_setter=None):
+    def process(self, instance, value, progress_setter=None):
         field = self.field
         if value in field.empty_values or not self.has_processor():
-            if self.set_default(value, instance) and self.has_processor():
+            if self.set_default(instance, value) and self.has_processor():
                 value = self.get_value(instance)
                 field = self._dependee
         if (field is None or value not in field.empty_values) and self.has_processor():
@@ -199,6 +210,18 @@ class Dependency(object):
                 progress_setter(self._processor, 1)
             if new_value is not VALUE_NOT_SET:
                 self.set_value(instance, new_value)
+
+    def pre_process(self, instance, value):
+        if self.has_pre_processor():
+            new_value = self._pre_processor(
+                value, instance=instance, field=self.field, 
+                dependee=self._dependee, **self._processor_params
+            )
+            if self._dependee is self.field:
+                return new_value
+            else:
+                self.set_value(instance, new_value)
+        return VALUE_NOT_SET
 
 
 class FileDependency(Dependency):

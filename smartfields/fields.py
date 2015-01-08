@@ -28,10 +28,12 @@ class SmartfieldsDescriptor(object):
         self.field = field
 
     def __set__(self, instance, value):
-        if self.field.manager is not None and self.field.manager.should_process:
-            previous_value = instance.__dict__.get(self.field.name)
-            if previous_value is not VALUE_NOT_SET:
-                self.field.manager.stash_previous_value(previous_value)
+        if self.field.manager is not None:
+            value = self.field.manager.pre_process(instance, value)
+            if self.field.manager.should_process:
+                previous_value = instance.__dict__.get(self.field.name)
+                if previous_value is not VALUE_NOT_SET:
+                    self.field.manager.stash_previous_value(previous_value)
         instance.__dict__[self.field.name] = self.field.to_python(value)
 
     def __get__(self, instance=None, model=None):
@@ -236,6 +238,7 @@ class FileDescriptor(files.FileDescriptor):
 
     def __set__(self, instance, value):
         if self.field.manager is not None:
+            value = self.field.manager.pre_process(instance, value)
             previous_value = self.__get__(instance)
             if previous_value is not VALUE_NOT_SET and previous_value._committed and \
                previous_value != value:
