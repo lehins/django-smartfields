@@ -46,13 +46,13 @@ specified for. Each `Dependency` handles the value from a field through
 ``pre_processor`` and ``processor`` kwargs. An actual model attribute or a field
 which a processed value will be assigned to is specifyied by one or none of the
 kwargs ``suffix`` and ``attname``. More details on those see documentation on
-``Dependency``, but for now let's see couple simple examples. 
+``Dependency``, but for now let's see a couple of simple examples. 
 
 Example 1
 ^^^^^^^^^
 
-* Let's say we have a Product model where a slug needs to be automatically
-  generated from product's name and also properly modified to look like a slug.
+Let's say we have a Product model where a slug needs to be automatically
+generated from product's name and also properly modified to look like a slug.
 
 .. code-block:: python
 
@@ -70,7 +70,7 @@ Example 1
             Dependency(default=name_getter, processor=slugify)
         ])
 
-Here is what will happen in above example whenever a new instance of `Product`
+Here is what will happen in above example whenever an instance of `Product`
 is created:
 
     * Whenever `Product` is initilized and `slug` field is empty, it will
