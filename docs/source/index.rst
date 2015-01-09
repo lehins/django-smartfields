@@ -48,6 +48,9 @@ which a processed value will be assigned to is specifyied by one or none of the
 kwargs ``suffix`` and ``attname``. More details on those see documentation on
 ``Dependency``, but for now let's see couple simple examples. 
 
+Example 1
+^^^^^^^^^
+
 * Let's say we have a Product model where a slug needs to be automatically
   generated from product's name and also properly modified to look like a slug.
 
@@ -79,4 +82,4 @@ is created:
       a slug. Important part is, processor will be invoked only whenever the
       value of `slug` field has changed.
      
-**MORE DOCS IS ON THE WAY**
+**MORE DOCS IS ON THE WAY** Stay tuned.
