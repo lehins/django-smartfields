@@ -50,8 +50,8 @@ kwargs ``suffix`` and ``attname``. More details on those see documentation in
 :doc:`dependencies` and :doc:`processors` sections,
 but for now let's see a couple of simple examples.
 
-Example 1
-^^^^^^^^^
+Example
+^^^^^^^
 
 Let's say we have a Product model where a slug needs to be automatically
 generated from product's name and also properly modified to look like a slug.

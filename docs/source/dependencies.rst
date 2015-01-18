@@ -19,7 +19,9 @@ Dependencies
 			 instance of a class derived from
 			 :class:`~smartfields.processors.BaseProcessor`. In a latter case it will
 			 receive all arguments: ``value``, ``instance``, ``field``,
-			 ``field_value``, ``dependee`` plus any custom kwargs.
+			 ``field_value``, ``dependee`` plus any custom kwargs. If a class is
+			 passed instead of it's instance it will be instantiated, to prevent a
+			 common mistake.
 
 
 
