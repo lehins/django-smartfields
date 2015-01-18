@@ -60,4 +60,4 @@ Dependencies
 * `BeautifulSoup4 <https://pypi.python.org/pypi/beautifulsoup4/>`_ - (optional) for HTML stripping
 * `django-crispy-forms <https://readthedocs.org/projects/django-crispy-forms/>`_ - (optional) for ajax uploading.
 * `Plupload <http://www.plupload.com/>`_ - (optional) for ajax uploading.
-
+* `Bootstrap3 <http://getbootstrap.com/>`_ - (optional) for ajax uploading.
