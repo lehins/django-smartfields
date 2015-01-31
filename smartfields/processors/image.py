@@ -1,3 +1,4 @@
+import warnings
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.utils import six
@@ -8,11 +9,13 @@ from smartfields.utils import ProcessingError
 
 try:
     from PIL import Image
+    from wand.image import Image as WandImage
 except ImportError:
-    pass
+    Image = None
+    WandImage = None
 
 __all__ = [
-    'ImageProcessor', 'ImageFormat', 'supported_formats'
+    'ImageProcessor', 'ImageFormat', 'supported_formats', 'WandImageProcessor'
 ]
 
 PILLOW_MODES = [
@@ -245,16 +248,16 @@ class ImageProcessor(BaseFileProcessor):
                 new_width = _round(new_height*ratio)
         return new_width, new_height
 
-    def resize(self, image, scale):
+    def resize(self, image, scale=None, **kwargs):
         if scale is not None:
             new_size = self.get_dimensions(*image.size, **scale)
             if image.size != new_size:
                 return image.resize(new_size, resample=self.resample)
         return image
 
-    def convert(self, image, format):
+    def convert(self, image, format=None, **kwargs):
         if format is None:
-            return image
+            return None
         new_mode = format.get_mode(old_mode=image.mode)
         if new_mode != image.mode:
             if new_mode == 'P':
@@ -266,6 +269,16 @@ class ImageProcessor(BaseFileProcessor):
                     new_mode, palette=Image.ADAPTIVE, colors=palette_size)
             else:
                 image = image.convert(new_mode)
+        if format != image.format:
+            stream_out = six.BytesIO()
+            image.save(stream_out, format=str(format), **format.save_kwargs)
+            return stream_out
+
+    def get_image(self, stream, **kwargs):
+        with warnings.catch_warnings():
+            if not settings.DEBUG:
+                warnings.simplefilter("error", Image.DecompressionBombWarning)
+            image = Image.open(stream)
         return image
 
     def process(self, value, scale=None, format=None, **kwargs):
@@ -275,19 +288,14 @@ class ImageProcessor(BaseFileProcessor):
         stream_out = None
         value.seek(cur_pos)
         try:
-            if scale is not None or format is not None:
-                # nothing to do, just return copy of the file
-                image = Image.open(stream)
-                image = self.resize(image, scale)
-                image = self.convert(image, format)
-                if format != image.format:
-                    stream_out = six.BytesIO()
-                    image.save(stream_out, format=str(format), **format.save_kwargs)
+            image = self.get_image(stream, scale=scale, format=format, **kwargs)
+            image = self.resize(image, scale=scale, format=format, **kwargs)
+            stream_out = self.convert(image, scale=scale, format=format, **kwargs)
             if stream_out is not None:
                 content = stream_out.getvalue()
             else:
                 content = stream.getvalue()
-        except (IOError, OSError) as e:
+        except (IOError, OSError, Image.DecompressionBombWarning) as e:
             raise ProcessingError(
                 "There was a problem with image conversion: %s" % e)
         finally:
@@ -295,3 +303,24 @@ class ImageProcessor(BaseFileProcessor):
                 stream_out.close()
             stream.close()
         return ContentFile(content)
+
+
+class WandImageProcessor(ImageProcessor):
+
+    def resize(self, image, scale=None, **kwargs):
+        if scale is not None:
+            new_size = self.get_dimensions(*image.size, **scale)
+            if image.size != new_size:
+                image.resize(*new_size)
+        return image
+
+    def convert(self, image, format=None, **kwargs):
+        if format is not None:
+            image.format = str(format)
+            stream_out = six.BytesIO()
+            image.save(file=stream_out)
+            return stream_out
+        
+    def get_image(self, stream, **kwargs):
+        return WandImage(file=stream)
+        

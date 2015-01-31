@@ -134,6 +134,10 @@ class ImageTesting(models.Model):
         FileDependency(suffix='jpeg2000', 
                        processor=processors.ImageProcessor(format='JPEG2000')),
     ])
+    image_5 = fields.ImageField(upload_to=UploadTo(name='image_5'), dependencies=[
+        FileDependency(suffix='jpeg', processor=processors.WandImageProcessor(
+            format='JPEG', scale={'max_width': 200, 'max_height': 150}))
+    ])
 
 
 class DependencyTesting(models.Model):

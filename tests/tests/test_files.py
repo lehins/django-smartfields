@@ -147,6 +147,21 @@ class ImageTestCase(FileBaseTestCase):
         instance.delete()
         self.assertFalse(os.path.isfile(add_base("media/image_2/lenna_square.png")))
 
+    def test_wand_image_processor(self):
+        instance = ImageTesting.objects.create()
+        lenna_square = File(open(add_base("static/images/lenna_square.png"), 'rb'))
+        instance.image_5 = lenna_square
+        instance.save()
+        # make sure conversion went through properly
+        self.assertEquals(instance.image_5_jpeg.width, 150)
+        self.assertEquals(instance.image_5_jpeg.height, 150)
+        # save instance, so files get commited to storage
+        path = instance.image_5.path
+        path_jpeg = instance.image_5_jpeg.path
+        # check to see that files got commited
+        self.assertTrue(os.path.isfile(path))
+        self.assertTrue(os.path.isfile(path_jpeg))
+
     def test_image_processor(self):
         instance = ImageTesting.objects.create()
         lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))

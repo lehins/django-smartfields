@@ -19,7 +19,7 @@ django-smartfields
 
 .. image:: https://pypip.in/download/django-smartfields/badge.svg
    :target: https://pypi.python.org/pypi/django-smartfields/
-   :alt: Downloads
+   :alt: Number of PyPI downloads
 
 Django Model Fields that are smart.
 -----------------------------------
