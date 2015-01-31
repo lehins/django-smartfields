@@ -9,6 +9,7 @@ install:
   - pip install -q coveralls
   - pip install -q beautifulsoup4
   - pip install -q Pillow
+  - pip install -q Wand
   - pip install -q Django==$DJANGO_VERSION
   - pip install -q django-crispy-forms
 before_install:
