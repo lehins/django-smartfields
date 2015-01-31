@@ -184,7 +184,7 @@ class VideoTesting(models.Model):
             FileDependency(suffix='mp4', async=True, processor=processors.FFMPEGProcessor(
                 format='mp4', vcodec='libx264', vbitrate='128k',
                 maxrate='128k', bufsize='256k', width='trunc(oh*a/2)*2',
-                height=240, threads=0, acodec='libfdk_aac', abitrate='96k')),
+                height=240, threads=0, acodec='libmp3lame', abitrate='96k')),
         ])
 
     def has_upload_permission(self, user, field_name=None):

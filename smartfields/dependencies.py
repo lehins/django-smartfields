@@ -1,4 +1,6 @@
 import os, datetime, inspect
+from django.apps import apps
+from django.core.exceptions import AppRegistryNotReady
 from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.db.models.fields import files, NOT_PROVIDED, FieldDoesNotExist
@@ -77,7 +79,7 @@ class Dependency(object):
     def _dependee(self):
         try:
             return self.model._meta.get_field(self.name)
-        except FieldDoesNotExist: pass
+        except (FieldDoesNotExist, AppRegistryNotReady): pass
 
     @property
     def has_stashed_value(self):
@@ -274,7 +276,7 @@ class FileDependency(Dependency):
             # creating a new field for the descriptor.
             setattr(model, self.name, self.descriptor_class(self))
         else:
-            assert isinstance(self._dependee, files.FileField), \
+            assert apps.ready or isinstance(self._dependee, files.FileField), \
                 "FileDependency can not set file like attributes on non file like fields."
 
     def post_init(self, instance, value, *args, **kwargs):

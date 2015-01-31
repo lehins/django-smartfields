@@ -52,7 +52,7 @@ setup(
     tests_require=[
         'Django>=1.7.0',
         'beautifulsoup4',
-        'Pillow',
+        'Pillow>=2.5.0',
         'django-crispy-forms'
     ],
     test_suite='runtests.runtests'
