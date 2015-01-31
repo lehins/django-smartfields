@@ -14,7 +14,9 @@ install:
   - pip install -q Django==$DJANGO_VERSION
   - pip install -q django-crispy-forms
 before_install:
-  - tests/install_ffmpeg.sh
+  - sudo apt-add-repository ppa:jon-severinsson/ffmpeg
+  - sudo apt-get update
+  - sudo apt-get -y install ffmpeg
 script:
   coverage run --source='smartfields' setup.py test
 after_success:
@@ -25,4 +27,7 @@ notifications:
       - lehins@yandex.ru
     on_success: never
     on_failure: always
+branches:
+  except:
+    - /^v[0-9].[0-9].[0-9]/
 
