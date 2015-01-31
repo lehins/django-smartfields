@@ -9,9 +9,11 @@ from smartfields.utils import ProcessingError
 
 try:
     from PIL import Image
-    from wand.image import Image as WandImage
 except ImportError:
     Image = None
+try:
+    from wand.image import Image as WandImage
+except ImportError:
     WandImage = None
 
 __all__ = [
@@ -161,12 +163,15 @@ supported_formats = ImageFormats(getattr(settings, 'SMARTFIELDS_IMAGE_FORMATS', 
 
 class ImageProcessor(BaseFileProcessor):
     field_file_class = ImageFieldFile
-    # resampling was renamed from Image.ANTIALIAS to Image.LANCZOS
-    if hasattr(Image, 'LANCZOS'):
-        resample = Image.LANCZOS
-    else:
-        resample = Image.ANTIALIAS 
     supported_formats = supported_formats
+
+    @property
+    def resample(self):
+        # resampling was renamed from Image.ANTIALIAS to Image.LANCZOS
+        if hasattr(Image, 'LANCZOS'):
+            return Image.LANCZOS
+        else:
+            return Image.ANTIALIAS 
 
     def get_params(self, **kwargs):
         params = super(ImageProcessor, self).get_params(**kwargs)
