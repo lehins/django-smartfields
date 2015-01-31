@@ -17,6 +17,10 @@ django-smartfields
    :target: https://landscape.io/github/lehins/django-smartfields/master
    :alt: Code Health
 
+.. image:: https://pypip.in/version/django-smartfields/badge.svg
+    :target: https://pypi.python.org/pypi/django-smartfields/
+    :alt: Latest Version
+
 .. image:: https://pypip.in/download/django-smartfields/badge.svg
    :target: https://pypi.python.org/pypi/django-smartfields/
    :alt: Number of PyPI downloads
