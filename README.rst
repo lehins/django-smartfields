@@ -5,6 +5,10 @@ django-smartfields
    :target: https://readthedocs.org/projects/django-smartfields/?badge=latest
    :alt: Documentation Status
 
+.. image:: https://landscape.io/github/lehins/django-smartfields/master/landscape.png
+   :target: https://landscape.io/github/lehins/django-smartfields/master
+   :alt: Code Health
+
 .. image:: https://travis-ci.org/lehins/django-smartfields.svg?branch=master   
    :target: https://travis-ci.org/lehins/django-smartfields
    :alt: Travis-CI
@@ -12,10 +16,6 @@ django-smartfields
 .. image:: https://coveralls.io/repos/lehins/django-smartfields/badge.png?branch=master 
    :target: https://coveralls.io/r/lehins/django-smartfields
    :alt: Tests Coverage
-
-.. image:: https://landscape.io/github/lehins/django-smartfields/master/landscape.png
-   :target: https://landscape.io/github/lehins/django-smartfields/master
-   :alt: Code Health
 
 .. image:: https://pypip.in/version/django-smartfields/badge.svg
     :target: https://pypi.python.org/pypi/django-smartfields/

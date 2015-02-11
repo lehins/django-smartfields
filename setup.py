@@ -23,14 +23,14 @@ setup(
     long_description='%s\n\n%s' % (read('README.rst'), read('CHANGELOG.rst')),
     author='Alexey Kuleshevich',
     author_email='lehins@yandex.ru',
-    license='GNU GPL v2.0',
+    license='MIT License',
     url='https://github.com/lehins/django-smartfields',
     platforms=["any"],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Framework :: Django',
         'Intended Audience :: Developers',
-        'License :: OSI Approved :: GNU General Public License v2 (GPLv2)',
+        'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
@@ -43,8 +43,8 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
     keywords=[
-        "django", "model fields", "declarative", "FileField cleanup", "FileField conversion",
-        "ajax uploading"
+        "django", "model fields", "declarative", "FileField cleanup", 
+        "FileField conversion", "ImageField conversion", "ajax uploading"
     ],
     install_requires=[
         'Django>=1.7.0'
