@@ -85,6 +85,13 @@ class Dependency(object):
     def has_stashed_value(self):
         return self._stashed_value is not VALUE_NOT_SET
 
+    def get_stashed_value(self):
+        if self._dependee is self.field:
+            return self.field.manager.get_stashed_value()
+        if self.has_stashed_value:
+            return self._stashed_value
+        return self.get_default_value()
+
     def stash_previous_value(self, instance, value):
         if self._stashed_value is VALUE_NOT_SET and self._dependee is not self.field:
             self._stashed_value = value
@@ -106,6 +113,9 @@ class Dependency(object):
         assert not self.async or self._dependee is None, \
             "Cannot do asynchronous processing and setting value on a field, dependee has" \
             "has to be a regular attribute."
+        #assert not(type(self) is Dependency and self.has_processor and self._dependee is None), \
+        #    "Regular Dependency doesn't make sense with non-field type dependee and a " \
+        #    "specified processor. Dependee attname: %s " % self.name
 
     def set_field(self, field):
         assert self.field is None, \
@@ -194,7 +204,8 @@ class Dependency(object):
                 if isinstance(self._processor, BaseProcessor):
                     new_value = self._processor(
                         value, instance=instance, field=self.field, 
-                        dependee=self._dependee, **self._processor_params
+                        dependee=self._dependee, stashed_value=self.get_stashed_value(),
+                        **self._processor_params
                     )
                 else:
                     new_value = self._processor(value)

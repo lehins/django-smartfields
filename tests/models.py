@@ -42,6 +42,12 @@ def _title_getter(value, instance, **kwargs):
     return instance.title
 
 
+class LoopbackProcessor(processors.BaseProcessor):
+
+    def process(self, value, **kwargs):
+        return kwargs['stashed_value']
+
+
 class TextTesting(models.Model):
     
     title = fields.CharField(max_length=11, unique=True, dependencies=[
@@ -57,7 +63,11 @@ class TextTesting(models.Model):
         Dependency(attname='summary_beginning', processor=processors.CropProcessor())
     ])
     summary_beginning = fields.CharField(max_length=100)
-
+    loopback = fields.CharField(max_length=10, dependencies=[
+        Dependency(suffix='foo', processor=LoopbackProcessor),
+        Dependency(processor=LoopbackProcessor)
+    ])
+    loopback_foo = fields.CharField(max_length=10)
 
 # FILE TESTING
 

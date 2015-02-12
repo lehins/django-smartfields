@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.0.4
+-----
+
+* Switched to MIT License
+* Added ``stashed_value`` to processors.
+
 1.0.3
 -----
 

@@ -90,3 +90,12 @@ class TextTestCase(TestCase):
             self.assertRegexpMatches(instance.slug, re.compile(r'lord-of-\d'))
         # make sure infinite loop is impossible
         self.assertRaises(IntegrityError, TextTesting.objects.create, title='Lord of War')
+
+    def test_stashed_value(self):
+        instance = TextTesting.objects.create(loopback='foo')
+        self.assertEqual(instance.loopback_foo, '')
+        self.assertEqual(instance.loopback, '')
+        instance.loopback = 'bar'
+        instance.save()
+        self.assertEqual(instance.loopback_foo, '')
+        self.assertEqual(instance.loopback, '')

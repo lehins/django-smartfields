@@ -16,11 +16,11 @@ class BaseProcessor(object):
     def __init__(self, **kwargs):
         self.default_params = kwargs
 
-    def __call__(self, value, 
-                 instance=None, field=None, field_value=None, dependee=None, **kwargs):
+    def __call__(self, value, instance=None, field=None, dependee=None, 
+                 stashed_value=None, **kwargs):
         return self.process(
-            value, instance=instance, field=field, field_value=field_value, 
-            dependee=dependee, **self.get_params(**kwargs))
+            value, instance=instance, field=field, dependee=dependee, 
+            stashed_value=stashed_value, **self.get_params(**kwargs))
 
     def __eq__(self, other):
         return (type(self) is type(other) and 
@@ -36,11 +36,11 @@ class BaseProcessor(object):
 
     def set_progress(self, progress):
         # see if dependency has set a progress setter, if so use it.
-        try:
-            getattr(self, 'progress_setter')(self, progress)
-        except AttributeError: pass
+        if hasattr(self, 'progress_setter'):
+            progress_setter = getattr(self, 'progress_setter')
+            progress_setter(self, progress)
 
-    def process(self, value, instance, field, field_value, dependee, **params):
+    def process(self, value, instance, field, dependee, stashed_value, **params):
         raise NotImplementedError("process is a required method")
 
 
