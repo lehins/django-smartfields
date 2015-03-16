@@ -8,6 +8,7 @@
 
   window.smartfields = {
     isCsrfAjaxSetup: false,
+    alert: (typeof bootbox !== "undefined" && bootbox !== null ? bootbox.alert : void 0) || alert,
     getFunction: function(func, parent) {
       var cur_obj, hierarchy, last, name, _i, _len;
       if (parent == null) {
@@ -84,41 +85,41 @@
         _this = this;
       this.$elem = $elem;
       this.$form = this.$elem.closest('form');
-      this.$browse_btn = this.$elem.find('.smartfields-btn-browse');
-      csrftoken = smartfields.getCsrfToken(this.$form.find("input[name='csrfmiddlewaretoken']"), this.$browse_btn.data('csrfCookieName'));
+      this.$browseBtn = this.$elem.find('.smartfields-btn-browse');
+      csrftoken = smartfields.getCsrfToken(this.$form.find("input[name='csrfmiddlewaretoken']"), this.$browseBtn.data('csrfCookieName'));
       smartfields.csrfAjaxSetup(csrftoken);
-      this.id = this.$browse_btn.attr('id');
-      this.$delete_btn = $("#" + this.id + "_delete");
+      this.id = this.$browseBtn.attr('id');
+      this.$deleteBtn = $("#" + this.id + "_delete");
       this.deleting = false;
-      this.$upload_btn = $("#" + this.id + "_upload");
+      this.$uploadBtn = $("#" + this.id + "_upload");
       this.$progress = $("#" + this.id + "_progress").hide();
       this.$current = $("#" + this.id + "_current");
       this.$errors = $("#" + this.id + "_errors_extra");
       this.callbacks = {
-        onError: smartfields.getFunction(this.$browse_btn.data('onError')),
-        onComplete: smartfields.getFunction(this.$browse_btn.data('onComplete')),
-        onReady: smartfields.getFunction(this.$browse_btn.data('onReady')),
-        onBusy: smartfields.getFunction(this.$browse_btn.data('onBusy')),
-        onProgress: smartfields.getFunction(this.$browse_btn.data('onProgress'))
+        onError: smartfields.getFunction(this.$browseBtn.data('onError')),
+        onComplete: smartfields.getFunction(this.$browseBtn.data('onComplete')),
+        onReady: smartfields.getFunction(this.$browseBtn.data('onReady')),
+        onBusy: smartfields.getFunction(this.$browseBtn.data('onBusy')),
+        onProgress: smartfields.getFunction(this.$browseBtn.data('onProgress'))
       };
-      this.$browse_btn.change(function() {
+      this.$browseBtn.change(function() {
         var file_name;
-        file_name = _this.$browse_btn.val().split('\\').pop();
+        file_name = _this.$browseBtn.val().split('\\').pop();
         return _this.$current.val(file_name);
       });
-      this.$current_btn = $("#" + this.id + "_link").click(function() {
+      this.$currentBtn = $("#" + this.id + "_link").click(function() {
         var href;
         href = $(this).data('href');
         if (href) {
           return window.open(href, $(this).data('target')).focus();
         }
       });
-      this.$upload_btn.hide();
+      this.$uploadBtn.hide();
       if (!this.$current.val()) {
-        this.$delete_btn.hide();
-        this.$current_btn.parent().hide();
+        this.$deleteBtn.hide();
+        this.$currentBtn.parent().hide();
       }
-      this.$delete_btn.click(function() {
+      this.$deleteBtn.click(function() {
         if (_this.deleting) {
           return false;
         }
@@ -129,15 +130,15 @@
             var extra;
             if (data.state === 'complete') {
               _this.$current.val('');
-              _this.$current_btn.data('href', "").hide();
-              _this.$delete_btn.hide();
+              _this.$currentBtn.data('href', "").hide();
+              _this.$deleteBtn.hide();
               _this.fileDeleted(data, textStatus, jqXHR);
             } else {
               extra = "";
               if (data.task_name) {
                 extra = " , it is " + data.task_name;
               }
-              bootbox.alert("Cannot delete this file right now" + extra + ". Please try again later.");
+              smartfields.alert("Cannot delete this file right now" + extra + ". Please try again later.");
             }
             return _this.deleting = false;
           }
@@ -146,7 +147,7 @@
       this.options = {
         browse_button: this.id,
         container: this.$elem[0],
-        file_data_name: this.$browse_btn.attr('name'),
+        file_data_name: this.$browseBtn.attr('name'),
         init: {
           Init: $.proxy(this.Init, this),
           PostInit: $.proxy(this.PostInit, this),
@@ -172,21 +173,23 @@
           'X-CSRFToken': csrftoken
         };
       }
-      $.extend(this.options, this.$browse_btn.data('pluploadOptions'));
+      $.extend(this.options, this.$browseBtn.data('pluploadOptions'));
       this.uploader = new plupload.Uploader(this.options);
       this.uploader.init();
-      this.form_submitted = false;
+      this.counterName = 'smartfieldsUploadCounter';
+      this.formSubmitted = false;
       this.$form.submit(function() {
-        if (!_this.form_submitted && _this.uploader.files.length > 0) {
-          _this.form_submitted = true;
+        if (_this.uploader.files.length > 0 && _this.uploader.state === plupload.STOPPED) {
           _this.uploader.start();
-          if (!_this.$browse_btn.data('silent')) {
-            bootbox.alert("This form contains a file that can take some time to upload.                        Please, wait for it to finish, you should be able to see the progress                        under the file input. It will advance to the next step once it's done                        uploading");
-          }
-          return false;
-        } else {
-          return !_this.form_submitted;
         }
+        if (!_this.formSubmitted && _this.uploader.state === plupload.STARTED) {
+          _this.$form.data(_this.counterName, (_this.$form.data(_this.counterName) || 0) + 1);
+          _this.formSubmitted = true;
+          if (!_this.$browseBtn.data('silent') && _this.$form.data(_this.counterName) === 1) {
+            smartfields.alert("This form contains a file(s) that can take some time to upload.                        Please, wait for it to finish, you should be able to see the progress                        under the file input. It will advance to the next step once it's done                        uploading");
+          }
+        }
+        return _this.uploader.state === plupload.STOPPED && !_this.$form.data(_this.counterName);
       });
     }
 
@@ -213,8 +216,16 @@
     };
 
     FileField.prototype.handleResponse = function(data, complete, error) {
-      var completed, delayedComplete, progress, _base, _base1, _base2,
+      var completed, delayedComplete, progress, submitForm, _base, _base1, _base2,
         _this = this;
+      submitForm = function(state) {
+        if (_this.formSubmitted && state !== 'error') {
+          _this.$form.data(_this.counterName, (_this.$form.data(_this.counterName) || 1) - 1);
+          if (_this.$form.data(_this.counterName) === 0) {
+            return _this.$form.submit();
+          }
+        }
+      };
       if (data.state === 'complete') {
         completed = false;
         delayedComplete = function() {
@@ -223,19 +234,16 @@
             completed = true;
             _this.$progress.hide();
             _this.setProgress();
-            _this.$delete_btn.show();
+            _this.$deleteBtn.show();
             _this.$current.val(data.file_name);
-            _this.$current_btn.data('href', data.file_url).parent().show();
+            _this.$currentBtn.data('href', data.file_url).parent().show();
             if (typeof complete === "function") {
               complete(data);
             }
             if (typeof (_base = _this.callbacks).onComplete === "function") {
               _base.onComplete(_this, data);
             }
-            if (_this.form_submitted && data.state !== 'error') {
-              _this.form_submitted = false;
-              return _this.$form.submit();
-            }
+            return submitForm(data.state);
           }
         };
         this.setProgress(1, 100, data.task_name);
@@ -256,10 +264,7 @@
           if (typeof (_base1 = this.callbacks).onProgress === "function") {
             _base1.onProgress(this, data, progress);
           }
-          if (this.form_submitted) {
-            this.form_submitted = false;
-            this.$form.submit();
-          }
+          submitForm(data.state);
         }
         return setTimeout((function() {
           return $.get(_this.options.url, function(data) {
@@ -341,14 +346,14 @@
 
     FileField.prototype.PostInit = function(up) {
       var status;
-      this.$browse_btn.click(function() {
+      this.$browseBtn.click(function() {
         return false;
       }).replaceWith(this.$elem.find(".moxie-shim").hide().find('input'));
-      this.$upload_btn.click(function() {
+      this.$uploadBtn.click(function() {
         up.start();
         return false;
       });
-      status = this.$browse_btn.data('status');
+      status = this.$browseBtn.data('status');
       if ((status != null ? status.state : void 0) === 'in_progress') {
         this.$progress.show();
       }
@@ -357,16 +362,16 @@
 
     FileField.prototype.FilesAdded = function(up, files) {
       this.$current.val(files[0].name);
-      this.$upload_btn.show();
+      this.$uploadBtn.show();
       this.$progress.show();
-      this.$delete_btn.hide();
+      this.$deleteBtn.hide();
       up.splice(0, up.files.length - 1);
       return this.setErrors();
     };
 
     FileField.prototype.BeforeUpload = function() {
       this.setProgress();
-      return this.$upload_btn.hide();
+      return this.$uploadBtn.hide();
     };
 
     FileField.prototype.UploadProgress = function(up, file) {
@@ -394,20 +399,20 @@
 
     function MediaField($elem) {
       MediaField.__super__.constructor.call(this, $elem);
-      this.$current_preview = $("#" + this.id + "_preview");
+      this.$currentPreview = $("#" + this.id + "_preview");
     }
 
     MediaField.prototype.fileDeleted = function(data, textStatus, jqXHR) {
-      return this.$current_preview.empty();
+      return this.$currentPreview.empty();
     };
 
     MediaField.prototype.handleResponse = function(data, complete, error) {
       var _this = this;
       return MediaField.__super__.handleResponse.call(this, data, (function(data) {
         var $preview, persistentLoader;
-        $preview = _this.$current_preview.empty().html(data.html_tag);
+        $preview = _this.$currentPreview.empty().html(data.html_tag);
         persistentLoader = function(attempts) {
-          return _this.$current_preview.find("[src]").each(function() {
+          return _this.$currentPreview.find("[src]").each(function() {
             return $(this).load(function() {}).error(function() {
               if (attempts > 0) {
                 return setTimeout((function() {
@@ -424,7 +429,7 @@
     };
 
     MediaField.prototype.BeforeUpload = function() {
-      this.$current_preview.empty();
+      this.$currentPreview.empty();
       return MediaField.__super__.BeforeUpload.apply(this, arguments);
     };
 
