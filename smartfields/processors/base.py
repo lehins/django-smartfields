@@ -36,8 +36,8 @@ class BaseProcessor(object):
 
     def set_progress(self, progress):
         # see if dependency has set a progress setter, if so use it.
-        if hasattr(self, 'progress_setter'):
-            progress_setter = getattr(self, 'progress_setter')
+        progress_setter = getattr(self, 'progress_setter', None)
+        if callable(progress_setter):
             progress_setter(self, progress)
 
     def process(self, value, instance, field, dependee, stashed_value, **params):

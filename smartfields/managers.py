@@ -66,6 +66,7 @@ class FieldManager(object):
     def get_stashed_value(self):
         if self.has_stashed_value:
             return self._stashed_value
+        return self.field.get_default()
 
     def stash_previous_value(self, value):
         if not self.has_stashed_value:

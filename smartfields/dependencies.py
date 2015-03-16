@@ -85,12 +85,12 @@ class Dependency(object):
     def has_stashed_value(self):
         return self._stashed_value is not VALUE_NOT_SET
 
-    def get_stashed_value(self):
+    def get_stashed_value(self, instance, value):
         if self._dependee is self.field:
             return self.field.manager.get_stashed_value()
         if self.has_stashed_value:
             return self._stashed_value
-        return self.get_default_value()
+        return self.get_default(instance, value)
 
     def stash_previous_value(self, instance, value):
         if self._stashed_value is VALUE_NOT_SET and self._dependee is not self.field:
@@ -203,8 +203,8 @@ class Dependency(object):
             try:
                 if isinstance(self._processor, BaseProcessor):
                     new_value = self._processor(
-                        value, instance=instance, field=self.field, 
-                        dependee=self._dependee, stashed_value=self.get_stashed_value(),
+                        value, instance=instance, field=self.field, dependee=self._dependee,
+                        stashed_value=self.get_stashed_value(instance, value),
                         **self._processor_params
                     )
                 else:

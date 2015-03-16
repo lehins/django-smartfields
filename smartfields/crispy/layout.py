@@ -17,7 +17,7 @@ class FileField(Field):
         kwargs['data_plupload_options'] = json.dumps(options)
         if not settings.CSRF_COOKIE_HTTPONLY:
             kwargs['data_csrf_cookie_name'] = settings.CSRF_COOKIE_NAME
-        kwargs['wrapper_class'] = kwargs.get('wrapper_class', 'smartfields-filefield')
+        kwargs.setdefault('wrapper_class', 'smartfields-filefield')
         super(FileField, self).__init__(*args, **kwargs)
 
 
@@ -26,7 +26,7 @@ class ImageField(FileField):
     template = "%s/imagefield.html" % TEMPLATE_PACK
 
     def __init__(self, *args, **kwargs): # pylint: disable=E1002
-        kwargs['wrapper_class'] = kwargs.get('wrapper_class', 'smartfields-mediafield')
+        kwargs['wrapper_class'] = kwargs.get('wrapper_class', '') + ' smartfields-mediafield'
         super(ImageField, self).__init__(*args, **kwargs)
 
 

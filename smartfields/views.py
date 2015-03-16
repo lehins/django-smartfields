@@ -151,8 +151,11 @@ class FileUploadView(View):
         form = form_class(
             instance=obj, data=request.POST, files=request.FILES)
         if form.is_valid():
-            obj = form.save()
+            is_new = obj.pk is None
+            obj = form.save(commit=is_new)
             field = self.field
+            if not is_new:
+                obj.save(update_fields=[field.name])
             if field.manager is None or not field.manager.should_process:
                 status = obj.smartfields_get_field_status(self.field_name)
                 status['state'] = 'complete'

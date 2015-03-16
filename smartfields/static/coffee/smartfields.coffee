@@ -4,6 +4,7 @@ transitionEnd = 'transitionend webkitTransitionEnd oTransitionEnd ' +
 
 window.smartfields =
     isCsrfAjaxSetup: false
+    alert: bootbox?.alert or alert
     
     getFunction: (func, parent=window) ->
         if not func?
@@ -57,60 +58,60 @@ window.smartfields =
 class smartfields.FileField
     constructor: (@$elem) ->
         @$form = @$elem.closest('form')
-        @$browse_btn = @$elem.find('.smartfields-btn-browse')
+        @$browseBtn = @$elem.find('.smartfields-btn-browse')
         csrftoken = smartfields.getCsrfToken(
             @$form.find("input[name='csrfmiddlewaretoken']"),
-            @$browse_btn.data('csrfCookieName'))
+            @$browseBtn.data('csrfCookieName'))
         smartfields.csrfAjaxSetup(csrftoken)
-        @id = @$browse_btn.attr('id')
-        @$delete_btn = $("##{@id}_delete")
+        @id = @$browseBtn.attr('id')
+        @$deleteBtn = $("##{@id}_delete")
         @deleting = false
-        @$upload_btn = $("##{@id}_upload")
+        @$uploadBtn = $("##{@id}_upload")
         @$progress = $("##{@id}_progress").hide()
         @$current = $("##{@id}_current")
         @$errors = $("##{@id}_errors_extra")
         @callbacks =
-            onError: smartfields.getFunction(@$browse_btn.data('onError'))
-            onComplete: smartfields.getFunction(@$browse_btn.data('onComplete'))
-            onReady: smartfields.getFunction(@$browse_btn.data('onReady'))
-            onBusy: smartfields.getFunction(@$browse_btn.data('onBusy'))
-            onProgress: smartfields.getFunction(@$browse_btn.data('onProgress'))
+            onError: smartfields.getFunction(@$browseBtn.data('onError'))
+            onComplete: smartfields.getFunction(@$browseBtn.data('onComplete'))
+            onReady: smartfields.getFunction(@$browseBtn.data('onReady'))
+            onBusy: smartfields.getFunction(@$browseBtn.data('onBusy'))
+            onProgress: smartfields.getFunction(@$browseBtn.data('onProgress'))
 
-        @$browse_btn.change( =>
+        @$browseBtn.change( =>
             # in case plupload fails to inititalize
-            file_name = @$browse_btn.val().split('\\').pop() # remove 'fakepath'
+            file_name = @$browseBtn.val().split('\\').pop() # remove 'fakepath'
             @$current.val(file_name)
         )
-        @$current_btn = $("##{@id}_link").click ->
+        @$currentBtn = $("##{@id}_link").click ->
             href = $(@).data('href')
             if href
                 window.open(href, $(@).data('target')).focus()
-        @$upload_btn.hide()
+        @$uploadBtn.hide()
         if !@$current.val()
-            @$delete_btn.hide()
-            @$current_btn.parent().hide()
-        @$delete_btn.click =>
+            @$deleteBtn.hide()
+            @$currentBtn.parent().hide()
+        @$deleteBtn.click =>
             if @deleting
                 return false
             @deleting = true
             $.ajax(@options.url, type: 'DELETE', success: (data, textStatus, jqXHR) =>
                 if data.state == 'complete'
                     @$current.val('')
-                    @$current_btn.data('href', "").hide()
-                    @$delete_btn.hide()
+                    @$currentBtn.data('href', "").hide()
+                    @$deleteBtn.hide()
                     @fileDeleted(data, textStatus, jqXHR)
                 else
                     extra = ""
                     if data.task_name
                         extra = " , it is #{data.task_name}"
-                    bootbox.alert(
+                    smartfields.alert(
                         "Cannot delete this file right now#{extra}. Please try again later.")
                 @deleting = false
             )
         @options = {
             browse_button: @id,
             container: @$elem[0],
-            file_data_name: @$browse_btn.attr('name'),
+            file_data_name: @$browseBtn.attr('name'),
             init: {
                 Init:           $.proxy(@Init, @),
                 PostInit:       $.proxy(@PostInit, @),
@@ -133,26 +134,24 @@ class smartfields.FileField
         }
         if csrftoken
             @options.headers = 'X-CSRFToken': csrftoken
-        $.extend(@options, @$browse_btn.data('pluploadOptions'))
+        $.extend(@options, @$browseBtn.data('pluploadOptions'))
         @uploader = new plupload.Uploader(@options)
         @uploader.init()
-        @form_submitted = false
-        @$form.submit( =>
-            if !@form_submitted and @uploader.files.length > 0
-                @form_submitted = true
+        @counterName = 'smartfieldsUploadCounter'
+        @formSubmitted = false
+        @$form.submit =>
+            if @uploader.files.length > 0 and @uploader.state is plupload.STOPPED
                 @uploader.start()
-                if !@$browse_btn.data('silent')
-                    bootbox.alert("This form contains a file that can take some time to upload.
+            if not @formSubmitted and @uploader.state is plupload.STARTED
+                @$form.data(@counterName, (@$form.data(@counterName) or 0) + 1)
+                @formSubmitted = true
+                if not @$browseBtn.data('silent') and @$form.data(@counterName) is 1
+                    smartfields.alert("This form contains a file(s) that can take some time to upload.
                         Please, wait for it to finish, you should be able to see the progress
                         under the file input. It will advance to the next step once it's done
                         uploading")
-                false
-            else
-                #if @uploader.state == plupload.STARTED
-                #    bootbox.alert(
-                #        "There is a file being uploaded, please wait for it to finish.")
-                !@form_submitted
-        )
+            @uploader.state is plupload.STOPPED and not @$form.data(@counterName)
+        
 
 
     setProgress: (index, percent, task_name) ->
@@ -175,21 +174,24 @@ class smartfields.FileField
 
 
     handleResponse: (data, complete, error) ->
+        submitForm = (state) =>
+            if @formSubmitted and state isnt 'error'
+                @$form.data(@counterName, (@$form.data(@counterName) or 1) - 1)
+                if @$form.data(@counterName) is 0
+                    @$form.submit()
         if data.state is 'complete'
             completed = false
             delayedComplete = () =>
-                if !completed
+                if not completed
                     completed = true
                     @$progress.hide()
                     @setProgress()
-                    @$delete_btn.show()
+                    @$deleteBtn.show()
                     @$current.val(data.file_name)
-                    @$current_btn.data('href', data.file_url).parent().show()
+                    @$currentBtn.data('href', data.file_url).parent().show()
                     complete?(data)
                     @callbacks.onComplete?(@, data)
-                    if @form_submitted and data.state != 'error'
-                        @form_submitted = false
-                        @$form.submit()
+                    submitForm(data.state)
             @setProgress(1, 100, data.task_name)
             @$progress.one(transitionEnd, => delayedComplete)
             #transitionEnd is not guaranteed to fire. setTimeout as a fallback
@@ -203,9 +205,7 @@ class smartfields.FileField
                 progress = Math.round(100 * data.progress)
                 @setProgress(1, progress, data.task_name)
                 @callbacks.onProgress?(@, data, progress)
-                if @form_submitted
-                    @form_submitted = false
-                    @$form.submit()
+                submitForm(data.state)
             setTimeout((=> $.get(@options.url, (data) => @handleResponse(data))), 3000)
         else if data.state is 'ready'
             @callbacks.onReady?(@, data)
@@ -272,28 +272,28 @@ class smartfields.FileField
     Destroy: ->
 
     PostInit: (up) ->
-        @$browse_btn.click( -> false)
+        @$browseBtn.click( -> false)
             .replaceWith(@$elem.find(".moxie-shim").hide().find('input'))
-        @$upload_btn.click ->
+        @$uploadBtn.click ->
             up.start()
             false
-        status = @$browse_btn.data('status')
+        status = @$browseBtn.data('status')
         if status?.state == 'in_progress'
             @$progress.show()
         @handleResponse(status)
 
     FilesAdded: (up, files) ->
         @$current.val(files[0].name)
-        @$upload_btn.show()
+        @$uploadBtn.show()
         @$progress.show()
-        @$delete_btn.hide()
+        @$deleteBtn.hide()
         # remove previously selected files from the queue, so only one left
         up.splice(0, up.files.length-1)
         @setErrors()
 
     BeforeUpload: ->
         @setProgress()
-        @$upload_btn.hide()
+        @$uploadBtn.hide()
 
     UploadProgress: (up, file) ->
         @setProgress(0, file.percent, "Uploading")
@@ -311,17 +311,17 @@ class smartfields.FileField
 class smartfields.MediaField extends smartfields.FileField
     constructor: ($elem) ->
         super $elem
-        @$current_preview = $("##{@id}_preview")
+        @$currentPreview = $("##{@id}_preview")
 
     fileDeleted: (data, textStatus, jqXHR) ->
-        @$current_preview.empty()
+        @$currentPreview.empty()
 
     handleResponse: (data, complete, error) ->
         super data, ((data) =>
-            $preview = @$current_preview.empty().html(data.html_tag)
+            $preview = @$currentPreview.empty().html(data.html_tag)
             # make sure server is ready to serve the file, by retrying the load
             persistentLoader = (attempts) =>
-                @$current_preview.find("[src]").each( ->
+                @$currentPreview.find("[src]").each( ->
                     $(@).load(->)
                     .error(->
                         if attempts > 0
@@ -336,7 +336,7 @@ class smartfields.MediaField extends smartfields.FileField
             ), error
 
     BeforeUpload: ->
-        @$current_preview.empty()
+        @$currentPreview.empty()
         super
 
 class smartfields.LimitedField
