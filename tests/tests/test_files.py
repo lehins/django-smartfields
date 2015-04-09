@@ -1,13 +1,10 @@
-import os, time, shutil
+import os, shutil
 from django.core.files.base import File
 from django.conf import settings
-from django.db.models.fields.files import FileDescriptor
 from django.test import TestCase
 from django.utils.encoding import force_bytes
 
-from smartfields.models import SmartfieldsModelMixin
-
-from tests.models import FileTesting, ImageTesting, DependencyTesting
+from tests.models import FileTesting, ImageTesting, DependencyTesting, RenameFileTesting
 
 
 def add_base(path):
@@ -243,8 +240,6 @@ class ImageTestCase(FileBaseTestCase):
         lenna_rect.close()
         image_3 = instance.image_3
         image_4 = instance.image_4
-        image_3_path = instance.image_3.path
-        image_4_path = instance.image_4.path
         # restores values since new file is a text file that cannot be processed
         instance.image_2 = text_file
         instance.save()
@@ -290,3 +285,23 @@ class ImageTestCase(FileBaseTestCase):
         self.assertRaises(AssertionError, image_2.manager.dependencies[0].set_field, image_1)
 
 
+    def test_rename_file_testing(self):
+        instance = RenameFileTesting()
+        lenna = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
+        instance.label = 'foo'
+        instance.dynamic_name_file = lenna
+        instance.save()
+        self.assertEqual(instance.dynamic_name_file.url,
+                         "/media/tests/renamefiletesting/foo.jpg")
+        foo_path = instance.dynamic_name_file.path
+        self.assertTrue(os.path.isfile(foo_path))
+        instance.label = "bar"
+        instance.save()
+        self.assertEqual(instance.dynamic_name_file.url,
+                         "/media/tests/renamefiletesting/bar.jpg")
+        bar_path = instance.dynamic_name_file.path
+        self.assertNotEqual(foo_path, bar_path)
+        self.assertFalse(os.path.isfile(foo_path))
+        self.assertTrue(os.path.isfile(bar_path))
+        instance.delete()
+        self.assertFalse(os.path.isfile(bar_path))

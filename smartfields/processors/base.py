@@ -5,7 +5,7 @@ from django.utils.six.moves import queue
 from smartfields.utils import NamedTemporaryFile, AsynchronousFileReader, ProcessingError
 
 __all__ = [
-    'BaseProcessor', 'BaseFileProcessor', 'ExternalFileProcessor'
+    'BaseProcessor', 'BaseFileProcessor', 'RenameFileProcessor', 'ExternalFileProcessor'
 ]
 
 @deconstructible
@@ -55,6 +55,16 @@ class BaseFileProcessor(BaseProcessor):
             format = format or self.default_params['format']
             return ".%s" % format.lower()
         except KeyError: pass
+
+
+class RenameFileProcessor(BaseFileProcessor):
+
+    def process(self, value, stashed_value=None, **kwargs):
+        field_file = stashed_value
+        if not field_file or not field_file._committed:
+            return field_file
+        field_file.file.temporary_file_path = lambda: field_file.path
+        return field_file.file
 
 
 class ExternalFileProcessor(BaseFileProcessor):

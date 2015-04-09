@@ -257,9 +257,11 @@ class FileDependency(Dependency):
     def cleanup_stash(self):
         if self.has_stashed_value and self._stashed_value:
             if isinstance(self._stashed_value, FieldFile):
-                if not self._stashed_value.field.keep_orphans:
+                if self._stashed_value._committed and \
+                   not self._stashed_value.field.keep_orphans:
                     self._stashed_value.delete(instance_update=False)
-            elif isinstance(self._stashed_value, files.FieldFile) and not self.keep_orphans:
+            elif isinstance(self._stashed_value, files.FieldFile) and \
+                 self._stashed_value._committed and not self.keep_orphans:
                 stashed_value = FieldFile(self._stashed_value.instance, 
                                           self._stashed_value.field,
                                           self._stashed_value.name)
@@ -270,14 +272,17 @@ class FileDependency(Dependency):
     def restore_stash(self, instance):
         field_file = self.get_value(instance)
         if field_file and field_file._committed:
-            field_file.delete(instance_update=False)
+            if isinstance(field_file, FieldFile):
+                field_file.delete(instance_update=False)
+            elif isinstance(field_file, files.FieldFile):
+                field_file.delete(save=False)
         super(FileDependency, self).restore_stash(instance)
             
     def cleanup(self, instance):
         # do not cleanup self dependency, it will be cleaned up by the manager
         if self._dependee is not self.field:
             field_file = self.get_value(instance)
-            if field_file and not getattr(field_file.field, 'keep_orphans', KEEP_ORPHANS):
+            if field_file and not getattr(field_file.field, 'keep_orphans', self.keep_orphans):
                 field_file.delete(save=False)
 
     def contribute_to_model(self, model):
@@ -323,6 +328,9 @@ class FileDependency(Dependency):
         return os.path.join(upload_to, self.get_filename(filename))
 
     def set_value(self, instance, value, is_default=False):
+        if not value:
+            super(FileDependency, self).set_value(instance, value, is_default=is_default)
+            return
         dependee = self._dependee
         field_file_class = self.attr_class
         if is_default and dependee is None and isinstance(value, six.string_types):

@@ -1,13 +1,11 @@
 from django.db import models
-from django.conf import settings
 from django.core.files.base import ContentFile
-from django.utils.text import slugify
 
 from decimal import Decimal, InvalidOperation
 
 from smartfields import fields, processors
 from smartfields.dependencies import Dependency, FileDependency
-from smartfields.utils import UploadTo, VALUE_NOT_SET
+from smartfields.utils import UploadTo
 
 # PRE PROCESSING
 
@@ -170,6 +168,16 @@ class DependencyTesting(models.Model):
     image_4 = fields.ImageField(upload_to=UploadTo(name='image_4'))
     
 
+def _name_getter(name, instance):
+    return instance.label
+    
+class RenameFileTesting(models.Model):
+    label = fields.CharField(max_length=32, dependencies=[
+        FileDependency(attname='dynamic_name_file', 
+                       processor=processors.RenameFileProcessor())
+    ])
+    dynamic_name_file = models.FileField(
+        upload_to=UploadTo(name=_name_getter, add_pk=False))
         
 
 

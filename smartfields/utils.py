@@ -86,7 +86,7 @@ class UploadTo(object):
 
     def __init__(self, basefolder=None, subfolder=None, filename=None, name=None, ext=None,
                  app_label=None, model_name=None, parent_field_name=None, field_name=None, 
-                 generator=None):
+                 add_pk=True, generator=None):
         assert filename is None or name is None, \
             "Cannot have 'filename' and 'name' specified at the same time." 
         assert generator is None or (filename is None and name is None), \
@@ -102,6 +102,7 @@ class UploadTo(object):
         self.model_name = model_name
         self.parent_field_name = parent_field_name
         self.field_name = field_name
+        self.add_pk = add_pk
         self.generator = uuid.uuid1 if generator is True else generator
 
     def __eq__(self, other):
@@ -115,6 +116,7 @@ class UploadTo(object):
                 self.model_name == other.model_name and
                 self.parent_field_name == other.parent_field_name and
                 self.field_name == other.field_name and
+                self.add_pk == other.add_pk and
                 self.generator is other.generator)
         
     def __call__(self, instance, filename):
@@ -134,14 +136,14 @@ class UploadTo(object):
             structure.append(parent_pk)
         if self.subfolder is not None:
             structure.append(self.subfolder)
-        if instance.pk is not None:
+        if self.add_pk and instance.pk is not None:
             structure.append(force_text(instance.pk))
         if self.field_name is not None:
             structure.append(self.field_name)
-        structure.append(self.get_filename(filename))
+        structure.append(self.get_filename(filename, instance))
         return os.path.join(*structure)
 
-    def get_filename(self, filename):
+    def get_filename(self, filename, instance):
         if self.filename is not None:
             filename = self.filename
         else:
@@ -151,7 +153,10 @@ class UploadTo(object):
             if self.generator is not None:
                 name = self.generator()
             elif self.name is not None:
-                name = self.name
+                if callable(self.name):
+                    name = self.name(name, instance)
+                else:
+                    name = self.name
             if self.ext is not None:
                 ext = self.ext
             if ext:
