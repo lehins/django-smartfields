@@ -14,7 +14,7 @@ install:
   - pip install -q Django==$DJANGO_VERSION
   - pip install -q django-crispy-forms
 before_install:
-  - sudo apt-add-repository -y ppa:mc3man/trusty-media
+  - sudo apt-add-repository -y ppa:djcj/vlc-stable
   - sudo apt-get update -qq
   - sudo apt-get -y install ffmpeg
 script:

@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.0.6
+-----
+
+* added ``RenameFileProcessor``
+
 1.0.5
 -----
 
