@@ -5,6 +5,14 @@ django-smartfields
    :target: https://readthedocs.org/projects/django-smartfields/?badge=latest
    :alt: Documentation Status
 
+.. image:: https://pypip.in/version/django-smartfields/badge.svg
+    :target: https://pypi.python.org/pypi/django-smartfields/
+    :alt: Latest Version
+
+.. image:: https://pypip.in/download/django-smartfields/badge.svg
+   :target: https://pypi.python.org/pypi/django-smartfields/
+   :alt: Number of PyPI downloads
+
 .. image:: https://landscape.io/github/lehins/django-smartfields/master/landscape.png
    :target: https://landscape.io/github/lehins/django-smartfields/master
    :alt: Code Health
@@ -17,13 +25,6 @@ django-smartfields
    :target: https://coveralls.io/r/lehins/django-smartfields
    :alt: Tests Coverage
 
-.. image:: https://pypip.in/version/django-smartfields/badge.svg
-    :target: https://pypi.python.org/pypi/django-smartfields/
-    :alt: Latest Version
-
-.. image:: https://pypip.in/download/django-smartfields/badge.svg
-   :target: https://pypi.python.org/pypi/django-smartfields/
-   :alt: Number of PyPI downloads
 
 Django Model Fields that are smart.
 -----------------------------------
