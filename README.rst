@@ -28,11 +28,27 @@ django-smartfields
 Django Model Fields that are smart.
 -----------------------------------
 
-This app introduces a declarative way of handling fields' values. It can be especially useful when one field depends on a value from another field, even if a field depends on itself. At first it might sound useless, but, as it turns out, it is an amazing concept that helps in writing clear, concise and DRY code.
+This app introduces a declarative way of handling fields' values. It can be
+especially useful when one field depends on a value from another field, even if
+a field depends on itself. At first it might sound useless, but, as it turns
+out, it is an amazing concept that helps in writing clear, concise and DRY code.
 
-Best way to descibe is on a simple example. Let's say there is a field where you store a custom html page and you would like to have another field attached to the same model store the same page but with html tags stripped out, moreover you would like it to update whenever the first field changes it's value. A common way to handle that issue is to overwrite model's ``save`` method and put all the logic there, right? What if you could just give a field a function that does the stripping and everything else is taking care of? Wouldn't that be nice, huh? Well, that's one of many things this app let's you do. 
+Best way to descibe is on a simple example. Let's say there is a field where you
+store a custom html page and you would like to have another field attached to
+the same model store the same page but with html tags stripped out, moreover you
+would like it to update whenever the first field changes it's value. A common
+way to handle that issue is to overwrite model's ``save`` method and put all the
+logic there, right? What if you could just give a field a function that does the
+stripping and everything else is taking care of? Wouldn't that be nice, huh?
+Well, that's one of many things this app let's you do.
 
-Another great example is django's ``ImageField`` that can update ``width_field`` and ``height_field`` whenever image is changed. This app uses similar concepts to achive that functionality. But here is a more powerful example that demonstrates the value of this app. Let's say you would like to have a user be able to upload an image in any format and automatically add another version of this image converted to JPEG and shrunk to fit in a box size of 1024x768. Here is how it could look with utilization of `django-smartfields`:
+Another great example is django's ``ImageField`` that can update ``width_field``
+and ``height_field`` whenever image is changed. This app uses similar concepts
+to achive that functionality. But here is a more powerful example that
+demonstrates the value of this app. Let's say you would like to have a user be
+able to upload an image in any format and automatically add another version of
+this image converted to JPEG and shrunk to fit in a box size of 1024x768. Here
+is how it could look with utilization of `django-smartfields`:
 
 .. code-block:: python
 
@@ -45,23 +61,32 @@ Another great example is django's ``ImageField`` that can update ``width_field``
     class User(models.Model):
         # ... more fields ....
         avatar = fields.ImageField(upload_to='avatar', dependencies=[
-            attname='avatar_jpeg', FileDependency(processor=ImageProcessor(
+            FileDependency(attname='avatar_jpeg', processor=ImageProcessor(
                 format='JPEG', scale={'max_width': 1024, 'max_height': 768})),
         ])
         avatar_jpeg = fields.ImageField(upload_to='avatar')
         # ... more fields ...
 
-That's it. Did I mention that it will also clean up old files, when new ones are uploaded?
+That's it. Did I mention that it will also clean up old files, when new ones are
+uploaded?
 
-So hopefully I got you convinced to give this app a try. There is full documentation also on the way, but for now you can check out 'tests' folder for some examples.
+So hopefully I got you convinced to give this app a try. There is full
+documentation also on the way, but for now you can check out 'tests' folder for
+some examples.
 
 
 Dependencies
 ------------
-* `Django <https://djangoproject.com/>`_ (for now only version >= 1.7, will add support for earlier versions later).
-* `Python Pillow <https://pypi.python.org/pypi/Pillow/>`_ - (optional) used for image conversion/resizing.
-* `ffmpeg <https://www.ffmpeg.org/>`_ - (optional) for video conversion. (could be easily adopted for libav).
-* `BeautifulSoup4 <https://pypi.python.org/pypi/beautifulsoup4/>`_ - (optional) for HTML stripping
-* `django-crispy-forms <https://readthedocs.org/projects/django-crispy-forms/>`_ - (optional) for ajax uploading.
+* `Django <https://djangoproject.com/>`_ (for now only version >= 1.7, will add
+  support for earlier versions later).
+* `Python Pillow <https://pypi.python.org/pypi/Pillow/>`_ - (optional) used for
+  image conversion/resizing.
+* `ffmpeg <https://www.ffmpeg.org/>`_ - (optional) for video conversion. (could
+  be easily adopted for libav).
+* `BeautifulSoup4 <https://pypi.python.org/pypi/beautifulsoup4/>`_ - (optional)
+  for HTML stripping
+* `django-crispy-forms
+  <https://readthedocs.org/projects/django-crispy-forms/>`_ - (optional) for
+  ajax uploading.
 * `Plupload <http://www.plupload.com/>`_ - (optional) for ajax uploading.
 * `Bootstrap3 <http://getbootstrap.com/>`_ - (optional) for ajax uploading.
