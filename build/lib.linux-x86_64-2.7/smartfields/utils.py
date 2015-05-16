@@ -1,43 +1,14 @@
-import os, errno, uuid, threading
+import os, errno, importlib, uuid, threading
 
-from django.conf import settings
-from django.core import validators
 from django.core.files import base, temp
+from django.utils.deconstruct import deconstructible
 from django.utils.encoding import force_text
 from django.utils.six.moves import queue as six_queue
-try:
-    from django.utils.deconstruct import deconstructible
-except ImportError:
-    deconstructible = lambda x: x
-try:
-    from django.apps import apps
-    from django.core.exceptions import AppRegistryNotReady
-except ImportError:
-    from django.db import models
-    class AppRegistryNotReady(BaseException): pass
-    class BackwardsApps(object):
-        ready = True
-        def is_installed(self, app_name):
-            return app_name in settings.INSTALLED_APPS
-        def get_model(self, app_label, model_name=None):
-            if model_name is None:
-                app_label, model_name = app_label.split('.')
-            return models.get_model(app_label, model_name)
-    apps = BackwardsApps()    
-
 
 __all__ = [
     'VALUE_NOT_SET', 'ProcessingError', 'NamedTemporaryFile', 'UploadTo', 
     'AsynchronousFileReader'
 ]
-
-def get_model_name(instance):
-    return getattr(instance._meta, 'model_name',
-                   instance._meta.object_name.lower())
-
-def get_empty_values(field):
-    return getattr(field, 'empty_values', list(validators.EMPTY_VALUES))
-
 
 class VALUE_NOT_SET(object):
     pass
@@ -157,7 +128,7 @@ class UploadTo(object):
         elif self.app_label:
             structure.append(self.app_label)
         if self.model_name is None:
-            structure.append(get_model_name(instance))
+            structure.append(instance._meta.model_name)
         elif self.model_name:
             structure.append(self.model_name)
         parent_pk = self.get_parent_pk(instance)

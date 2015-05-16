@@ -1,11 +1,11 @@
 import time, random
+from django.apps import apps
 from django.contrib.sites.models import Site
 from django.utils.functional import SimpleLazyObject
 from django.utils.text import slugify
 from django.utils.encoding import force_text
 
 from smartfields.processors.base import BaseProcessor
-from smartfields.utils import apps
 
 try:
     from bs4 import BeautifulSoup, Comment

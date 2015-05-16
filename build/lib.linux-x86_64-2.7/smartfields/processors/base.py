@@ -1,8 +1,8 @@
 import subprocess, time
+from django.utils.deconstruct import deconstructible
 from django.utils.six.moves import queue
 
-from smartfields.utils import NamedTemporaryFile, AsynchronousFileReader, \
-    ProcessingError, deconstructible, get_model_name
+from smartfields.utils import NamedTemporaryFile, AsynchronousFileReader, ProcessingError
 
 __all__ = [
     'BaseProcessor', 'BaseFileProcessor', 'RenameFileProcessor', 'ExternalFileProcessor'
@@ -98,7 +98,7 @@ class ExternalFileProcessor(BaseFileProcessor):
         need to be deleted, instaed file is safely moved over. With other cloud
         based storage it is a good idea to set `delete=True`."""
         return NamedTemporaryFile(mode='rb', suffix='_%s_%s%s' % (
-            get_model_name(instance), field.name, self.get_ext()), delete=False)
+            instance._meta.model_name, field.name, self.get_ext()), delete=False)
 
     def process(self, in_file, **kwargs):
         out_file = self.get_output_file(in_file, **kwargs)

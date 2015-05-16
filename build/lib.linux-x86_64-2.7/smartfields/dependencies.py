@@ -1,15 +1,17 @@
 import os, datetime, inspect
+from django.apps import apps
+from django.core.exceptions import AppRegistryNotReady
 from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.db.models.fields import files, NOT_PROVIDED, FieldDoesNotExist
 from django.utils.encoding import force_text, force_str
+from django.utils.deconstruct import deconstructible
 from django.utils import six
 
 from smartfields.fields import FieldFile, FileField
 from smartfields.settings import KEEP_ORPHANS
 from smartfields.processors.base import BaseProcessor
-from smartfields.utils import VALUE_NOT_SET, deconstructible, apps, AppRegistryNotReady, \
-    get_empty_values
+from smartfields.utils import VALUE_NOT_SET
 
 __all__ = [
     'Dependency', 'FileDependency'
@@ -146,7 +148,7 @@ class Dependency(object):
     def set_default(self, instance, value):
         dependee = self._dependee
         if dependee is None or \
-           dependee.value_from_object(instance) in get_empty_values(dependee):
+           dependee.value_from_object(instance) in dependee.empty_values:
             default_value = self.get_default(instance, value)
             if default_value is not VALUE_NOT_SET:
                 self.set_value(instance, default_value, is_default=True)
@@ -190,11 +192,11 @@ class Dependency(object):
 
     def process(self, instance, value, progress_setter=None):
         field = self.field
-        if value in get_empty_values(field) or not self.has_processor():
+        if value in field.empty_values or not self.has_processor():
             if self.set_default(instance, value) and self.has_processor():
                 value = self.get_value(instance)
                 field = self._dependee
-        if (field is None or value not in get_empty_values(field)) and self.has_processor():
+        if (field is None or value not in field.empty_values) and self.has_processor():
             if self.async:
                 self._processor.progress_setter = progress_setter
                 progress_setter(self._processor, 0)
@@ -295,7 +297,7 @@ class FileDependency(Dependency):
 
     def post_init(self, instance, value, *args, **kwargs):
         if self._dependee is None and self._processor and \
-            value not in get_empty_values(self.field) and isinstance(value, files.FieldFile):
+            value not in self.field.empty_values and isinstance(value, files.FieldFile):
             # regenerate the dependent filename and reattach it.
             self.set_value(instance, self.generate_filename(instance, value.name))
         else:
@@ -364,15 +366,10 @@ class FileDependency(Dependency):
                 field_file = dependee.attr_class(instance, dependee, name)
             cur_pos = value.tell()
             value.seek(0)
-            if isinstance(dependee, FileField):
+            if isinstance(self._dependee, FileField):
                 field_file.save(name, value, instance_update=False)
             else:
                 field_file.save(name, value, save=False)
-            if not value.closed:
-                # in django < 1.7c1 temp files are closed after moving.
-                value.seek(cur_pos)
-            if hasattr(value, 'temporary_file_path'):
-                # make sure temporary files are deleted.
-                value.close()
+            value.seek(cur_pos)
             value = field_file
         super(FileDependency, self).set_value(instance, value, is_default=is_default)

@@ -80,10 +80,11 @@ Dependencies
 ------------
 * `Django <https://djangoproject.com/>`_ (for now only version >= 1.7, will add
   support for earlier versions later).
-* `Python Pillow <https://pypi.python.org/pypi/Pillow/>`_ - (optional) used for
-  image conversion/resizing.
-* `ffmpeg <https://www.ffmpeg.org/>`_ - (optional) for video conversion. (could
-  be easily adopted for libav).
+* `Python Pillow <https://pillow.readthedocs.org>`_ - (optional) used for
+  image conversion/resizing. AND/OR
+* `Wand <http://docs.wand-py.org>`_ - also for image processing.
+* `ffmpeg <https://www.ffmpeg.org/>`_ - (optional) for video conversion. (can
+  be easily adopted for `avconv <https://libav.org/avconv.html>`_).
 * `BeautifulSoup4 <https://pypi.python.org/pypi/beautifulsoup4/>`_ - (optional)
   for HTML stripping
 * `django-crispy-forms

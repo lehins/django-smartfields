@@ -168,7 +168,10 @@ class ImageProcessor(BaseFileProcessor):
     @property
     def resample(self):
         # resampling was renamed from Image.ANTIALIAS to Image.LANCZOS
-        return getattr(Image, 'LANCZOS', getattr(Image, 'ANTIALIAS')) 
+        if hasattr(Image, 'LANCZOS'):
+            return Image.LANCZOS
+        else:
+            return Image.ANTIALIAS 
 
     def get_params(self, **kwargs):
         params = super(ImageProcessor, self).get_params(**kwargs)

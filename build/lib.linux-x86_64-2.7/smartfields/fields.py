@@ -1,12 +1,10 @@
 import os
 from django import forms
 from django.contrib.staticfiles.storage import staticfiles_storage
+from django.core import checks
 from django.db.models import fields
-from django.db.models.fields import files
+from django.db.models.fields import files, NOT_PROVIDED
 from django.utils.six import text_type
-try:
-    from django.core import checks
-except ImportError: pass
 
 from smartfields.settings import KEEP_ORPHANS
 from smartfields.managers import FieldManager
@@ -117,12 +115,8 @@ class DecimalField(Field, fields.DecimalField):
     pass
 
 
-if hasattr(fields, 'BinaryField'):
-    # Django>=1.6
-    class BinaryField(Field, getattr(fields, 'BinaryField')):
-        pass
-else:
-    BinaryField = None
+class BinaryField(Field, fields.BinaryField):
+    pass
 
 
 class CharField(Field, fields.CharField):

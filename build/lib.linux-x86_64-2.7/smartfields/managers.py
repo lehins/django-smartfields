@@ -2,7 +2,7 @@ import threading
 
 from django.core.cache import cache
 
-from smartfields.utils import ProcessingError, VALUE_NOT_SET, get_model_name
+from smartfields.utils import ProcessingError, VALUE_NOT_SET
 
 __all__ = [
     'FieldManager',
@@ -172,7 +172,7 @@ class FieldManager(object):
         """Generates a key used to set a status on a field"""
         key_id = "inst_%s" % id(instance) if instance.pk is None else instance.pk
         return "%s.%s-%s-%s" % (instance._meta.app_label,
-                                get_model_name(instance),
+                                instance._meta.model_name,
                                 key_id,
                                 self.field.name)
 
@@ -180,7 +180,7 @@ class FieldManager(object):
         status_key = status_key or self.get_status_key(instance)
         status = {
             'app_label': instance._meta.app_label,
-            'model_name': get_model_name(instance),
+            'model_name': instance._meta.model_name,
             'pk': instance.pk,
             'field_name': self.field.name,
             'state': 'ready'

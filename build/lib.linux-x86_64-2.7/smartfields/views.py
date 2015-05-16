@@ -1,5 +1,6 @@
 import json
 
+from django.apps import apps
 from django.contrib.auth.decorators import login_required
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured, PermissionDenied
@@ -10,8 +11,6 @@ from django.utils.six import text_type
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.cache import never_cache
 from django.views.generic import View
-
-from smartfields.utils import apps
 
 __all__ = (
     "FileUploadView",
@@ -29,7 +28,8 @@ class FileUploadView(View):
             app_label = self.kwargs.get('app_label', None)
             model = self.kwargs.get('model', None)
             if app_label and model:
-                self._model = apps.get_model(app_label, model)
+                app = apps.get_app_config(app_label)
+                self._model = app.get_model(model)
         if self._model is not None:
             return self._model
         raise ImproperlyConfigured("'model' is a required property")

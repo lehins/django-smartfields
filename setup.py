@@ -47,10 +47,10 @@ setup(
         "FileField conversion", "ImageField conversion", "ajax uploading"
     ],
     install_requires=[
-        'Django>=1.7.0'
+        'Django>=1.5.0'
     ],
     tests_require=[
-        'Django>=1.7.0',
+        'Django>=1.5.0',
         'beautifulsoup4',
         'Pillow>=2.5.0',
         'Wand',
