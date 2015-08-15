@@ -155,7 +155,7 @@ class ExternalFileProcessor(BaseFileProcessor):
                     stderr_reader.join()
                     proc.stderr.close()
         if proc.returncode < 0:
-            raise ProcessingError("There was a problem processing this video file")
+            raise ProcessingError("There was a problem processing this file.")
         return out_file
 
 

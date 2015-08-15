@@ -303,9 +303,9 @@ class FileDependency(Dependency):
                 self.set_value(instance, None)
             super(FileDependency, self).post_init(instance, value, *args, **kwargs)
 
-    def get_directory_name(self, upload_to):
+    def get_directory_name(self):
         return os.path.normpath(
-            force_text(datetime.datetime.now().strftime(force_str(upload_to))))
+            force_text(datetime.datetime.now().strftime(force_str(self.upload_to))))
 
     def get_filename(self, filename):
         name, ext = os.path.splitext(filename)
@@ -320,10 +320,11 @@ class FileDependency(Dependency):
         return "%s%s" % (name, ext)
 
     def generate_filename(self, instance, filename):
-        upload_to, filename = os.path.split(filename)
-        if self.upload_to:
-            upload_to = self.get_directory_name(self.upload_to)
-        return os.path.join(upload_to, self.get_filename(filename))
+        if callable(self.upload_to):
+            directory_name, filename = os.path.split(self.upload_to(instance, filename))
+            filename = self.storage.get_valid_name(filename)
+            return os.path.normpath(os.path.join(directory_name, filename))
+        return os.path.join(self.get_directory_name(), self.get_filename(filename))
 
     def set_value(self, instance, value, is_default=False):
         if not value:

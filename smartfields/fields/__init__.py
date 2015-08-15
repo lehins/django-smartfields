@@ -51,11 +51,11 @@ class Field(fields.Field):
     manager_class = FieldManager
     manager = None
     
-    def __init__(self, verbose_name=None, name=None, dependencies=None,  **kwargs):
+    def __init__(self, verbose_name=None, name=None, dependencies=None, **kwargs):
         if dependencies is not None:
             self.manager = self.manager_class(self, dependencies)
         self._dependencies = dependencies
-        super(Field, self).__init__(verbose_name, name, **kwargs)
+        super(Field, self).__init__(verbose_name=verbose_name, name=name, **kwargs)
 
     def contribute_to_class(self, cls, name, **kwargs):
         super(Field, self).contribute_to_class(cls, name, **kwargs)
