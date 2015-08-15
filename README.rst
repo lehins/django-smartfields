@@ -5,11 +5,11 @@ django-smartfields
    :target: https://readthedocs.org/projects/django-smartfields/?badge=latest
    :alt: Documentation Status
 
-.. image:: https://pypip.in/version/django-smartfields/badge.svg
+.. image:: https://img.shields.io/pypi/v/django-smartfields.svg
     :target: https://pypi.python.org/pypi/django-smartfields/
     :alt: Latest Version
 
-.. image:: https://pypip.in/download/django-smartfields/badge.svg
+.. image:: https://img.shields.io/pypi/dm/django-smartfields.svg
    :target: https://pypi.python.org/pypi/django-smartfields/
    :alt: Number of PyPI downloads
 
