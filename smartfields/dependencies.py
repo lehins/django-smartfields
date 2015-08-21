@@ -239,7 +239,7 @@ class FileDependency(Dependency):
     def attr_class(self):
         return getattr(self._processor, 'field_file_class', FieldFile)
 
-    def __init__(self, upload_to='', storage=None, keep_orphans=KEEP_ORPHANS, **kwargs):
+    def __init__(self, upload_to="", storage=None, keep_orphans=KEEP_ORPHANS, **kwargs):
         # `default` has to be a static file
         self.storage = storage or default_storage
         self.upload_to = upload_to
@@ -304,8 +304,10 @@ class FileDependency(Dependency):
             super(FileDependency, self).post_init(instance, value, *args, **kwargs)
 
     def get_directory_name(self):
-        return os.path.normpath(
-            force_text(datetime.datetime.now().strftime(force_str(self.upload_to))))
+        if self.upload_to:
+            return os.path.normpath(
+                force_text(datetime.datetime.now().strftime(force_str(self.upload_to))))
+        return ""
 
     def get_filename(self, filename):
         name, ext = os.path.splitext(filename)
