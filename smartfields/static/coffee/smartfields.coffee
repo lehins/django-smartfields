@@ -1,7 +1,6 @@
 transitionEnd = 'transitionend webkitTransitionEnd oTransitionEnd ' +
                 'otransitionend MSTransitionEnd'
 
-
 window.smartfields =
     isCsrfAjaxSetup: false
     alert: bootbox?.alert or alert
@@ -318,7 +317,9 @@ class smartfields.MediaField extends smartfields.FileField
 
     handleResponse: (data, complete, error) ->
         super data, ((data) =>
-            $preview = @$currentPreview.empty().html(data.html_tag)
+            $preview = @$currentPreview.empty()
+                .removeClass('smartfields-loading')
+                .html(data.html_tag)
             # make sure server is ready to serve the file, by retrying the load
             persistentLoader = (attempts) =>
                 @$currentPreview.find("[src]").each( ->
@@ -335,8 +336,12 @@ class smartfields.MediaField extends smartfields.FileField
             complete?()
             ), error
 
+    setProgress: (index, percent, task_name) ->
+        @$currentPreview.empty().addClass('smartfields-loading')
+        super index, percent, task_name
+        
     BeforeUpload: ->
-        @$currentPreview.empty()
+        @$currentPreview.empty().addClass('smartfields-loading')
         super
 
 class smartfields.LimitedField

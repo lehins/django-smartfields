@@ -410,7 +410,7 @@
       var _this = this;
       return MediaField.__super__.handleResponse.call(this, data, (function(data) {
         var $preview, persistentLoader;
-        $preview = _this.$currentPreview.empty().html(data.html_tag);
+        $preview = _this.$currentPreview.empty().removeClass('smartfields-loading').html(data.html_tag);
         persistentLoader = function(attempts) {
           return _this.$currentPreview.find("[src]").each(function() {
             return $(this).load(function() {}).error(function() {
@@ -428,8 +428,13 @@
       }), error);
     };
 
+    MediaField.prototype.setProgress = function(index, percent, task_name) {
+      this.$currentPreview.empty().addClass('smartfields-loading');
+      return MediaField.__super__.setProgress.call(this, index, percent, task_name);
+    };
+
     MediaField.prototype.BeforeUpload = function() {
-      this.$currentPreview.empty();
+      this.$currentPreview.empty().addClass('smartfields-loading');
       return MediaField.__super__.BeforeUpload.apply(this, arguments);
     };
 

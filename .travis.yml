@@ -4,8 +4,8 @@ python:
   - "3.3"
   - "3.4"
 env:
-  - DJANGO_VERSION=1.7.9
-  - DJANGO_VERSION=1.8.3
+  - DJANGO_VERSION=1.7.10
+  - DJANGO_VERSION=1.8.4
 install:
   - pip install -q coveralls
   - pip install -q beautifulsoup4
