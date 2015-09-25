@@ -40,6 +40,12 @@ def _title_getter(value, instance, **kwargs):
     return instance.title
 
 
+class ToUpperProcessor(processors.BaseProcessor):
+
+    def process(self, value, **kwargs):
+        return value.upper()
+
+    
 class LoopbackProcessor(processors.BaseProcessor):
 
     def process(self, value, **kwargs):
@@ -66,6 +72,11 @@ class TextTesting(models.Model):
         Dependency(processor=LoopbackProcessor)
     ])
     loopback_foo = fields.CharField(max_length=10)
+    html = fields.TextField(dependencies=[
+        Dependency(processor=ToUpperProcessor),
+        Dependency(suffix='plain', processor=processors.HTMLProcessor())
+    ])
+    html_plain = fields.TextField()
 
 # FILE TESTING
 

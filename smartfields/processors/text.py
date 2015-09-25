@@ -91,6 +91,8 @@ class SlugProcessor(UniqueProcessor):
 class HTMLProcessor(CropProcessor):
     """Basic HTML processor that stripps out all the tags."""
 
+    parser = "lxml"
+
     def remove_comments(self, soup):
         for comment in soup.findAll(text=lambda text: isinstance(text, Comment)):
             comment.extract()
@@ -99,7 +101,7 @@ class HTMLProcessor(CropProcessor):
         tag.hidden = True
 
     def process(self, value, **kwargs):
-        soup = BeautifulSoup(value)
+        soup = BeautifulSoup(value, self.parser)
         self.remove_comments(soup)
         for tag in soup.findAll(True):
             self.process_tag(tag)

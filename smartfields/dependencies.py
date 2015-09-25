@@ -194,7 +194,7 @@ class Dependency(object):
             if self.set_default(instance, value) and self.has_processor():
                 value = self.get_value(instance)
                 field = self._dependee
-        if (field is None or value not in get_empty_values(field)) and self.has_processor():
+        if self.has_processor():  #(field is None or value not in get_empty_values(field)) and
             if self.async:
                 self._processor.progress_setter = progress_setter
                 progress_setter(self._processor, 0)

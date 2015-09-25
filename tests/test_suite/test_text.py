@@ -99,3 +99,16 @@ class TextTestCase(TestCase):
         instance.save()
         self.assertEqual(instance.loopback_foo, '')
         self.assertEqual(instance.loopback, '')
+
+    def test_blank_chained_processors(self):
+        instance = TextTesting.objects.get(title='Snatch')
+        instance.html = ""
+        instance.save()
+        self.assertEqual(instance.html_plain, "")
+
+    def test_chained_processors(self):
+        instance = TextTesting.objects.get(title='Snatch')
+        instance.html = "<h1>foo</h1>"
+        instance.save()
+        self.assertEqual(instance.html_plain, "FOO")
+        
