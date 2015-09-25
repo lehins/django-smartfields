@@ -12,7 +12,7 @@ install:
   - pip install -q Pillow
   - pip install -q Wand
   - pip install -q Django==$DJANGO_VERSION
-	- pip install -q lxml
+  - pip install -q lxml
   - pip install -q django-crispy-forms
 before_install:
   - sudo apt-get update -qq

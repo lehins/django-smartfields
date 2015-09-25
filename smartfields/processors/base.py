@@ -100,7 +100,7 @@ class ExternalFileProcessor(BaseFileProcessor):
         return NamedTemporaryFile(mode='rb', suffix='_%s_%s%s' % (
             get_model_name(instance), field.name, self.get_ext()), delete=False)
 
-    def process(self, in_file, **kwargs): # pylint: disable=E1102
+    def process(self, in_file, **kwargs):
         out_file = self.get_output_file(in_file, **kwargs)
         cmd = self.cmd_template.format(
             input=self.get_input_path(in_file), output=self.get_output_path(out_file),
@@ -133,11 +133,11 @@ class ExternalFileProcessor(BaseFileProcessor):
                       not (stderr_reader is None or stderr_reader.eof()):
                     if stdout_queue is not None:
                         while not stdout_queue.empty():
-                            stdout_args = self.stdout_handler(
+                            stdout_args = self.stdout_handler( # pylint: disable=not-callable
                                 stdout_queue.get(), *stdout_args) or ()
                     if stderr_queue is not None:
                         while not stderr_queue.empty():
-                            stderr_args = self.stderr_handler(
+                            stderr_args = self.stderr_handler( # pylint: disable=not-callable
                                 stderr_queue.get(), *stderr_args) or ()
                     time.sleep(self.sleep_time)
             except ProcessingError:
