@@ -11,7 +11,7 @@ from test_suite.test_files import add_base
 class TextTestCase(TestCase):
 
     def strip(self, text):
-        return re.sub('( +|\t+|\n+)', ' ', text)
+        return re.sub('( +|\t+|\n+)', ' ', text).strip()
 
     def setUp(self):
         descr = open(add_base("static/defaults/snatch.html"), 'r')
