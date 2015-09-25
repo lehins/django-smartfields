@@ -87,6 +87,7 @@ Dependencies
   be easily adopted for `avconv <https://libav.org/avconv.html>`_).
 * `BeautifulSoup4 <https://pypi.python.org/pypi/beautifulsoup4/>`_ - (optional)
   for HTML stripping
+* `lxml <https://pypi.python.org/pypi/lxml>`_ - (optional) for `BeautifulSoup`.
 * `django-crispy-forms
   <https://readthedocs.org/projects/django-crispy-forms/>`_ - (optional) for
   ajax uploading.
