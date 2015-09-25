@@ -100,7 +100,7 @@ class ExternalFileProcessor(BaseFileProcessor):
         return NamedTemporaryFile(mode='rb', suffix='_%s_%s%s' % (
             get_model_name(instance), field.name, self.get_ext()), delete=False)
 
-    def process(self, in_file, **kwargs):
+    def process(self, in_file, **kwargs): # pylint: disable=E1102
         out_file = self.get_output_file(in_file, **kwargs)
         cmd = self.cmd_template.format(
             input=self.get_input_path(in_file), output=self.get_output_path(out_file),
