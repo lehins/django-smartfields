@@ -3,6 +3,7 @@
 
 /.eggs
 /django_smartfields.egg-info
+/build
 /docs/build
 /dist
 /tests/migrations

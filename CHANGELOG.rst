@@ -5,6 +5,7 @@ Changelog
 -----
 
 * added ``gis`` fields.
+* made ``lxml`` a default parser for HTMLProcessor.  
 
 1.0.6
 -----
