@@ -15,7 +15,6 @@ install:
   - pip install -q lxml
   - pip install -q django-crispy-forms
   - pip install -q docutils
-  - python setup.py check --restructuredtext -s
 before_install:
   - sudo apt-get update -qq
   - sudo apt-get -y install wget tar bzip2 flvtool2
@@ -23,7 +22,8 @@ before_install:
   - tar jxf ffmpeg-2.1.3-64bit-static.tar.bz2
   - sudo cp ffmpeg-2.1.3-64bit-static/ffmpeg ffmpeg-2.1.3-64bit-static/ffprobe /usr/bin
 script:
-  coverage run --source='smartfields' setup.py test
+  - python setup.py check --restructuredtext -s
+  - coverage run --source='smartfields' setup.py test
 after_success:
   coveralls
 notifications:
