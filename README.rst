@@ -51,7 +51,7 @@ able to upload an image in any format and automatically add another version of
 this image converted to JPEG and shrunk to fit in a box size of 1024x768. Here
 is how it could look with utilization of `django-smartfields`:
 
-.. code-block:: python
+.. code:: python
 
     from django.db import models
     
