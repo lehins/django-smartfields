@@ -9,7 +9,7 @@ from smartfields.utils import apps
 
 try:
     from bs4 import BeautifulSoup, Comment
-    import lxml
+    import lxml # pylint: disable=unused-import
     DEFAULT_PARSER = "lxml"
 except ImportError:
     DEFAULT_PARSER = "html.parser"
