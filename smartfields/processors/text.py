@@ -9,8 +9,10 @@ from smartfields.utils import apps
 
 try:
     from bs4 import BeautifulSoup, Comment
+    import lxml
+    DEFAULT_PARSER = "lxml"
 except ImportError:
-    pass
+    DEFAULT_PARSER = "html.parser"
 
 __all__ = [
     'CropProcessor', 'UniqueProcessor', 'SlugProcessor', 'HTMLProcessor', 'HTMLTagProcessor'
@@ -90,9 +92,8 @@ class SlugProcessor(UniqueProcessor):
 
 class HTMLProcessor(CropProcessor):
     """Basic HTML processor that stripps out all the tags."""
-
-    parser = "lxml"
-
+    parser = DEFAULT_PARSER
+    
     def remove_comments(self, soup):
         for comment in soup.findAll(text=lambda text: isinstance(text, Comment)):
             comment.extract()
