@@ -22,6 +22,24 @@ class Dependency(object):
     field = None
     model = None
 
+    @property
+    def name(self):
+        if self._attname:
+            return self._attname
+        if self._suffix:
+            return "%s_%s" % (self.field.name, self._suffix)
+        return self.field.name
+
+    @property
+    def _dependee(self):
+        try:
+            return self.model._meta.get_field(self.name)
+        except (FieldDoesNotExist, AppRegistryNotReady): pass
+
+    @property
+    def has_stashed_value(self):
+        return self._stashed_value is not VALUE_NOT_SET
+
     def __init__(self, attname=None, suffix=None, processor=None, pre_processor=None,
                  async=False, default=NOT_PROVIDED, processor_params=None, uid=None):
         """
@@ -52,9 +70,11 @@ class Dependency(object):
             if hasattr(self._processor, 'check_params'):
                 self._processor.check_params(**self._processor_params)
         self.async = async
+        self._uid = uid
         assert not async or self.has_processor(), \
             "Asynchrounous processing doesn't make sense without a processor."
-        self._uid = uid
+        if not (self.has_pre_processor() or self.has_processor() or self._default):
+            assert attname or suffix, "Dependency without any arguments, has no purpose."
 
     def __eq__(self, other):
         return (type(self) is type(other) and
@@ -64,24 +84,6 @@ class Dependency(object):
                 self._default == other._default and
                 self._processor_params == other._processor_params and
                 self._uid == other._uid)
-
-    @property
-    def name(self):
-        if self._attname:
-            return self._attname
-        if self._suffix:
-            return "%s_%s" % (self.field.name, self._suffix)
-        return self.field.name
-
-    @property
-    def _dependee(self):
-        try:
-            return self.model._meta.get_field(self.name)
-        except (FieldDoesNotExist, AppRegistryNotReady): pass
-
-    @property
-    def has_stashed_value(self):
-        return self._stashed_value is not VALUE_NOT_SET
 
     def get_stashed_value(self, instance, value):
         if self._dependee is self.field:
