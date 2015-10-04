@@ -34,14 +34,14 @@ especially useful when one field depends on a value from another field, even if
 a field depends on itself. At first it might sound useless, but, as it turns
 out, it is an amazing concept that helps in writing clear, concise and DRY code.
 
-Best way to descibe is on a simple example. Let's say there is a field where you
-store a custom html page and you would like to have another field attached to
-the same model store the same page but with html tags stripped out, moreover you
-would like it to update whenever the first field changes it's value. A common
-way to handle that issue is to overwrite model's ``save`` method and put all the
-logic there, right? What if you could just give a field a function that does the
-stripping and everything else is taking care of? Wouldn't that be nice, huh?
-Well, that's one of many things this app let's you do.
+Best way to describe is on a simple example. Let's say there is a field where
+you store a custom html page and you would like to have another field attached
+to the same model store the same page but with html tags stripped out, moreover
+you would like it to update whenever the first field changes it's value. A
+common way to handle that issue is to overwrite model's ``save`` method and put
+all the logic there, right? What if you could just give a field a function that
+does the stripping and everything else is taking care of? Wouldn't that be nice,
+huh?  Well, that's one of many things this app let's you do.
 
 Another great example is django's ``ImageField`` that can update ``width_field``
 and ``height_field`` whenever image is changed. This app uses similar concepts
