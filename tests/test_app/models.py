@@ -81,9 +81,6 @@ class TextTesting(models.Model):
 # FILE TESTING
 
 
-def _id(value):
-    return value
-
 def _get_foo(value, instance, field, **kwargs):
     return instance.field_1_foo
 
@@ -98,7 +95,8 @@ def _file_to_lower(f):
 class FileTesting(models.Model):
     # test static default
     field_1 = fields.FileField(upload_to='testing', dependencies=[
-        FileDependency(suffix='foo', default="defaults/foo.txt", processor=_id),
+        FileDependency(suffix='foo', default="defaults/foo.txt",
+                       processor=processors.BaseProcessor),
         FileDependency(attname='bar', default="defaults/bar.txt")
     ])
     # test default FieldFile
