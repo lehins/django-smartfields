@@ -40,8 +40,8 @@ class BaseProcessor(object):
         if callable(progress_setter):
             progress_setter(self, progress)
 
-    def process(self, value, instance, field, dependee, stashed_value, **params):
-        raise NotImplementedError("process is a required method")
+    def process(self, value, *args, **kwargs):
+        return value
 
 
 class BaseFileProcessor(BaseProcessor):
