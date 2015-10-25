@@ -145,12 +145,11 @@ class smartfields.FileField
                 @$form.data(@counterName, (@$form.data(@counterName) or 0) + 1)
                 @formSubmitted = true
                 if not @$browseBtn.data('silent') and @$form.data(@counterName) is 1
-                    smartfields.alert("This form contains a file(s) that can take some time to upload.
-                        Please, wait for it to finish, you should be able to see the progress
-                        under the file input. It will advance to the next step once it's done
-                        uploading")
+                    smartfields.alert("This form contains a file(s) that can take some time 
+                        to upload. Please, wait for it to finish, you should be able to see 
+                        the progress under the file input. It will proceed automatically 
+                        once it's done uploading.")
             @uploader.state is plupload.STOPPED and not @$form.data(@counterName)
-        
 
 
     setProgress: (index, percent, task_name) ->

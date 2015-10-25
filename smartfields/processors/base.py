@@ -40,7 +40,7 @@ class BaseProcessor(object):
         if callable(progress_setter):
             progress_setter(self, progress)
 
-    def process(self, value, *args, **kwargs):
+    def process(self, value, **kwargs):
         return value
 
 
