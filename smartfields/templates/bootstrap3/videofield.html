@@ -4,7 +4,7 @@
 
 {% block field %}
 <div>
-  <div id="{{ field.auto_id }}_preview">
+  <div id="{{ field.auto_id }}_preview" class="smartfields-preview">
     {% if field.value and field.value.state == 'ready' %}
       {{ field.value.html_tag|safe }}
     {% endif %}
