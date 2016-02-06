@@ -64,7 +64,7 @@ PILLOW_IMAGE_SUPPORT = {
 
     'DCX': (['dcx'], ['1', 'L', 'P', 'RGB'], None), # - Intel fax format
     # PCD format segfaults: https://github.com/python-pillow/Pillow/issues/568
-    'PCD': (['pcd'], ['RGB'], None),
+    # 'PCD': (['pcd'], ['RGB'], None),
     'PDF': (['pdf'], None, ['1', 'RGB']),
     'PSD': (['psd'], ['P'], None),
     'XPM': (['xpm'], ['P'], None),
