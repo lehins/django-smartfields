@@ -37,7 +37,7 @@ class ImageProcessorsTestCase(TestCase):
         self.assertEqual(p.get_dimensions(200, 100, max_width=400, max_height=200), (200, 100))
         # without preserving ratio
         self.assertEqual(p.get_dimensions(
-            200, 100, min_width=50, max_width=100, min_height=2000, 
+            200, 100, min_width=50, max_width=100, min_height=2000,
             max_height=2001, preserve=False), (100, 2000))
         self.assertEqual(p.get_dimensions(
             200, 100, height=500, min_width=300, max_width=400, preserve=False), (300, 500))
@@ -83,5 +83,3 @@ class ImageProcessorsTestCase(TestCase):
         p = ImageProcessor()
         self.assertIsNone(p.get_ext())
         self.assertEquals(p.get_ext(format=ImageFormat('TIFF', ext='')), '')
-
-        

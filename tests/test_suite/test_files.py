@@ -63,7 +63,7 @@ class FileTestCase(FileBaseTestCase):
         self.assertFalse(os.path.isfile(field_1_path))
         self.assertFalse(os.path.isfile(field_1_foo_path))
         self.assertFalse(os.path.isfile(field_2_path))
-        
+
     def test_file_cleanup_after_delete(self):
         instance = FileTesting.objects.create()
         foo_bar = File(open(add_base("static/defaults/foo-bar.txt"), 'r'))
@@ -182,17 +182,10 @@ class ImageTestCase(FileBaseTestCase):
         # test problematic processor (JPEG2000 is missing a required library)
         instance.image_4 = lenna_rect
         instance.save()
-        self.assertEqual(instance.smartfields_get_field_status('image_4'), {
-            'state': 'error', 
-            'messages': [
-                'ProcessingError: There was a problem with image conversion: encoder '
-                'jpeg2k not available'
-            ], 
-            'app_label': 'test_app', 
-            'pk': 1, 
-            'field_name': 'image_4', 
-            'model_name': 'imagetesting'
-        })
+        # check to see that files got commited
+        # It is possible than `libjpeg` isn't installed which will cause the test to fail
+        self.assertEquals(instance.image_4_jpeg2000.width, 200)
+        self.assertEquals(instance.image_4_jpeg2000.height, 112)
         lenna_rect.close()
         # delete instance and check if everything is cleaned up
         instance.delete()
