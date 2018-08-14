@@ -33,6 +33,14 @@ MIDDLEWARE_CLASSES = [
 
 SITE_ID = 1
 
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [],
+        'APP_DIRS': True
+    }
+]
+
 MEDIA_ROOT = os.path.join(BASE_PATH, 'static/media/')
 
 MEDIA_URL = '/media/'
@@ -44,3 +52,4 @@ STATIC_URL = '/static/'
 ROOT_URLCONF = 'tests.urls'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap3'
+
