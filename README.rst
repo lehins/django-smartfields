@@ -74,17 +74,6 @@ some examples.
 Django settings
 ---------------
 
-.. code-block:: python
-
-    MIDDLEWARE_CLASSES = [
-        'django.contrib.sessions.middleware.SessionMiddleware',
-        'django.contrib.auth.middleware.AuthenticationMiddleware',
-        'django.contrib.messages.middleware.MessageMiddleware'
-    ]
-
-    SITE_ID = 1
-
-
 Required django apps for most of the functionality:
 
 .. code-block:: python
@@ -98,6 +87,18 @@ Required django apps for most of the functionality:
         # optional, needed for forms
         'crispy_forms'
     ]
+
+Other required settings
+
+.. code-block:: python
+
+    MIDDLEWARE_CLASSES = [
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'django.contrib.messages.middleware.MessageMiddleware'
+    ]
+
+    SITE_ID = 1
 
 Dependencies
 ------------
