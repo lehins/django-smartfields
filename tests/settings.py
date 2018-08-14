@@ -41,7 +41,7 @@ TEMPLATES = [
     }
 ]
 
-MEDIA_ROOT = os.path.join(BASE_PATH, 'static/media/')
+MEDIA_ROOT = os.path.join(BASE_PATH, 'media/')
 
 MEDIA_URL = '/media/'
 
