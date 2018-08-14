@@ -12,7 +12,7 @@ def add_base(path):
 
 
 class FileBaseTestCase(TestCase):
-    media_path = add_base("media")
+    media_path = add_base("static/media")
 
     def setUp(self):
         if not os.path.exists(self.media_path): os.makedirs(self.media_path)
@@ -129,10 +129,10 @@ class ImageTestCase(FileBaseTestCase):
         # test image replacing
         lenna_square = File(open(add_base("static/images/lenna_square.png"), 'rb'))
         instance.image_2 = lenna_square
-        self.assertTrue(os.path.isfile(add_base("media/image_2/lenna_rect.jpg")))
+        self.assertTrue(os.path.isfile(add_base("static/media/image_2/lenna_rect.jpg")))
         instance.save()
         lenna_square.close()
-        self.assertFalse(os.path.isfile(add_base("media/image_2/lenna_rect.jpg")))
+        self.assertFalse(os.path.isfile(add_base("static/media/image_2/lenna_rect.jpg")))
         self.assertEqual(instance.image_2.width, 512)
         self.assertEqual(instance.image_2.height, 512)
         instance.image_2 = None
@@ -142,7 +142,7 @@ class ImageTestCase(FileBaseTestCase):
         # remove django's ImageFieldFile manually
         instance.image_1.delete()
         instance.delete()
-        self.assertFalse(os.path.isfile(add_base("media/image_2/lenna_square.png")))
+        self.assertFalse(os.path.isfile(add_base("static/media/image_2/lenna_square.png")))
 
     def test_wand_image_processor(self):
         instance = ImageTesting.objects.create()
@@ -184,8 +184,8 @@ class ImageTestCase(FileBaseTestCase):
         instance.save()
         # check to see that files got commited
         # It is possible than `libjpeg` isn't installed which will cause the test to fail
-        self.assertEquals(instance.image_4_jpeg2000.width, 200)
-        self.assertEquals(instance.image_4_jpeg2000.height, 112)
+        self.assertEquals(instance.image_4_jpeg2000.width, 400)
+        self.assertEquals(instance.image_4_jpeg2000.height, 225)
         lenna_rect.close()
         # delete instance and check if everything is cleaned up
         instance.delete()

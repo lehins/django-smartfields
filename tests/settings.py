@@ -33,7 +33,7 @@ MIDDLEWARE_CLASSES = [
 
 SITE_ID = 1
 
-MEDIA_ROOT = os.path.join(BASE_PATH, 'media/')
+MEDIA_ROOT = os.path.join(BASE_PATH, 'static/media/')
 
 MEDIA_URL = '/media/'
 
