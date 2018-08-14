@@ -1,5 +1,5 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, url
 
-urlpatterns = patterns('',
+urlpatterns = [
     url(r'smartfields/', include('smartfields.urls', namespace='smartfields')),
-)
+]
