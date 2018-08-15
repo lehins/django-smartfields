@@ -34,7 +34,7 @@ class AsyncHandler(threading.Thread):
         try:
             for idx, d in enumerate(dependencies):
                 self.manager._process(
-                    d, self.instance, 
+                    d, self.instance,
                     progress_setter=self.get_progress_setter(multiplier, idx)
                 )
             self.manager.finished_processing(self.instance)
@@ -46,7 +46,7 @@ class AsyncHandler(threading.Thread):
 
 class FieldManager(object):
     _stashed_value = VALUE_NOT_SET
-    
+
     def __init__(self, field, dependencies):
         self.field = field
         self.dependencies = dependencies
@@ -98,7 +98,7 @@ class FieldManager(object):
         if self.has_stashed_value:
             self.cleanup_stash()
         self.set_status(instance, {'state': 'complete'})
-        
+
     def cleanup(self, instance):
         for d in self.dependencies:
             d.cleanup(instance)
@@ -107,7 +107,7 @@ class FieldManager(object):
         if hasattr(value, 'delete') and hasattr(value, 'field') \
            and value and not value.field.keep_orphans:
             value.delete(instance_update=False)
-    
+
     def cleanup_stash(self):
         self.delete_value(self._stashed_value)
         self._stashed_value = VALUE_NOT_SET
@@ -144,7 +144,7 @@ class FieldManager(object):
                 d.stash_previous_value(instance, d.get_value(instance))
             try:
                 if self.has_async:
-                    for d in filter(lambda d: not d.async and d.should_process(), 
+                    for d in filter(lambda d: not d.async and d.should_process(),
                                     self.dependencies):
                         self._process(d, instance)
                     async_handler = AsyncHandler(self, instance)
@@ -166,7 +166,7 @@ class FieldManager(object):
             if new_value is not VALUE_NOT_SET:
                 value = new_value
         return value
-                
+
 
     def get_status_key(self, instance):
         """Generates a key used to set a status on a field"""

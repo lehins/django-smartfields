@@ -9,10 +9,6 @@ django-smartfields
    :target: https://pypi.python.org/pypi/django-smartfields/
    :alt: Latest Version
 
-.. image:: https://img.shields.io/pypi/dm/django-smartfields.svg
-   :target: https://pypi.python.org/pypi/django-smartfields/
-   :alt: Number of PyPI downloads
-
 .. image:: https://landscape.io/github/lehins/django-smartfields/master/landscape.png
    :target: https://landscape.io/github/lehins/django-smartfields/master
    :alt: Code Health
@@ -20,8 +16,8 @@ django-smartfields
 .. image:: https://img.shields.io/coveralls/lehins/django-smartfields.svg
    :target: https://coveralls.io/r/lehins/django-smartfields
    :alt: Tests Coverage
-            
-.. image:: https://travis-ci.org/lehins/django-smartfields.svg?branch=master   
+
+.. image:: https://travis-ci.org/lehins/django-smartfields.svg?branch=master
    :target: https://travis-ci.org/lehins/django-smartfields
    :alt: Travis-CI
 
@@ -54,7 +50,7 @@ is how it could look with utilization of `django-smartfields`:
 .. code-block:: python
 
     from django.db import models
-    
+
     from smartfields import fields
     from smartfields.dependencies import FileDependency
     from smartfields.processors import ImageProcessor
@@ -75,11 +71,38 @@ So hopefully I got you convinced to give this app a try. There is full
 documentation also on the way, but for now you can check out 'tests' folder for
 some examples.
 
+Django settings
+---------------
+
+Required django apps for most of the functionality:
+
+.. code-block:: python
+
+    INSTALLED_APPS = [
+        'django.contrib.auth',
+        'django.contrib.sessions',
+        'django.contrib.contenttypes',
+        'django.contrib.sites',
+
+        # optional, needed for forms
+        'crispy_forms'
+    ]
+
+Other required settings
+
+.. code-block:: python
+
+    MIDDLEWARE_CLASSES = [
+        'django.contrib.sessions.middleware.SessionMiddleware',
+        'django.contrib.auth.middleware.AuthenticationMiddleware',
+        'django.contrib.messages.middleware.MessageMiddleware'
+    ]
+
+    SITE_ID = 1
 
 Dependencies
 ------------
-* `Django <https://djangoproject.com/>`_ (for now only version >= 1.7, will add
-  support for earlier versions later).
+* `Django <https://djangoproject.com/>`_ (for now only version >= 1.7 && < 2.0).
 * `Python Pillow <https://pillow.readthedocs.org>`_ - (optional) used for
   image conversion/resizing. AND/OR
 * `Wand <http://docs.wand-py.org>`_ - also for image processing.

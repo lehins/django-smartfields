@@ -7,7 +7,7 @@ from test_app.forms import TextTestingForm, ImageTestingForm, VideoTestingForm
 from crispy_forms.templatetags.crispy_forms_tags import CrispyFormNode
 
 class CripsyTestCase(TestCase):
-    
+
     def render_form(self, form):
         node = CrispyFormNode('form', 'helper')
         f = node.render(Context({'form': form, 'helper': form.helper}))
@@ -25,4 +25,3 @@ class CripsyTestCase(TestCase):
     def test_video_field(self):
         form = VideoTestingForm()
         self.assertEqual(len(self.render_form(form)), 954)
-

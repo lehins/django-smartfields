@@ -19,10 +19,10 @@ def _incrementer(value):
     try:
         return value+1
     except (TypeError, ValueError): pass
-    
+
 
 class PreProcessorTesting(models.Model):
-    
+
     field_1 = fields.DecimalField(decimal_places=1, max_digits=4, dependencies=[
         Dependency(pre_processor=_decimal_pre_processor, processor=_incrementer),
         Dependency(attname='field_2', pre_processor=int)
@@ -45,7 +45,7 @@ class ToUpperProcessor(processors.BaseProcessor):
     def process(self, value, **kwargs):
         return value.upper()
 
-    
+
 class LoopbackProcessor(processors.BaseProcessor):
 
     def process(self, value, **kwargs):
@@ -53,7 +53,7 @@ class LoopbackProcessor(processors.BaseProcessor):
 
 
 class TextTesting(models.Model):
-    
+
     title = fields.CharField(max_length=11, unique=True, dependencies=[
         Dependency(processor=processors.UniqueProcessor())
     ])
@@ -84,7 +84,7 @@ class TextTesting(models.Model):
 def _get_foo(value, instance, field, **kwargs):
     return instance.field_1_foo
 
-def _file_to_lower(f): 
+def _file_to_lower(f):
     pos = f.tell()
     f.seek(0)
     new_f = ContentFile(f.read().lower())
@@ -121,7 +121,7 @@ class ImageTesting(models.Model):
     image_2_height = models.IntegerField(null=True)
     image_3 = fields.ImageField(upload_to=UploadTo(name='image_3'), dependencies=[
         FileDependency(suffix='png', processor=processors.ImageProcessor(
-            format=processors.ImageFormat('PNG', mode='P'), 
+            format=processors.ImageFormat('PNG', mode='P'),
             scale={'max_width': 200, 'max_height':150})),
         FileDependency(suffix='bmp', processor=processors.ImageProcessor(
             format='BMP', scale={'width': 50})),
@@ -148,7 +148,7 @@ class ImageTesting(models.Model):
     ])
     # test problematic format
     image_4 = fields.ImageField(upload_to=UploadTo(name='image_4'), dependencies=[
-        FileDependency(suffix='jpeg2000', 
+        FileDependency(suffix='jpeg2000',
                        processor=processors.ImageProcessor(format='JPEG2000')),
     ])
     image_5 = fields.ImageField(upload_to=UploadTo(name='image_5'), dependencies=[
@@ -175,19 +175,19 @@ class DependencyTesting(models.Model):
     ])
     image_3 = models.ImageField(upload_to=UploadTo(name='image_3'))
     image_4 = fields.ImageField(upload_to=UploadTo(name='image_4'))
-    
+
 
 def _name_getter(name, instance):
     return instance.label
-    
+
 class RenameFileTesting(models.Model):
     label = fields.CharField(max_length=32, dependencies=[
-        FileDependency(attname='dynamic_name_file', 
+        FileDependency(attname='dynamic_name_file',
                        processor=processors.RenameFileProcessor())
     ])
     dynamic_name_file = models.FileField(
         upload_to=UploadTo(name=_name_getter, add_pk=False))
-        
+
 
 
 video_tag_processor = processors.HTMLTagProcessor(template=
@@ -197,7 +197,7 @@ video_tag_processor = processors.HTMLTagProcessor(template=
 
 
 class VideoTesting(models.Model):
-    
+
     video_1 = fields.FileField(
         upload_to=UploadTo(name='video_1'), dependencies=[
             # testing html tag setter
@@ -215,8 +215,6 @@ class VideoTesting(models.Model):
         ])
 
     def has_upload_permission(self, user, field_name=None):
-        return (field_name == 'video_1' and 
-                user.is_authenticated() and 
+        return (field_name == 'video_1' and
+                user.is_authenticated() and
                 user.username == 'test_user')
-
-

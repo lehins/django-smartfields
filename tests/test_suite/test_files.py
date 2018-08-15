@@ -12,10 +12,13 @@ def add_base(path):
 
 
 class FileBaseTestCase(TestCase):
+    static_path = add_base("static")
     media_path = add_base("media")
 
     def setUp(self):
-        if not os.path.exists(self.media_path): os.makedirs(self.media_path)
+        if not os.path.exists(self.media_path):
+            os.makedirs(self.media_path)
+            shutil.copytree(self.static_path, os.path.join(self.media_path, "static"))
 
     def tearDown(self):
         if os.path.exists(self.media_path): shutil.rmtree(self.media_path)
@@ -35,7 +38,7 @@ class FileTestCase(FileBaseTestCase):
         field_2_path = instance.field_2.path
         self.assertTrue(os.path.isfile(field_2_path))
         # test assignment of file
-        foo_bar = File(open(add_base("static/defaults/foo-bar.txt"), 'r'))
+        foo_bar = File(open(add_base("media/static/defaults/foo-bar.txt"), 'r'))
         instance.field_1 = foo_bar
         instance.save()
         foo_bar.close()
@@ -63,10 +66,10 @@ class FileTestCase(FileBaseTestCase):
         self.assertFalse(os.path.isfile(field_1_path))
         self.assertFalse(os.path.isfile(field_1_foo_path))
         self.assertFalse(os.path.isfile(field_2_path))
-        
+
     def test_file_cleanup_after_delete(self):
         instance = FileTesting.objects.create()
-        foo_bar = File(open(add_base("static/defaults/foo-bar.txt"), 'r'))
+        foo_bar = File(open(add_base("media/static/defaults/foo-bar.txt"), 'r'))
         instance.field_3 = foo_bar
         instance.field_4 = foo_bar
         instance.save()
@@ -83,7 +86,7 @@ class FileTestCase(FileBaseTestCase):
 
     def test_file_cleanup_after_replace(self):
         instance = FileTesting.objects.create()
-        foo_bar = File(open(add_base("static/defaults/foo-bar.txt"), 'r'))
+        foo_bar = File(open(add_base("media/static/defaults/foo-bar.txt"), 'r'))
         instance.field_3 = foo_bar
         instance.field_4 = foo_bar
         instance.save()
@@ -92,7 +95,7 @@ class FileTestCase(FileBaseTestCase):
         field_4_path = instance.field_4.path
         self.assertTrue(os.path.isfile(field_3_path))
         self.assertTrue(os.path.isfile(field_4_path))
-        foo = File(open(add_base("static/defaults/foo.txt"), 'r'))
+        foo = File(open(add_base("media/static/defaults/foo.txt"), 'r'))
         instance.field_3 = foo
         instance.field_4 = foo
         instance.save()
@@ -107,7 +110,7 @@ class ImageTestCase(FileBaseTestCase):
 
     def test_image_field_mimic_django(self):
         instance = ImageTesting.objects.create()
-        lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
+        lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
         instance.image_1 = lenna_rect
         instance.image_2 = lenna_rect
         instance.save()
@@ -127,7 +130,7 @@ class ImageTestCase(FileBaseTestCase):
         self.assertEqual(instance.image_1.url, "/media/image_1/lenna_rect.jpg")
         self.assertEqual(instance.image_2.url, "/media/image_2/lenna_rect.jpg")
         # test image replacing
-        lenna_square = File(open(add_base("static/images/lenna_square.png"), 'rb'))
+        lenna_square = File(open(add_base("media/static/images/lenna_square.png"), 'rb'))
         instance.image_2 = lenna_square
         self.assertTrue(os.path.isfile(add_base("media/image_2/lenna_rect.jpg")))
         instance.save()
@@ -146,7 +149,7 @@ class ImageTestCase(FileBaseTestCase):
 
     def test_wand_image_processor(self):
         instance = ImageTesting.objects.create()
-        lenna_square = File(open(add_base("static/images/lenna_square.png"), 'rb'))
+        lenna_square = File(open(add_base("media/static/images/lenna_square.png"), 'rb'))
         instance.image_5 = lenna_square
         instance.save()
         # make sure conversion went through properly
@@ -161,7 +164,7 @@ class ImageTestCase(FileBaseTestCase):
 
     def test_image_processor(self):
         instance = ImageTesting.objects.create()
-        lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
+        lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
         instance.image_3 = lenna_rect
         instance.save()
         # make sure conversion went through properly
@@ -182,17 +185,10 @@ class ImageTestCase(FileBaseTestCase):
         # test problematic processor (JPEG2000 is missing a required library)
         instance.image_4 = lenna_rect
         instance.save()
-        self.assertEqual(instance.smartfields_get_field_status('image_4'), {
-            'state': 'error', 
-            'messages': [
-                'ProcessingError: There was a problem with image conversion: encoder '
-                'jpeg2k not available'
-            ], 
-            'app_label': 'test_app', 
-            'pk': 1, 
-            'field_name': 'image_4', 
-            'model_name': 'imagetesting'
-        })
+        # check to see that files got commited
+        # It is possible than `libjpeg` isn't installed which will cause the test to fail
+        self.assertEquals(instance.image_4_jpeg2000.width, 400)
+        self.assertEquals(instance.image_4_jpeg2000.height, 225)
         lenna_rect.close()
         # delete instance and check if everything is cleaned up
         instance.delete()
@@ -201,7 +197,7 @@ class ImageTestCase(FileBaseTestCase):
 
     def test_self_dependency(self):
         instance = DependencyTesting.objects.create()
-        lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
+        lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
         instance.image_1 = lenna_rect
         instance.save()
         lenna_rect.close()
@@ -216,8 +212,8 @@ class ImageTestCase(FileBaseTestCase):
         instance.delete()
 
     def test_value_restoration_1(self):
-        lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
-        text_file = File(open(add_base("static/defaults/foo.txt"), 'rb'))
+        lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
+        text_file = File(open(add_base("media/static/defaults/foo.txt"), 'rb'))
         instance = DependencyTesting.objects.create()
         instance.image_1 = lenna_rect
         instance.save()
@@ -232,8 +228,8 @@ class ImageTestCase(FileBaseTestCase):
         instance.delete()
 
     def test_value_restoration_2(self):
-        lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
-        text_file = File(open(add_base("static/defaults/foo.txt"), 'rb'))
+        lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
+        text_file = File(open(add_base("media/static/defaults/foo.txt"), 'rb'))
         instance = DependencyTesting.objects.create()
         instance.image_2 = lenna_rect
         instance.save()
@@ -252,7 +248,7 @@ class ImageTestCase(FileBaseTestCase):
 
     def test_forward_dependency(self):
         instance = DependencyTesting.objects.create()
-        lenna_rect = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
+        lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
         instance.image_3 = lenna_rect
         instance.image_4 = lenna_rect
         instance.save()
@@ -287,7 +283,7 @@ class ImageTestCase(FileBaseTestCase):
 
     def test_rename_file_testing(self):
         instance = RenameFileTesting()
-        lenna = File(open(add_base("static/images/lenna_rect.jpg"), 'rb'))
+        lenna = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
         instance.label = 'foo'
         instance.dynamic_name_file = lenna
         instance.save()

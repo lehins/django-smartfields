@@ -39,7 +39,7 @@ class UploadingTestCase(FileBaseTestCase):
                 progress.append(status['progress'])
             elif status['state'] == 'error':
                 print(status)
-                # shouldn't happen if ffmpeg is properly installed
+                print("shouldn't happen if ffmpeg is properly installed")
             elif status['state'] == 'complete':
                 html_tag = status['html_tag']
             time.sleep(1)
