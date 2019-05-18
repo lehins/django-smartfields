@@ -41,12 +41,12 @@ class Dependency(object):
         return self._stashed_value is not VALUE_NOT_SET
 
     def __init__(self, attname=None, suffix=None, processor=None, pre_processor=None,
-                 async=False, default=NOT_PROVIDED, processor_params=None, uid=None):
+                 async_=False, default=NOT_PROVIDED, processor_params=None, uid=None):
         """
         Every Dependency depends on a field, either itself or another field specified
         by a ``field_name``.
         if field_name is None and attname or suffix are also None, this
-        dependency becomes a forward dependency. All ``async=True`` will run last.
+        dependency becomes a forward dependency. All ``async_=True`` will run last.
 
         """
         assert attname is None or suffix is None, \
@@ -69,9 +69,9 @@ class Dependency(object):
             assert callable(self._processor), "processor has to be a function"
             if hasattr(self._processor, 'check_params'):
                 self._processor.check_params(**self._processor_params)
-        self.async = async
+        self.async_ = async_
         self._uid = uid
-        assert not async or self.has_processor(), \
+        assert not async_ or self.has_processor(), \
             "Asynchrounous processing doesn't make sense without a processor."
         if not (self.has_pre_processor() or self.has_processor() or self._default):
             assert attname or suffix, "Dependency without any arguments, has no purpose."
@@ -110,7 +110,7 @@ class Dependency(object):
 
     def contribute_to_model(self, model):
         self.model = model
-        assert not self.async or self._dependee is None, \
+        assert not self.async_ or self._dependee is None, \
             "Cannot do asynchronous processing and setting value on a field, dependee has" \
             "has to be a regular attribute."
         #assert not(type(self) is Dependency and self.has_processor and self._dependee is None), \
@@ -197,7 +197,7 @@ class Dependency(object):
                 value = self.get_value(instance)
                 field = self._dependee
         if self.has_processor():  
-            if self.async:
+            if self.async_:
                 self._processor.progress_setter = progress_setter
                 progress_setter(self._processor, 0)
             try:
@@ -210,9 +210,9 @@ class Dependency(object):
                 else:
                     new_value = self._processor(value)
             finally:
-                if self.async:
+                if self.async_:
                     delattr(self._processor, 'progress_setter')
-            if self.async:
+            if self.async_:
                 progress_setter(self._processor, 1)
             if new_value is not VALUE_NOT_SET:
                 self.set_value(instance, new_value)
