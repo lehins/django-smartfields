@@ -1,7 +1,11 @@
 import os, time, json
 from django.test import Client
-from django.core.urlresolvers import reverse
 from django.utils.encoding import force_text
+
+try:
+    from django.core.urlresolvers import reverse
+except ImportError:
+    from django.urls import reverse
 
 from test_app.models import VideoTesting
 from test_suite.test_files import add_base, FileBaseTestCase
@@ -56,7 +60,7 @@ class UploadingTestCase(FileBaseTestCase):
             '</video>')
         # make sure progress is within correct bounds [0,1]
         self.assertFalse(list(filter(lambda x: x < 0 or x > 1, progress)))
-        # check if we got progress reporting from actual processors 
+        # check if we got progress reporting from actual processors
         self.assertTrue(list(filter(lambda x: x != 0 and x != 1, progress)))
         # make sure it is an increasing progress
         self.assertEqual(progress, sorted(progress))
@@ -77,4 +81,3 @@ class UploadingTestCase(FileBaseTestCase):
         self.assertTrue(instance.video_1_mp4.size != 0)
         self.assertTrue(instance.video_1_webm.size != 0)
         instance.delete()
-

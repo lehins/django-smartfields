@@ -1,5 +1,9 @@
 from django import forms
-from django.core.urlresolvers import reverse
+
+try:
+    from django.core.urlresolvers import reverse
+except ImportError:
+    from django.urls import reverse
 
 from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Layout
@@ -11,7 +15,7 @@ from .models import TextTesting, ImageTesting, VideoTesting
 
 
 class TextTestingForm(forms.ModelForm):
-    
+
     class Meta:
         model = TextTesting
         fields = ('title',)
@@ -20,10 +24,10 @@ class TextTestingForm(forms.ModelForm):
         super(TextTestingForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper(self)
         self.helper.layout = Layout(LimitedField('title'))
-            
+
 
 class ImageTestingForm(forms.ModelForm):
-    
+
     class Meta:
         model = ImageTesting
         fields = ('image_2',)
@@ -43,10 +47,10 @@ class ImageTestingForm(forms.ModelForm):
                     'mime_types': [{'title': "Image Files",
                                     'extensions': supported_formats.input_exts}]
                 }}))
-            
-            
+
+
 class VideoTestingForm(forms.ModelForm):
-    
+
     class Meta:
         model = VideoTesting
         fields = ('video_1',)

@@ -16,9 +16,9 @@ class FileBaseTestCase(TestCase):
     media_path = add_base("media")
 
     def setUp(self):
-        if not os.path.exists(self.media_path):
-            os.makedirs(self.media_path)
-            shutil.copytree(self.static_path, os.path.join(self.media_path, "static"))
+        self.tearDown()
+        os.makedirs(self.media_path)
+        shutil.copytree(self.static_path, os.path.join(self.media_path, "static"))
 
     def tearDown(self):
         if os.path.exists(self.media_path): shutil.rmtree(self.media_path)
@@ -110,7 +110,8 @@ class ImageTestCase(FileBaseTestCase):
 
     def test_image_field_mimic_django(self):
         instance = ImageTesting.objects.create()
-        lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
+        lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'),
+                          name="lenna_rect.jpg")
         instance.image_1 = lenna_rect
         instance.image_2 = lenna_rect
         instance.save()

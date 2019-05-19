@@ -67,7 +67,7 @@ is how it could look with utilization of `django-smartfields`:
 That's it. Did I mention that it will also clean up old files, when new ones are
 uploaded?
 
-So hopefully I got you convinced to give this app a try. There is full
+So, hopefully I got you convinced to give this app a try. There is full
 documentation also on the way, but for now you can check out 'tests' folder for
 some examples.
 
@@ -84,6 +84,8 @@ Required django apps for most of the functionality:
         'django.contrib.contenttypes',
         'django.contrib.sites',
 
+        'smartfields',
+
         # optional, needed for forms
         'crispy_forms'
     ]
@@ -92,7 +94,7 @@ Other required settings
 
 .. code-block:: python
 
-    MIDDLEWARE_CLASSES = [
+    MIDDLEWARE = [
         'django.contrib.sessions.middleware.SessionMiddleware',
         'django.contrib.auth.middleware.AuthenticationMiddleware',
         'django.contrib.messages.middleware.MessageMiddleware'
@@ -102,10 +104,10 @@ Other required settings
 
 Dependencies
 ------------
-* `Django <https://djangoproject.com/>`_ (for now only version >= 1.7 && < 2.0).
+* `Django <https://djangoproject.com/>`_ versions >= 1.7 (should aslo work for 2.x)
 * `Python Pillow <https://pillow.readthedocs.org>`_ - (optional) used for
   image conversion/resizing. AND/OR
-* `Wand <http://docs.wand-py.org>`_ - also for image processing.
+* `Wand <http://docs.wand-py.org>`_ - (optional) also for image processing.
 * `ffmpeg <https://www.ffmpeg.org/>`_ - (optional) for video conversion. (can
   be easily adopted for `avconv <https://libav.org/avconv.html>`_).
 * `BeautifulSoup4 <https://pypi.python.org/pypi/beautifulsoup4/>`_ - (optional)

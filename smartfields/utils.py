@@ -23,11 +23,11 @@ except ImportError:
             if model_name is None:
                 app_label, model_name = app_label.split('.')
             return models.get_model(app_label, model_name)
-    apps = BackwardsApps()    
+    apps = BackwardsApps()
 
 
 __all__ = [
-    'VALUE_NOT_SET', 'ProcessingError', 'NamedTemporaryFile', 'UploadTo', 
+    'VALUE_NOT_SET', 'ProcessingError', 'NamedTemporaryFile', 'UploadTo',
     'AsynchronousFileReader'
 ]
 
@@ -64,7 +64,8 @@ class NamedTemporaryFile(base.File):
         return self.file.name
 
     def close(self):
-        self._size = self._get_size()
+        # make sure the size is recorded before closing the file
+        _ = self.size
         try:
             return self.file.close()
         except OSError as e:
@@ -77,9 +78,9 @@ class UploadTo(object):
     passed as an ``upload_to`` keyword argument to the ``models.FileField`` and
     it's derivatives. It will generate the path in the form:
     basefolder/app_label/model_name/parent_pk/subfolder/pk/field_name/filename.ext
-    
-    :keyword str basefolder: path that will be prepended to the filename.  
-    
+
+    :keyword str basefolder: path that will be prepended to the filename.
+
     :keyword str subfolder: path that will be a container of the model instances
 
     :keyword str filename: will replace the actual file name completely, ex:
@@ -93,12 +94,12 @@ class UploadTo(object):
 
     :keyword str app_label: if ``None`` will insert the ``app_label`` retrieved from
     the model instance (Default). Otherwise specify a string to enforce a
-    specific app_label or anything else evaluating to ``False`` except ``None`` 
+    specific app_label or anything else evaluating to ``False`` except ``None``
     in order to skip insertion of an app_label.
 
     :keyword str model_name: if ``None`` will insert the ``model_name`` retrieved
     from the model instance (Default). Otherwise specify a string to enforce a
-    specific model_name or anything else evaluating to ``False`` except ``None`` 
+    specific model_name or anything else evaluating to ``False`` except ``None``
     in order to skip insertion of a model_name.
 
     :keyword str field_name: if ``None`` will skip insertion of a field_name
@@ -108,16 +109,16 @@ class UploadTo(object):
     of the file in case if it is set to ``True`` default generator :func:`uuid.uuid1`
     will be used.
 
-    :keyword str parent_field_name: name of the ForeignKey or OneToOneField, that 
+    :keyword str parent_field_name: name of the ForeignKey or OneToOneField, that
     is considered a parent for this field's model. Set to an empty string to ignore parent_pk
 
     """
 
     def __init__(self, basefolder=None, subfolder=None, filename=None, name=None, ext=None,
-                 app_label=None, model_name=None, parent_field_name=None, field_name=None, 
+                 app_label=None, model_name=None, parent_field_name=None, field_name=None,
                  add_pk=True, generator=None):
         assert filename is None or name is None, \
-            "Cannot have 'filename' and 'name' specified at the same time." 
+            "Cannot have 'filename' and 'name' specified at the same time."
         assert generator is None or (filename is None and name is None), \
             "Cannot specify a name and enforce name generation"
         assert generator is None or generator is True or callable(generator), \
@@ -147,7 +148,7 @@ class UploadTo(object):
                 self.field_name == other.field_name and
                 self.add_pk == other.add_pk and
                 self.generator is other.generator)
-        
+
     def __call__(self, instance, filename):
         structure = []
         if self.basefolder is not None:
@@ -190,7 +191,7 @@ class UploadTo(object):
                 ext = self.ext
             if ext:
                 filename = "%s.%s" % (name, ext)
-            else: 
+            else:
                 filename = name
         return filename
 

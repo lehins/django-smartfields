@@ -1,16 +1,19 @@
 Changelog
 =========
 
-1.0.10
+1.1.0
 ------
 
-* renamed ``Dependency.async`` to ``Dependency.async_``.
+* renamed ``Dependency.async`` to ``Dependency.async_``. Fix for [#16](https://github.com/lehins/django-smartfields/issues/16). Thanks @zglennie
+* Fix compatibility with Django=2:
+  * Added `app_name='smartifelds'` to `urls.py` file
+  * Fix relying on `_size` and `_set_size()` attributes, since those where only available in 1.x
 
 1.0.7
 -----
 
 * added ``gis`` fields.
-* made ``lxml`` a default parser for HTMLProcessor.  
+* made ``lxml`` a default parser for HTMLProcessor.
 
 1.0.6
 -----
@@ -32,7 +35,7 @@ Changelog
 -----
 
 * Added support for ``Wand`` with ``WandImageProcessor``.
-* Made it compatible with Django 1.8 
+* Made it compatible with Django 1.8
 * Updated compiled JavaScript file.
 
 1.0.2

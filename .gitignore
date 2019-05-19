@@ -7,6 +7,7 @@
 /docs/build
 /dist
 /tests/migrations
+/tests/media
 
 .coverage
 __pycache__

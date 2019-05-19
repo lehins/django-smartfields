@@ -25,6 +25,13 @@ INSTALLED_APPS = [
     'test_suite'
 ]
 
+MIDDLEWARE = [
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware'
+]
+
+# for pre django 1.10
 MIDDLEWARE_CLASSES = [
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',

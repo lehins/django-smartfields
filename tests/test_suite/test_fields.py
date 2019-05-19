@@ -34,4 +34,3 @@ class ReconstructionTestCase(TestCase):
         new_field = PointField(*args, **kwargs)
         self.assertEqual(old_field._dependencies, new_field._dependencies)
         self.assertEqual(kwargs.get('srid'), 4326)
-        

@@ -1,3 +1,4 @@
+import django
 from django.db import models
 from django.core.files.base import ContentFile
 
@@ -203,18 +204,17 @@ class VideoTesting(models.Model):
             # testing html tag setter
             Dependency(suffix='html_tag', default=video_tag_processor),
             # testing conversion to webm
-            FileDependency(suffix='webm', async=True, processor=processors.FFMPEGProcessor(
+            FileDependency(suffix='webm', async_=True, processor=processors.FFMPEGProcessor(
                 format='webm', vcodec='libvpx', vbitrate='128k', maxrate='128k',
                 bufsize='256k', width='trunc(oh*a/2)*2', height=240,
                 threads=4, acodec='libvorbis', abitrate='96k')),
             # testing conversion to mp4
-            FileDependency(suffix='mp4', async=True, processor=processors.FFMPEGProcessor(
+            FileDependency(suffix='mp4', async_=True, processor=processors.FFMPEGProcessor(
                 format='mp4', vcodec='libx264', vbitrate='128k',
                 maxrate='128k', bufsize='256k', width='trunc(oh*a/2)*2',
                 height=240, threads=0, acodec='libmp3lame', abitrate='96k')),
         ])
 
     def has_upload_permission(self, user, field_name=None):
-        return (field_name == 'video_1' and
-                user.is_authenticated() and
-                user.username == 'test_user')
+        is_auth = user.is_authenticated if django.VERSION >= (1, 10) else user.is_authenticated()
+        return (field_name == 'video_1' and is_auth and user.username == 'test_user')
