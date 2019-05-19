@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.0.10
+------
+
+* renamed ``Dependency.async`` to ``Dependency.async_``.
+
 1.0.7
 -----
 

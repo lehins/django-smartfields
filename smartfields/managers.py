@@ -29,7 +29,7 @@ class AsyncHandler(threading.Thread):
         return progress_setter
 
     def run(self):
-        dependencies = list(filter(lambda d: d.async, self.manager.dependencies))
+        dependencies = list(filter(lambda d: d.async_, self.manager.dependencies))
         multiplier = 1.0/len(dependencies)
         try:
             for idx, d in enumerate(dependencies):
@@ -55,7 +55,7 @@ class FieldManager(object):
         for d in self.dependencies:
             d.set_field(self.field)
             if not self.has_async:
-                self.has_async = d.async
+                self.has_async = d.async_
             if not self.should_process:
                 self.should_process = d.should_process()
 
@@ -144,7 +144,7 @@ class FieldManager(object):
                 d.stash_previous_value(instance, d.get_value(instance))
             try:
                 if self.has_async:
-                    for d in filter(lambda d: not d.async and d.should_process(),
+                    for d in filter(lambda d: not d.async_ and d.should_process(),
                                     self.dependencies):
                         self._process(d, instance)
                     async_handler = AsyncHandler(self, instance)
