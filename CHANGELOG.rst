@@ -4,10 +4,12 @@ Changelog
 1.1.0
 ------
 
-* renamed ``Dependency.async`` to ``Dependency.async_``. Fix for [#16](https://github.com/lehins/django-smartfields/issues/16). Thanks @zglennie
-* Fix compatibility with Django=2:
-  * Added `app_name='smartifelds'` to `urls.py` file
-  * Fix relying on `_size` and `_set_size()` attributes, since those where only available in 1.x
+* renamed ``Dependency.async`` to ``Dependency.async_``. Fix for `#16 <https://github.com/lehins/django-smartfields/issues/16>`. Thanks `@zglennie <https://github.com/zglennie>`
+* Fix compatibility with ``Django=2.x``:
+
+  * Added ``app_name='smartifelds'`` to ``urls.py`` file
+  * Stop using ``_size`` and ``_set_size()`` attributes in ``NamedTemporaryFile``,
+    since those where only available in ``Django=1.x``
 
 1.0.7
 -----
