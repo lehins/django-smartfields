@@ -4,7 +4,9 @@ Changelog
 1.1.0
 ------
 
-* renamed ``Dependency.async`` to ``Dependency.async_``. Fix for `#16 <https://github.com/lehins/django-smartfields/issues/16>`. Thanks `@zglennie <https://github.com/zglennie>`
+* renamed ``Dependency.async`` to ``Dependency.async_``.
+  Fix for `#16 <https://github.com/lehins/django-smartfields/issues/16>`_.
+  Thanks `@zglennie <https://github.com/zglennie>`_
 * Fix compatibility with ``Django=2.x``:
 
   * Added ``app_name='smartifelds'`` to ``urls.py`` file
