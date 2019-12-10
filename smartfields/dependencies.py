@@ -3,7 +3,7 @@ from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.db.models.fields import files, NOT_PROVIDED, FieldDoesNotExist
 from django.utils.encoding import force_text, force_str
-from django.utils import six
+import six
 
 from smartfields.fields import FieldFile, FileField
 from smartfields.settings import KEEP_ORPHANS

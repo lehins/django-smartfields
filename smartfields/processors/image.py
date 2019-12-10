@@ -1,7 +1,7 @@
 import warnings
 from django.conf import settings
 from django.core.files.base import ContentFile
-from django.utils import six
+import six
 
 from smartfields.fields import ImageFieldFile
 from smartfields.processors.base import BaseFileProcessor

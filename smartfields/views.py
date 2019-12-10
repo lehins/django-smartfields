@@ -6,7 +6,7 @@ from django.core.exceptions import ImproperlyConfigured, PermissionDenied
 from django.http import Http404, HttpResponse
 from django.forms.models import modelform_factory
 from django.utils.decorators import method_decorator
-from django.utils.six import text_type
+from six import text_type
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.cache import never_cache
 from django.views.generic import View

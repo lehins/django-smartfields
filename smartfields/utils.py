@@ -4,7 +4,7 @@ from django.conf import settings
 from django.core import validators
 from django.core.files import base, temp
 from django.utils.encoding import force_text
-from django.utils.six.moves import queue as six_queue
+from six.moves import queue as six_queue
 try:
     from django.utils.deconstruct import deconstructible
 except ImportError:

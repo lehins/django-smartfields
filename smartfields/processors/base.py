@@ -1,5 +1,5 @@
 import subprocess, time
-from django.utils.six.moves import queue
+from six.moves import queue
 
 from smartfields.utils import NamedTemporaryFile, AsynchronousFileReader, \
     ProcessingError, deconstructible, get_model_name
