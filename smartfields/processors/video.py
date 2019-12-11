@@ -1,5 +1,5 @@
 import re
-from django.utils import six
+import six
 
 from smartfields.processors.base import ExternalFileProcessor
 from smartfields.utils import ProcessingError

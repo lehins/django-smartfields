@@ -3,7 +3,7 @@ from django import forms
 from django.contrib.staticfiles.storage import staticfiles_storage
 from django.db.models import fields
 from django.db.models.fields import files
-from django.utils.six import text_type
+from six import text_type
 try:
     from django.core import checks
 except ImportError: pass

@@ -50,7 +50,7 @@ setup(
         "FileField conversion", "ImageField conversion", "ajax uploading"
     ],
     install_requires=[
-        'Django>=1.5.0'
+        'Django>=1.5.0', 'six'
     ],
     tests_require=[
         'Django>=1.5.0',
