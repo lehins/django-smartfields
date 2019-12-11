@@ -104,7 +104,7 @@ Other required settings
 
 Dependencies
 ------------
-* `Django <https://djangoproject.com/>`_ versions >= 1.7 (should aslo work for 2.x)
+* `Django <https://djangoproject.com/>`_ versions >= 1.7 (also works for 2.x and 3.x)
 * `Python Pillow <https://pillow.readthedocs.org>`_ - (optional) used for
   image conversion/resizing. AND/OR
 * `Wand <http://docs.wand-py.org>`_ - (optional) also for image processing.

@@ -1,8 +1,13 @@
 Changelog
 =========
 
+1.1.1
+-----
+
+* Support for Django=3.x
+
 1.1.0
-------
+-----
 
 * renamed ``Dependency.async`` to ``Dependency.async_``.
   Fix for `#16 <https://github.com/lehins/django-smartfields/issues/16>`_.

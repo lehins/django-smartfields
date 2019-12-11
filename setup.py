@@ -43,10 +43,11 @@ setup(
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
     keywords=[
-        "django", "model fields", "declarative", "FileField cleanup", 
+        "django", "model fields", "declarative", "FileField cleanup",
         "FileField conversion", "ImageField conversion", "ajax uploading"
     ],
     install_requires=[
