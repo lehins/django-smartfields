@@ -55,7 +55,7 @@ set progress between 0.0 and 1.0, which can be retrieved from field's status.
    from smartfields.processors import FFMPEGProcessor
 
    class MediaModel(models.Model):
-       video = feilds.FileField(dependencies=[
+       video = fields.FileField(dependencies=[
            dependencies.FileDependency(suffix='mp4', processor=FFMPEGProcessor(
                vbitrate = '1M', 
                maxrate = '1M',
