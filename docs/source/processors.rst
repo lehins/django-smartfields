@@ -64,6 +64,7 @@ set progress between 0.0 and 1.0, which can be retrieved from field's status.
                height = 720,
                threads = 0, # use all cores 
                abitrate = '96k',
-               format = 'mp4', 
-               vcodec = 'libx264', 
+               format = 'mp4',
+               ac = 1, # 1 - mono, 2 - stereo
+               vcodec = 'libx264',
                acodec = 'libfdk_aac'))])            
