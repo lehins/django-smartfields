@@ -12,7 +12,7 @@ class FFMPEGProcessor(ExternalFileProcessor):
     duration_re = re.compile(r'Duration: (?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+)')
     progress_re = re.compile(r'time=(?P<hours>\d+):(?P<minutes>\d+):(?P<seconds>\d+)')
     error_re = re.compile(r'Invalid data found when processing input')
-    cmd_template = "ffmpeg -i {input} -y -codec:v {vcodec} -b:v {vbitrate} " \
+    cmd_template = "ffmpeg -i {input} -y -codec:v {vcodec} -ac {ac} -b:v {vbitrate} " \
                    "-maxrate {maxrate} -bufsize {bufsize} -vf " \
                    "scale={width}:{height} -threads {threads} -c:a {acodec} {output}"
     
