@@ -17,6 +17,14 @@ class FFMPEGProcessor(ExternalFileProcessor):
                    "scale={width}:{height} -threads {threads} -c:a {acodec} {output}"
     
     def stdout_handler(self, line, duration=None):
+        """
+        Handler for a line.
+
+        Args:
+            self: (todo): write your description
+            line: (str): write your description
+            duration: (float): write your description
+        """
         if duration is None:
             duration_time = self.duration_re.search(line)
             if duration_time:
@@ -33,6 +41,13 @@ class FFMPEGProcessor(ExternalFileProcessor):
         return (duration,)
 
     def timedict_to_seconds(self, timedict):
+        """
+        Convert a datetime.
+
+        Args:
+            self: (todo): write your description
+            timedict: (dict): write your description
+        """
         seconds = 0
         for key, t in six.iteritems(timedict):
             if key == 'seconds':

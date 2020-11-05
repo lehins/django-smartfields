@@ -11,11 +11,34 @@ __all__ = [
 class AsyncHandler(threading.Thread):
 
     def __init__(self, manager, instance):
+        """
+        Initialize the manager.
+
+        Args:
+            self: (todo): write your description
+            manager: (todo): write your description
+            instance: (str): write your description
+        """
         self.manager, self.instance = manager, instance
         super(AsyncHandler, self).__init__()
 
     def get_progress_setter(self, multiplier, index):
+        """
+        Get a progressset.
+
+        Args:
+            self: (todo): write your description
+            multiplier: (todo): write your description
+            index: (int): write your description
+        """
         def progress_setter(processor, progress):
+            """
+            Set the progress of the progress.
+
+            Args:
+                processor: (str): write your description
+                progress: (todo): write your description
+            """
             try:
                 progress = multiplier * (index + progress)
             except TypeError as e:
@@ -29,6 +52,12 @@ class AsyncHandler(threading.Thread):
         return progress_setter
 
     def run(self):
+        """
+        Run all dependencies.
+
+        Args:
+            self: (todo): write your description
+        """
         dependencies = list(filter(lambda d: d.async_, self.manager.dependencies))
         multiplier = 1.0/len(dependencies)
         try:
@@ -48,6 +77,14 @@ class FieldManager(object):
     _stashed_value = VALUE_NOT_SET
 
     def __init__(self, field, dependencies):
+        """
+        Initialize the field.
+
+        Args:
+            self: (todo): write your description
+            field: (todo): write your description
+            dependencies: (todo): write your description
+        """
         self.field = field
         self.dependencies = dependencies
         self.has_async = False
@@ -61,18 +98,45 @@ class FieldManager(object):
 
     @property
     def has_stashed_value(self):
+        """
+        Returns true if the current value has a stashed.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._stashed_value is not VALUE_NOT_SET
 
     def get_stashed_value(self):
+        """
+        Return the current value of the field
+
+        Args:
+            self: (todo): write your description
+        """
         if self.has_stashed_value:
             return self._stashed_value
         return self.field.get_default()
 
     def stash_previous_value(self, value):
+        """
+        Stash the previous value.
+
+        Args:
+            self: (todo): write your description
+            value: (todo): write your description
+        """
         if not self.has_stashed_value:
             self._stashed_value = value
 
     def handle(self, instance, event, *args, **kwargs):
+        """
+        This method todo.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            event: (todo): write your description
+        """
         if event == 'pre_init':
             instance.__dict__[self.field.name] = VALUE_NOT_SET
             field_value = None
@@ -88,6 +152,15 @@ class FieldManager(object):
             d.handle(instance, event, *args, **kwargs)
 
     def failed_processing(self, instance, error=None, is_async=False):
+        """
+        Restore a failed failed processing.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            error: (todo): write your description
+            is_async: (bool): write your description
+        """
         self.restore_stash(instance)
         if is_async:
             instance.save()
@@ -95,20 +168,47 @@ class FieldManager(object):
             self.set_error_status(instance, "%s: %s" % (type(error).__name__, str(error)))
 
     def finished_processing(self, instance):
+        """
+        Marks the processing of a processing.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+        """
         if self.has_stashed_value:
             self.cleanup_stash()
         self.set_status(instance, {'state': 'complete'})
 
     def cleanup(self, instance):
+        """
+        Cleans up all the dependencies.
+
+        Args:
+            self: (todo): write your description
+            instance: (str): write your description
+        """
         for d in self.dependencies:
             d.cleanup(instance)
 
     def delete_value(self, value):
+        """
+        Delete the value of the field.
+
+        Args:
+            self: (todo): write your description
+            value: (todo): write your description
+        """
         if hasattr(value, 'delete') and hasattr(value, 'field') \
            and value and not value.field.keep_orphans:
             value.delete(instance_update=False)
 
     def cleanup_stash(self):
+        """
+        Cleanup the cache.
+
+        Args:
+            self: (todo): write your description
+        """
         self.delete_value(self._stashed_value)
         self._stashed_value = VALUE_NOT_SET
         for d in self.dependencies:
@@ -116,6 +216,13 @@ class FieldManager(object):
                 d.cleanup_stash()
 
     def restore_stash(self, instance):
+        """
+        Restore the state of the model.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+        """
         if self.has_stashed_value:
             self.delete_value(self.field.value_from_object(instance))
             instance.__dict__[self.field.name] = self._stashed_value
@@ -125,6 +232,15 @@ class FieldManager(object):
                 d.restore_stash(instance)
 
     def _process(self, dependency, instance, progress_setter=None):
+        """
+        Process a dependency.
+
+        Args:
+            self: (todo): write your description
+            dependency: (todo): write your description
+            instance: (todo): write your description
+            progress_setter: (todo): write your description
+        """
         # process single dependency
         value = self.field.value_from_object(instance)
         dependency.process(instance, value, progress_setter=progress_setter)
@@ -161,6 +277,14 @@ class FieldManager(object):
             self.cleanup_stash()
 
     def pre_process(self, instance, value):
+        """
+        Pre - process pre - process.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+        """
         for d in filter(lambda d: d.has_pre_processor(), self.dependencies):
             new_value = d.pre_process(instance, value)
             if new_value is not VALUE_NOT_SET:
@@ -177,6 +301,14 @@ class FieldManager(object):
                                 self.field.name)
 
     def _get_status(self, instance, status_key=None):
+        """
+        Return status of a model
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            status_key: (str): write your description
+        """
         status_key = status_key or self.get_status_key(instance)
         status = {
             'app_label': instance._meta.app_label,
@@ -206,12 +338,28 @@ class FieldManager(object):
         cache.set(status_key, status, timeout=300)
 
     def set_error_status(self, instance, error):
+        """
+        Set the error status.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            error: (todo): write your description
+        """
         self.set_status(instance, {
             'state': 'error',
             'messages': [error]
         })
 
     def contribute_to_model(self, model, name):
+        """
+        Contribute the given model.
+
+        Args:
+            self: (todo): write your description
+            model: (todo): write your description
+            name: (str): write your description
+        """
         model._smartfields_managers[name] = self
         for d in self.dependencies:
             d.contribute_to_model(model)

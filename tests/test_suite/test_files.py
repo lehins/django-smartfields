@@ -8,6 +8,12 @@ from test_app.models import FileTesting, ImageTesting, DependencyTesting, Rename
 
 
 def add_base(path):
+    """
+    Add a base path.
+
+    Args:
+        path: (str): write your description
+    """
     return os.path.join(settings.BASE_PATH, path)
 
 
@@ -16,17 +22,35 @@ class FileBaseTestCase(TestCase):
     media_path = add_base("media")
 
     def setUp(self):
+        """
+        Sets the static files
+
+        Args:
+            self: (todo): write your description
+        """
         self.tearDown()
         os.makedirs(self.media_path)
         shutil.copytree(self.static_path, os.path.join(self.media_path, "static"))
 
     def tearDown(self):
+        """
+        Tear down a media_path.
+
+        Args:
+            self: (todo): write your description
+        """
         if os.path.exists(self.media_path): shutil.rmtree(self.media_path)
         pass
 
 class FileTestCase(FileBaseTestCase):
 
     def test_file_field(self):
+        """
+        Updates the field of the field
+
+        Args:
+            self: (todo): write your description
+        """
         instance = FileTesting.objects.create()
         # test default static
         self.assertEqual(instance.field_1_foo.url, "/static/defaults/foo.txt")
@@ -68,6 +92,12 @@ class FileTestCase(FileBaseTestCase):
         self.assertFalse(os.path.isfile(field_2_path))
 
     def test_file_cleanup_after_delete(self):
+        """
+        Cleans up the file after the database.
+
+        Args:
+            self: (todo): write your description
+        """
         instance = FileTesting.objects.create()
         foo_bar = File(open(add_base("media/static/defaults/foo-bar.txt"), 'r'))
         instance.field_3 = foo_bar
@@ -85,6 +115,12 @@ class FileTestCase(FileBaseTestCase):
         self.assertTrue(os.path.isfile(field_4_path))
 
     def test_file_cleanup_after_replace(self):
+        """
+        Cleans up the file after the database.
+
+        Args:
+            self: (todo): write your description
+        """
         instance = FileTesting.objects.create()
         foo_bar = File(open(add_base("media/static/defaults/foo-bar.txt"), 'r'))
         instance.field_3 = foo_bar
@@ -109,6 +145,12 @@ class FileTestCase(FileBaseTestCase):
 class ImageTestCase(FileBaseTestCase):
 
     def test_image_field_mimic_django(self):
+        """
+        This method to generate_image_m field
+
+        Args:
+            self: (todo): write your description
+        """
         instance = ImageTesting.objects.create()
         lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'),
                           name="lenna_rect.jpg")
@@ -149,6 +191,12 @@ class ImageTestCase(FileBaseTestCase):
         self.assertFalse(os.path.isfile(add_base("media/image_2/lenna_square.png")))
 
     def test_wand_image_processor(self):
+        """
+        Saves the image processor processor.
+
+        Args:
+            self: (todo): write your description
+        """
         instance = ImageTesting.objects.create()
         lenna_square = File(open(add_base("media/static/images/lenna_square.png"), 'rb'))
         instance.image_5 = lenna_square
@@ -164,6 +212,12 @@ class ImageTestCase(FileBaseTestCase):
         self.assertTrue(os.path.isfile(path_jpeg))
 
     def test_image_processor(self):
+        """
+        Saves image file exists.
+
+        Args:
+            self: (todo): write your description
+        """
         instance = ImageTesting.objects.create()
         lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
         instance.image_3 = lenna_rect
@@ -197,6 +251,12 @@ class ImageTestCase(FileBaseTestCase):
         self.assertFalse(os.path.isfile(path_png))
 
     def test_self_dependency(self):
+        """
+        Sets the dependency
+
+        Args:
+            self: (todo): write your description
+        """
         instance = DependencyTesting.objects.create()
         lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
         instance.image_1 = lenna_rect
@@ -213,6 +273,12 @@ class ImageTestCase(FileBaseTestCase):
         instance.delete()
 
     def test_value_restoration_1(self):
+        """
+        Set the rest of the restclenna the same.
+
+        Args:
+            self: (todo): write your description
+        """
         lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
         text_file = File(open(add_base("media/static/defaults/foo.txt"), 'rb'))
         instance = DependencyTesting.objects.create()
@@ -229,6 +295,12 @@ class ImageTestCase(FileBaseTestCase):
         instance.delete()
 
     def test_value_restoration_2(self):
+        """
+        Set the value of the current image value
+
+        Args:
+            self: (todo): write your description
+        """
         lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
         text_file = File(open(add_base("media/static/defaults/foo.txt"), 'rb'))
         instance = DependencyTesting.objects.create()
@@ -248,6 +320,12 @@ class ImageTestCase(FileBaseTestCase):
         instance.delete()
 
     def test_forward_dependency(self):
+        """
+        Runs a forward image
+
+        Args:
+            self: (todo): write your description
+        """
         instance = DependencyTesting.objects.create()
         lenna_rect = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
         instance.image_3 = lenna_rect
@@ -276,6 +354,12 @@ class ImageTestCase(FileBaseTestCase):
         instance.delete()
 
     def test_dependency_error(self):
+        """
+        Test if the image is raised.
+
+        Args:
+            self: (todo): write your description
+        """
         instance = ImageTesting()
         image_1 = instance._meta.get_field('image_1')
         image_2 = instance._meta.get_field('image_2')
@@ -283,6 +367,12 @@ class ImageTestCase(FileBaseTestCase):
 
 
     def test_rename_file_testing(self):
+        """
+        Renames the current record
+
+        Args:
+            self: (todo): write your description
+        """
         instance = RenameFileTesting()
         lenna = File(open(add_base("media/static/images/lenna_rect.jpg"), 'rb'))
         instance.label = 'foo'

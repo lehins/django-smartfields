@@ -25,6 +25,12 @@ class FileUploadView(View):
 
     @property
     def model(self):
+        """
+        Return model instance.
+
+        Args:
+            self: (todo): write your description
+        """
         if self._model is None:
             app_label = self.kwargs.get('app_label', None)
             model = self.kwargs.get('model', None)
@@ -36,10 +42,23 @@ class FileUploadView(View):
 
     @model.setter
     def model(self, value):
+        """
+        Set the model.
+
+        Args:
+            self: (todo): write your description
+            value: (str): write your description
+        """
         self._model = value
 
     @property
     def field_name(self):
+        """
+        Returns the name of the field.
+
+        Args:
+            self: (todo): write your description
+        """
         if self._field_name is None:
             self._field_name = self.kwargs.get('field_name', None)
         if self._field_name is not None:
@@ -48,14 +67,33 @@ class FileUploadView(View):
 
     @field_name.setter
     def field_name(self, value):
+        """
+        Set the name of the field.
+
+        Args:
+            self: (todo): write your description
+            value: (str): write your description
+        """
         self._field_name = value
 
     @property
     def field(self):
+        """
+        Returns the field of the model
+
+        Args:
+            self: (todo): write your description
+        """
         return self.model._meta.get_field(self.field_name)
 
     @property
     def parent_field_name(self):
+        """
+        Get the parent name for this field.
+
+        Args:
+            self: (todo): write your description
+        """
         if self._parent_field_name is not None:
             return self._parent_field_name
         if self._parent_field_name is None:
@@ -66,9 +104,24 @@ class FileUploadView(View):
 
     @parent_field_name.setter
     def parent_field_name(self, value):
+        """
+        Set the parent name.
+
+        Args:
+            self: (todo): write your description
+            value: (str): write your description
+        """
         self._parent_field_name = value
 
     def has_permission(self, obj, user):
+        """
+        Returns true if the current user has permission.
+
+        Args:
+            self: (todo): write your description
+            obj: (todo): write your description
+            user: (todo): write your description
+        """
         # by raising 404 we make sure that fields that haven't been configured for 
         # uploading look like the don't have an uploading url
         if not settings.DEBUG:
@@ -79,9 +132,23 @@ class FileUploadView(View):
             self.instance_method_name)
 
     def get_form_class(self):
+        """
+        Returns the form class for the given form.
+
+        Args:
+            self: (todo): write your description
+        """
         return modelform_factory(self.model, fields=(self.field_name,))
 
     def get_object(self, pk=None, parent_pk=None):
+        """
+        Retrieve an object from the parent.
+
+        Args:
+            self: (todo): write your description
+            pk: (str): write your description
+            parent_pk: (str): write your description
+        """
         kwargs = {}
         model = self.model
         manager = model._default_manager
@@ -104,6 +171,14 @@ class FileUploadView(View):
         return obj
 
     def json_response(self, context, status=200):
+        """
+        Returns a json response.
+
+        Args:
+            self: (todo): write your description
+            context: (todo): write your description
+            status: (str): write your description
+        """
         response = HttpResponse(json.dumps(context), 
                                 content_type="application/json; charset=utf-8",
                                 status=status)
@@ -113,6 +188,13 @@ class FileUploadView(View):
     @method_decorator(csrf_protect)
     @method_decorator(login_required)
     def dispatch(self, request, *args, **kwargs):
+        """
+        This decorator.
+
+        Args:
+            self: (todo): write your description
+            request: (todo): write your description
+        """
         obj = self.get_object(pk=kwargs.get('pk', None),
                               parent_pk=kwargs.get('parent_pk', None))
         has_permission = None if self.instance_method_name is None else \
@@ -124,6 +206,14 @@ class FileUploadView(View):
         return super(FileUploadView, self).dispatch(request, obj, *args, **kwargs)
 
     def complete(self, obj, status):
+        """
+        Complete an html response.
+
+        Args:
+            self: (todo): write your description
+            obj: (todo): write your description
+            status: (str): write your description
+        """
         field_file = getattr(obj, self.field_name)
         if field_file:
             status.update({
@@ -138,12 +228,28 @@ class FileUploadView(View):
         return self.json_response(status)
 
     def get(self, request, obj, *args, **kwargs):
+        """
+        Handles get requests.
+
+        Args:
+            self: (todo): write your description
+            request: (todo): write your description
+            obj: (todo): write your description
+        """
         status = obj.smartfields_get_field_status(self.field_name)
         if status['state'] == 'complete':
             return self.complete(obj, status)
         return self.json_response(status)
 
     def post(self, request, obj, *args, **kwargs):
+        """
+        Handles post requests.
+
+        Args:
+            self: (todo): write your description
+            request: (todo): write your description
+            obj: (todo): write your description
+        """
         status = obj.smartfields_get_field_status(self.field_name)
         if status['state'] != 'ready':
             return self.json_response(status)
@@ -170,6 +276,14 @@ class FileUploadView(View):
         return self.json_response(status)
 
     def delete(self, request, obj, *args, **kwargs):
+        """
+        Delete an object
+
+        Args:
+            self: (todo): write your description
+            request: (todo): write your description
+            obj: (todo): write your description
+        """
         field_file = getattr(obj, self.field_name)
         if field_file:
             field_file.delete()

@@ -14,33 +14,83 @@ class BaseProcessor(object):
     task_name = 'Processing'
 
     def __init__(self, **kwargs):
+        """
+        Initialize this instance.
+
+        Args:
+            self: (todo): write your description
+        """
         self.default_params = kwargs
 
     def __call__(self, value, instance=None, field=None, dependee=None, 
                  stashed_value=None, **kwargs):
+        """
+        Call a single call with the given value.
+
+        Args:
+            self: (todo): write your description
+            value: (str): write your description
+            instance: (todo): write your description
+            field: (todo): write your description
+            dependee: (todo): write your description
+            stashed_value: (str): write your description
+        """
         return self.process(
             value, instance=instance, field=field, dependee=dependee, 
             stashed_value=stashed_value, **self.get_params(**kwargs))
 
     def __eq__(self, other):
+        """
+        Returns true if other is the same as other.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         return (type(self) is type(other) and 
                 self.default_params == other.default_params)
 
     def check_params(self, **kwargs):
+        """
+        Check if all of the params.
+
+        Args:
+            self: (todo): write your description
+        """
         pass
 
     def get_params(self, **kwargs):
+        """
+        Get kwargs dict.
+
+        Args:
+            self: (todo): write your description
+        """
         params = self.default_params.copy()
         params.update(kwargs)
         return params
 
     def set_progress(self, progress):
+        """
+        Sets the progress. progress. progress. progress.
+
+        Args:
+            self: (todo): write your description
+            progress: (todo): write your description
+        """
         # see if dependency has set a progress setter, if so use it.
         progress_setter = getattr(self, 'progress_setter', None)
         if callable(progress_setter):
             progress_setter(self, progress)
 
     def process(self, value, **kwargs):
+        """
+        Process the given value.
+
+        Args:
+            self: (todo): write your description
+            value: (todo): write your description
+        """
         return value
 
 
@@ -60,6 +110,14 @@ class BaseFileProcessor(BaseProcessor):
 class RenameFileProcessor(BaseFileProcessor):
 
     def process(self, value, stashed_value=None, **kwargs):
+        """
+        Process a single field.
+
+        Args:
+            self: (todo): write your description
+            value: (todo): write your description
+            stashed_value: (todo): write your description
+        """
         field_file = stashed_value
         if not field_file or not field_file._committed:
             return field_file
@@ -77,6 +135,14 @@ class ExternalFileProcessor(BaseFileProcessor):
     stderr_handler = True
 
     def __init__(self, cmd_template=None, sleep_time=1, **kwargs):
+        """
+        Initialize the template.
+
+        Args:
+            self: (todo): write your description
+            cmd_template: (todo): write your description
+            sleep_time: (float): write your description
+        """
         self.cmd_template = cmd_template or self.cmd_template
         if self.cmd_template is None:
             raise ValueError('"cmd_template" is a required argument')
@@ -84,13 +150,34 @@ class ExternalFileProcessor(BaseFileProcessor):
         super(ExternalFileProcessor, self).__init__(**kwargs)
 
     def __eq__(self, other):
+        """
+        Determine if two strings.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         return super(ExternalFileProcessor, self).__eq__(other) and \
             self.cmd_template == other.cmd_template
 
     def get_input_path(self, in_file):
+        """
+        Get the path of the input file.
+
+        Args:
+            self: (todo): write your description
+            in_file: (str): write your description
+        """
         return in_file.path
 
     def get_output_path(self, out_file):
+        """
+        Returns the output path for the output file.
+
+        Args:
+            self: (todo): write your description
+            out_file: (str): write your description
+        """
         return out_file.name
 
     def get_output_file(self, in_file, instance, field, **kwargs):
@@ -101,6 +188,13 @@ class ExternalFileProcessor(BaseFileProcessor):
             get_model_name(instance), field.name, self.get_ext()), delete=False)
 
     def process(self, in_file, **kwargs):
+        """
+        Process a process.
+
+        Args:
+            self: (todo): write your description
+            in_file: (str): write your description
+        """
         out_file = self.get_output_file(in_file, **kwargs)
         cmd = self.cmd_template.format(
             input=self.get_input_path(in_file), output=self.get_output_path(out_file),

@@ -27,9 +27,24 @@ class SmartfieldsDescriptor(object):
     field = None
 
     def __init__(self, field):
+        """
+        Initialize the field
+
+        Args:
+            self: (todo): write your description
+            field: (todo): write your description
+        """
         self.field = field
 
     def __set__(self, instance, value):
+        """
+        Set the value of the value.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+        """
         if self.field.manager is not None:
             value = self.field.manager.pre_process(instance, value)
             if self.field.manager.should_process:
@@ -39,6 +54,14 @@ class SmartfieldsDescriptor(object):
         instance.__dict__[self.field.name] = self.field.to_python(value)
 
     def __get__(self, instance=None, model=None):
+        """
+        Get the value of this field
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            model: (todo): write your description
+        """
         if instance is None:
             raise AttributeError(
                 "The '%s' attribute can only be accessed from %s instances."
@@ -52,12 +75,29 @@ class Field(fields.Field):
     manager = None
     
     def __init__(self, verbose_name=None, name=None, dependencies=None, **kwargs):
+        """
+        Initialize this class.
+
+        Args:
+            self: (todo): write your description
+            verbose_name: (str): write your description
+            name: (str): write your description
+            dependencies: (todo): write your description
+        """
         if dependencies is not None:
             self.manager = self.manager_class(self, dependencies)
         self._dependencies = dependencies
         super(Field, self).__init__(verbose_name=verbose_name, name=name, **kwargs)
 
     def contribute_to_class(self, cls, name, **kwargs):
+        """
+        This is_to_managers.
+
+        Args:
+            self: (todo): write your description
+            cls: (todo): write your description
+            name: (str): write your description
+        """
         super(Field, self).contribute_to_class(cls, name, **kwargs)
         if not issubclass(cls, SmartfieldsModelMixin):
             cls.__bases__ = (SmartfieldsModelMixin,) + cls.__bases__
@@ -70,10 +110,25 @@ class Field(fields.Field):
             self.manager.contribute_to_model(cls, name)
             
     def get_status(self, instance):
+        """
+        Get the status of this instance.
+
+        Args:
+            self: (todo): write your description
+            instance: (str): write your description
+        """
         if self.manager is not None:
             return self.manager.get_status(instance)
 
     def pre_save(self, model_instance, add):
+        """
+        Pre - process the save value.
+
+        Args:
+            self: (todo): write your description
+            model_instance: (todo): write your description
+            add: (bool): write your description
+        """
         value = super(Field, self).pre_save(model_instance, add)
         if self.manager is not None:
             self.manager.process(model_instance)
@@ -181,12 +236,28 @@ class FilePathField(Field, fields.FilePathField):
 class FieldFile(files.FieldFile):
     
     def __init__(self, *args, **kwargs):
+        """
+        Initialize static files.
+
+        Args:
+            self: (todo): write your description
+        """
         self.is_static = kwargs.pop('is_static', False)
         super(FieldFile, self).__init__(*args, **kwargs)
         if self.is_static:
             self.storage = staticfiles_storage
 
     def save(self, name, content, save=True, instance_update=True):
+        """
+        Saves the content of the field.
+
+        Args:
+            self: (todo): write your description
+            name: (str): write your description
+            content: (str): write your description
+            save: (bool): write your description
+            instance_update: (bool): write your description
+        """
         # prevent static files from being modified
         if self.is_static:
             return
@@ -202,6 +273,14 @@ class FieldFile(files.FieldFile):
     save.alters_data = True
 
     def delete(self, save=True, instance_update=True):
+        """
+        Delete the object.
+
+        Args:
+            self: (todo): write your description
+            save: (bool): write your description
+            instance_update: (bool): write your description
+        """
         # prevent static files from being deleted
         if self.is_static or not self:
             return
@@ -224,17 +303,35 @@ class FieldFile(files.FieldFile):
 
     @property
     def state(self):
+        """
+        Get the state of the instance
+
+        Args:
+            self: (todo): write your description
+        """
         if getattr(self.field, 'manager', None) is not None:
             return self.field.manager._get_status(self.instance)[1]['state']
 
     @property
     def name_base(self):
+        """
+        Return the base name of the file.
+
+        Args:
+            self: (todo): write your description
+        """
         if self:
             return os.path.split(self.name)[1]
         return ""
 
     @property
     def html_tag(self):
+        """
+        Return html tag.
+
+        Args:
+            self: (todo): write your description
+        """
         if self:
             return text_type(getattr(self.instance, "%s_html_tag" % self.field.name, ""))
         return ""
@@ -243,6 +340,14 @@ class FieldFile(files.FieldFile):
 class FileDescriptor(files.FileDescriptor):
 
     def __set__(self, instance, value):
+        """
+        Sets the field.
+
+        Args:
+            self: (dict): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+        """
         if self.field.manager is not None:
             value = self.field.manager.pre_process(instance, value)
             previous_value = self.__get__(instance)
@@ -260,6 +365,17 @@ class FileField(Field, files.FileField):
 
     def __init__(self, verbose_name=None, name=None, keep_orphans=KEEP_ORPHANS, 
                  dependencies=None, **kwargs):
+        """
+        Initialize this class.
+
+        Args:
+            self: (todo): write your description
+            verbose_name: (str): write your description
+            name: (str): write your description
+            keep_orphans: (bool): write your description
+            KEEP_ORPHANS: (bool): write your description
+            dependencies: (todo): write your description
+        """
         self.keep_orphans = keep_orphans
         if not keep_orphans and dependencies is None:
             # make sure there is a manger so orphans will get cleaned up
@@ -268,6 +384,12 @@ class FileField(Field, files.FileField):
                                         dependencies=dependencies, **kwargs)
 
     def deconstruct(self):
+        """
+        Deconstructs the field from the name.
+
+        Args:
+            self: (todo): write your description
+        """
         name, path, args, kwargs = super(FileField, self).deconstruct()
         if self.keep_orphans != KEEP_ORPHANS:
             kwargs['keep_orphans'] = self.keep_orphans
@@ -279,10 +401,22 @@ class ImageFieldFile(FieldFile, files.ImageFieldFile):
 
 
 def _get_width(image, **kwargs): 
+    """
+    Returns the width of image.
+
+    Args:
+        image: (array): write your description
+    """
     if image:
         return image.width
 
 def _get_height(image, **kwargs): 
+    """
+    Returns the height of image.
+
+    Args:
+        image: (array): write your description
+    """
     if image:
         return image.height
 
@@ -292,6 +426,13 @@ class ImageField(FileField):
     attr_class = ImageFieldFile
 
     def _get_dim_dependency(self, dim):
+        """
+        Return a dimension of dimension.
+
+        Args:
+            self: (todo): write your description
+            dim: (int): write your description
+        """
         from smartfields.dependencies import Dependency
         field = getattr(self, "%s_field" % dim)
         # ugly, but lambdas and bound methods are not picklable
@@ -300,6 +441,17 @@ class ImageField(FileField):
 
     def __init__(self, verbose_name=None, name=None, dependencies=None, 
                  width_field=None, height_field=None, **kwargs):
+        """
+        Initialize a list of dependencies.
+
+        Args:
+            self: (todo): write your description
+            verbose_name: (str): write your description
+            name: (str): write your description
+            dependencies: (todo): write your description
+            width_field: (str): write your description
+            height_field: (str): write your description
+        """
         dependencies = [d for d in dependencies or []]
         self.width_field, self.height_field = width_field, height_field
         if self.width_field:
@@ -311,11 +463,23 @@ class ImageField(FileField):
                                          dependencies=dependencies, **kwargs)
 
     def check(self, **kwargs):
+        """
+        Checks if the check is installed.
+
+        Args:
+            self: (todo): write your description
+        """
         errors = super(ImageField, self).check(**kwargs)
         errors.extend(self._check_image_library_installed())
         return errors
 
     def _check_image_library_installed(self):
+        """
+        Checks if image is installed.
+
+        Args:
+            self: (todo): write your description
+        """
         try:
             from PIL import Image  # NOQA
         except ImportError:
@@ -332,6 +496,12 @@ class ImageField(FileField):
             return []
 
     def deconstruct(self):
+        """
+        Deconstruct field for the field
+
+        Args:
+            self: (todo): write your description
+        """
         name, path, args, kwargs = super(ImageField, self).deconstruct()
         dependencies = kwargs.get('dependencies', None) 
         if dependencies:
@@ -345,6 +515,12 @@ class ImageField(FileField):
         return name, path, args, kwargs
 
     def formfield(self, **kwargs):
+        """
+        Returns the form field.
+
+        Args:
+            self: (todo): write your description
+        """
         defaults = {'form_class': forms.ImageField}
         defaults.update(kwargs)
         return super(ImageField, self).formfield(**defaults)

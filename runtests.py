@@ -10,6 +10,11 @@ from django.conf import settings
 from django.test.utils import get_runner
 
 def runtests():
+    """
+    Run the wsgi interface.
+
+    Args:
+    """
     os.environ['DJANGO_SETTINGS_MODULE'] = 'tests.settings'
     if hasattr(django, 'setup'):
         django.setup()
