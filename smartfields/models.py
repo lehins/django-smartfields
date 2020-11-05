@@ -3,6 +3,12 @@ class SmartfieldsModelMixin(object):
 
     @property
     def smartfields_managers(self):
+        """
+        Return a list of smartfields.
+
+        Args:
+            self: (todo): write your description
+        """
         if hasattr(self, '_smartfields_managers_list'):
             return getattr(self, '_smartfields_managers_list')
         managers = []
@@ -13,11 +19,23 @@ class SmartfieldsModelMixin(object):
         return self._smartfields_managers_list
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize the fields of the fields
+
+        Args:
+            self: (todo): write your description
+        """
         self.smartfields_handle('pre_init', *args, **kwargs)
         super(SmartfieldsModelMixin, self).__init__(*args, **kwargs)
         self.smartfields_handle('post_init', *args, **kwargs)
 
     def save(self, *args, **kwargs):
+        """
+        Custom save method.
+
+        Args:
+            self: (todo): write your description
+        """
         fresh_keys = None
         if self.pk is None:
             fresh_keys = []
@@ -35,16 +53,36 @@ class SmartfieldsModelMixin(object):
     save.alters_data = True
 
     def delete(self, *args, **kwargs):
+        """
+        This method is called when a model.
+
+        Args:
+            self: (todo): write your description
+        """
         self.smartfields_handle('pre_delete', *args, **kwargs)
         super(SmartfieldsModelMixin, self).delete(*args, **kwargs)
         self.smartfields_handle('post_delete', *args, **kwargs)
     delete.alters_data = True
 
     def smartfields_handle(self, event, *args, **kwargs):
+        """
+        Handles all registered fields.
+
+        Args:
+            self: (todo): write your description
+            event: (todo): write your description
+        """
         for manager in self.smartfields_managers:
             manager.handle(self, event, *args, **kwargs)
 
     def smartfields_process(self, field_names=None):
+        """
+        Process the given fields.
+
+        Args:
+            self: (todo): write your description
+            field_names: (str): write your description
+        """
         if field_names is None:
             for manager in self.smartfields_managers:
                 manager.process(self, force=True)

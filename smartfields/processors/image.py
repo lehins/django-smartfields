@@ -74,6 +74,12 @@ PILLOW_IMAGE_SUPPORT = {
 
 
 def _round(val):
+    """
+    Round val to int.
+
+    Args:
+        val: (float): write your description
+    """
     # emulate python3 way of rounding toward the even choice
     new_val = int(round(val))
     if abs(val - new_val) == 0.5 and new_val % 2 == 1:
@@ -84,6 +90,16 @@ def _round(val):
 class ImageFormat(object):
 
     def __init__(self, format, mode=None, ext=None, save_kwargs=None):
+        """
+        Initialize input files.
+
+        Args:
+            self: (todo): write your description
+            format: (str): write your description
+            mode: (todo): write your description
+            ext: (str): write your description
+            save_kwargs: (dict): write your description
+        """
         self.format = format
         self.mode = mode
         self.ext = ext
@@ -93,20 +109,51 @@ class ImageFormat(object):
         self.save_kwargs = save_kwargs or {}
         
     def __str__(self):
+        """
+        : return : class
+
+        Args:
+            self: (todo): write your description
+        """
         return self.format
 
     def __eq__(self, other):
+        """
+        Returns true if other is equal false otherwise.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         return str(self) == str(other)
 
     @property
     def can_read(self):
+        """
+        Returns true if the input can be read or not.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.input_modes is not None
 
     @property
     def can_write(self):
+        """
+        Returns true if the output can be written.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.output_modes is not None
 
     def get_ext(self):
+        """
+        Return the extension of the file.
+
+        Args:
+            self: (todo): write your description
+        """
         if self.ext is not None:
             return self.ext
         return self.exts[0]
@@ -148,10 +195,23 @@ class ImageFormat(object):
 class ImageFormats(dict):
 
     def __init__(self, formats):
+        """
+        Initialize formats.
+
+        Args:
+            self: (todo): write your description
+            formats: (str): write your description
+        """
         super(ImageFormats, self).__init__([(f, ImageFormat(f)) for f in formats])
 
     @property
     def input_exts(self):
+        """
+        Return a list of all input extensions.
+
+        Args:
+            self: (todo): write your description
+        """
         return ','.join([f.get_exts() for _, f in six.iteritems(self) if f.can_read])
 
 
@@ -167,10 +227,22 @@ class ImageProcessor(BaseFileProcessor):
 
     @property
     def resample(self):
+        """
+        Resample the image.
+
+        Args:
+            self: (todo): write your description
+        """
         # resampling was renamed from Image.ANTIALIAS to Image.LANCZOS
         return getattr(Image, 'LANCZOS', getattr(Image, 'ANTIALIAS')) 
 
     def get_params(self, **kwargs):
+        """
+        Get parameters.
+
+        Args:
+            self: (todo): write your description
+        """
         params = super(ImageProcessor, self).get_params(**kwargs)
         if 'format' in params:
             format = params['format']
@@ -182,12 +254,24 @@ class ImageProcessor(BaseFileProcessor):
         return params
 
     def check_params(self, **kwargs):
+        """
+        Method to make sure all parameters have been set.
+
+        Args:
+            self: (todo): write your description
+        """
         params = self.get_params(**kwargs)
         scale = params.get('scale', None)
         if scale is not None:
             self._check_scale_params(**scale)
 
     def get_ext(self, **kwargs):
+        """
+        Get the extension of a file extension.
+
+        Args:
+            self: (todo): write your description
+        """
         try:
             format = self.get_params(**kwargs)['format']
             ext = format.get_ext()
@@ -199,6 +283,19 @@ class ImageProcessor(BaseFileProcessor):
 
     def _check_scale_params(self, width=None, height=None, min_width=None, min_height=None, 
                             max_width=None, max_height=None, preserve=True):
+        """
+        Check that the scale parameters.
+
+        Args:
+            self: (todo): write your description
+            width: (int): write your description
+            height: (int): write your description
+            min_width: (float): write your description
+            min_height: (int): write your description
+            max_width: (int): write your description
+            max_height: (int): write your description
+            preserve: (todo): write your description
+        """
         assert width is None or (min_width is None and max_width is None), \
             "min_width or max_width don't make sence if width cannot be changed"
         assert height is None or (min_height is None and max_height is None), \
@@ -220,6 +317,21 @@ class ImageProcessor(BaseFileProcessor):
     def get_dimensions(self, old_width, old_height, width=None, height=None, 
                        min_width=None, min_height=None, 
                        max_width=None, max_height=None, preserve=True):
+        """
+        Get the width and height of a new dimensions.
+
+        Args:
+            self: (todo): write your description
+            old_width: (int): write your description
+            old_height: (int): write your description
+            width: (int): write your description
+            height: (int): write your description
+            min_width: (int): write your description
+            min_height: (float): write your description
+            max_width: (int): write your description
+            max_height: (int): write your description
+            preserve: (str): write your description
+        """
         self._check_scale_params(
             width, height, min_width, min_height, max_width, max_height, preserve)
         ratio = float(old_width)/old_height
@@ -251,6 +363,14 @@ class ImageProcessor(BaseFileProcessor):
         return new_width, new_height
 
     def resize(self, image, scale=None, **kwargs):
+        """
+        Resize the image.
+
+        Args:
+            self: (todo): write your description
+            image: (array): write your description
+            scale: (float): write your description
+        """
         if scale is not None:
             new_size = self.get_dimensions(*image.size, **scale)
             if image.size != new_size:
@@ -258,6 +378,14 @@ class ImageProcessor(BaseFileProcessor):
         return image
 
     def convert(self, image, format=None, **kwargs):
+        """
+        Convert the image to image.
+
+        Args:
+            self: (todo): write your description
+            image: (array): write your description
+            format: (todo): write your description
+        """
         if format is None:
             return None
         new_mode = format.get_mode(old_mode=image.mode)
@@ -277,6 +405,13 @@ class ImageProcessor(BaseFileProcessor):
             return stream_out
 
     def get_image(self, stream, **kwargs):
+        """
+        Get an image from file.
+
+        Args:
+            self: (int): write your description
+            stream: (str): write your description
+        """
         with warnings.catch_warnings():
             if not settings.DEBUG:
                 warnings.simplefilter("error", Image.DecompressionBombWarning)
@@ -284,6 +419,15 @@ class ImageProcessor(BaseFileProcessor):
         return image
 
     def process(self, value, scale=None, format=None, **kwargs):
+        """
+        Process the image.
+
+        Args:
+            self: (todo): write your description
+            value: (todo): write your description
+            scale: (float): write your description
+            format: (str): write your description
+        """
         cur_pos = value.tell()
         value.seek(0)
         stream = six.BytesIO(value.read())
@@ -310,6 +454,14 @@ class ImageProcessor(BaseFileProcessor):
 class WandImageProcessor(ImageProcessor):
 
     def resize(self, image, scale=None, **kwargs):
+        """
+        Resize the image.
+
+        Args:
+            self: (todo): write your description
+            image: (array): write your description
+            scale: (float): write your description
+        """
         if scale is not None:
             new_size = self.get_dimensions(*image.size, **scale)
             if image.size != new_size:
@@ -317,6 +469,14 @@ class WandImageProcessor(ImageProcessor):
         return image
 
     def convert(self, image, format=None, **kwargs):
+        """
+        Convert image to image.
+
+        Args:
+            self: (todo): write your description
+            image: (array): write your description
+            format: (str): write your description
+        """
         if format is not None:
             image.format = str(format)
             stream_out = six.BytesIO()
@@ -324,5 +484,12 @@ class WandImageProcessor(ImageProcessor):
             return stream_out
         
     def get_image(self, stream, **kwargs):
+        """
+        Return image object corresponding to stream.
+
+        Args:
+            self: (int): write your description
+            stream: (str): write your description
+        """
         return WandImage(file=stream)
         

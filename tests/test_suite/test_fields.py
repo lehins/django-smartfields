@@ -7,6 +7,12 @@ from smartfields.fields.gis import PointField
 class ReconstructionTestCase(TestCase):
 
     def test_file_field(self):
+        """
+        Test if a field of a test field.
+
+        Args:
+            self: (todo): write your description
+        """
         if not hasattr(Field, 'deconstruct'):
             return
         old_field = FileField()
@@ -15,6 +21,12 @@ class ReconstructionTestCase(TestCase):
         self.assertEqual(old_field._dependencies, new_field._dependencies)
 
     def test_image_field(self):
+        """
+        Deconstruct field of the field field.
+
+        Args:
+            self: (todo): write your description
+        """
         if not hasattr(Field, 'deconstruct'):
             return
         old_field = ImageField()
@@ -27,6 +39,12 @@ class ReconstructionTestCase(TestCase):
         self.assertEqual(old_field._dependencies, new_field._dependencies)
 
     def test_gis_field(self):
+        """
+        Test if the field is a gis field.
+
+        Args:
+            self: (todo): write your description
+        """
         if not hasattr(Field, 'deconstruct'):
             return
         old_field = PointField()

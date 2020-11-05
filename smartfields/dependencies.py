@@ -24,6 +24,12 @@ class Dependency(object):
 
     @property
     def name(self):
+        """
+        The name of the field.
+
+        Args:
+            self: (todo): write your description
+        """
         if self._attname:
             return self._attname
         if self._suffix:
@@ -32,12 +38,24 @@ class Dependency(object):
 
     @property
     def _dependee(self):
+        """
+        Returns the dependencies of this model.
+
+        Args:
+            self: (todo): write your description
+        """
         try:
             return self.model._meta.get_field(self.name)
         except (FieldDoesNotExist, AppRegistryNotReady): pass
 
     @property
     def has_stashed_value(self):
+        """
+        Returns true if the current value has a stashed.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._stashed_value is not VALUE_NOT_SET
 
     def __init__(self, attname=None, suffix=None, processor=None, pre_processor=None,
@@ -77,6 +95,13 @@ class Dependency(object):
             assert attname or suffix, "Dependency without any arguments, has no purpose."
 
     def __eq__(self, other):
+        """
+        Return true if other is the same astype.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         return (type(self) is type(other) and
                 self._attname == other._attname and
                 self._suffix == other._suffix and
@@ -86,6 +111,14 @@ class Dependency(object):
                 self._uid == other._uid)
 
     def get_stashed_value(self, instance, value):
+        """
+        : param instance : param instance.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+        """
         if self._dependee is self.field:
             return self.field.manager.get_stashed_value()
         if self.has_stashed_value:
@@ -93,22 +126,57 @@ class Dependency(object):
         return self.get_default(instance, value)
 
     def stash_previous_value(self, instance, value):
+        """
+        Stash the previous value of the field.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+        """
         if self._stashed_value is VALUE_NOT_SET and self._dependee is not self.field:
             self._stashed_value = value
             instance.__dict__[self.name] = None
 
     def restore_stash(self, instance):
+        """
+        Restore the current instance.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+        """
         if self.has_stashed_value:
             instance.__dict__[self.name] = self._stashed_value
             self._stashed_value =  VALUE_NOT_SET
 
     def cleanup(self, instance):
+        """
+        Called when an instance.
+
+        Args:
+            self: (todo): write your description
+            instance: (str): write your description
+        """
         pass
 
     def cleanup_stash(self):
+        """
+        Cleanup the temporary statements.
+
+        Args:
+            self: (todo): write your description
+        """
         self._stashed_value = VALUE_NOT_SET
 
     def contribute_to_model(self, model):
+        """
+        Contribute this model to the given model.
+
+        Args:
+            self: (todo): write your description
+            model: (todo): write your description
+        """
         self.model = model
         assert not self.async_ or self._dependee is None, \
             "Cannot do asynchronous processing and setting value on a field, dependee has" \
@@ -118,24 +186,63 @@ class Dependency(object):
         #    "specified processor. Dependee attname: %s " % self.name
 
     def set_field(self, field):
+        """
+        Sets the field of the field
+
+        Args:
+            self: (todo): write your description
+            field: (todo): write your description
+        """
         assert self.field is None, \
             "This %s is already handling a field: %s. Create a new instance." % (
                 self.__class__.__name__, self.field.name)
         self.field = field
 
     def should_process(self):
+        """
+        Returns true if the process should be processed.
+
+        Args:
+            self: (todo): write your description
+        """
         return self.has_processor() or self.has_default()
 
     def has_processor(self):
+        """
+        Returns true if the processor has a processor processor.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._processor is not None
 
     def has_pre_processor(self):
+        """
+        Returns true if pre_processor has pre_processor.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._pre_processor is not None
 
     def has_default(self):
+        """
+        Returns true if the default if any of the default value.
+
+        Args:
+            self: (todo): write your description
+        """
         return self._default is not NOT_PROVIDED
         
     def get_default(self, instance, value):
+        """
+        Returns the default value for the field.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+        """
         if self.has_default():
             if callable(self._default):
                 return self._default(
@@ -146,6 +253,14 @@ class Dependency(object):
         return VALUE_NOT_SET
 
     def set_default(self, instance, value):
+        """
+        Sets the default value of an instance.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+        """
         dependee = self._dependee
         if dependee is None or \
            dependee.value_from_object(instance) in get_empty_values(dependee):
@@ -156,29 +271,94 @@ class Dependency(object):
         return False
 
     def pre_init(self, instance, value, *args, **kwargs):
+        """
+        Initialize instance initialization.
+
+        Args:
+            self: (todo): write your description
+            instance: (str): write your description
+            value: (todo): write your description
+        """
         pass
 
     def post_init(self, instance, value, *args, **kwargs):
+        """
+        Do some setup after initialisation.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (str): write your description
+        """
         self.set_default(instance, value)
 
     def pre_save(self, instance, value, *args, **kwargs):
+        """
+        Pre - save () is called.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+        """
         pass
 
     def post_save(self, instance, value, *args, **kwargs):
+        """
+        Calls the save.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (str): write your description
+        """
         pass
 
     def pre_delete(self, instance, value, *args, **kwargs):
+        """
+        Calls the delete function.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+        """
         pass
 
     def post_delete(self, instance, value, *args, **kwargs):
+        """
+        Clean up the object.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (str): write your description
+        """
         self.cleanup(instance)
 
     def handle(self, instance, event, *args, **kwargs):
+        """
+        Handle an event.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            event: (todo): write your description
+        """
         value = self.field.value_from_object(instance)
         event_handler = getattr(self, event)
         event_handler(instance, value, *args, **kwargs)
 
     def set_value(self, instance, value, is_default=False):
+        """
+        Sets the value of the field.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+            is_default: (bool): write your description
+        """
         if not is_default and self._dependee is self.field:
             # for self dependency ommit setting through descriptor
             # to prevent infinite processing, unless it is default value
@@ -188,9 +368,25 @@ class Dependency(object):
             setattr(instance, self.name, value)
 
     def get_value(self, instance):
+        """
+        Get the value of the field
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+        """
         return getattr(instance, self.name)
 
     def process(self, instance, value, progress_setter=None):
+        """
+        Process the given field.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+            progress_setter: (todo): write your description
+        """
         field = self.field
         if value in get_empty_values(field) or not self.has_processor():
             if self.set_default(instance, value) and self.has_processor():
@@ -218,6 +414,14 @@ class Dependency(object):
                 self.set_value(instance, new_value)
 
     def pre_process(self, instance, value):
+        """
+        Pre_process ( instance instance )
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+        """
         if self.has_pre_processor():
             if isinstance(self._pre_processor, BaseProcessor):
                 new_value = self._pre_processor(
@@ -239,9 +443,25 @@ class FileDependency(Dependency):
 
     @property
     def attr_class(self):
+        """
+        : return : class :.
+
+        Args:
+            self: (todo): write your description
+        """
         return getattr(self._processor, 'field_file_class', FieldFile)
 
     def __init__(self, upload_to="", storage=None, keep_orphans=KEEP_ORPHANS, **kwargs):
+        """
+        Initialize uploader.
+
+        Args:
+            self: (todo): write your description
+            upload_to: (todo): write your description
+            storage: (todo): write your description
+            keep_orphans: (bool): write your description
+            KEEP_ORPHANS: (bool): write your description
+        """
         # `default` has to be a static file
         self.storage = storage or default_storage
         self.upload_to = upload_to
@@ -249,12 +469,25 @@ class FileDependency(Dependency):
         super(FileDependency, self).__init__(**kwargs)
 
     def __eq__(self, other):
+        """
+        Determine if other is the same as other object.
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         return (super(FileDependency, self).__eq__(other) and 
                 self.storage is other.storage and
                 self.upload_to == other.upload_to and
                 self.keep_orphans == other.keep_orphans)
         
     def cleanup_stash(self):
+        """
+        Cleanup the file.
+
+        Args:
+            self: (todo): write your description
+        """
         if self.has_stashed_value and self._stashed_value:
             if isinstance(self._stashed_value, FieldFile):
                 if self._stashed_value._committed and \
@@ -270,6 +503,13 @@ class FileDependency(Dependency):
         super(FileDependency, self).cleanup_stash()
 
     def restore_stash(self, instance):
+        """
+        Restore the current state of the instance.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+        """
         field_file = self.get_value(instance)
         if field_file and field_file._committed:
             if isinstance(field_file, FieldFile):
@@ -279,6 +519,13 @@ class FileDependency(Dependency):
         super(FileDependency, self).restore_stash(instance)
             
     def cleanup(self, instance):
+        """
+        Cleans up the field and clean up.
+
+        Args:
+            self: (todo): write your description
+            instance: (str): write your description
+        """
         # do not cleanup self dependency, it will be cleaned up by the manager
         if self._dependee is not self.field:
             field_file = self.get_value(instance)
@@ -286,6 +533,13 @@ class FileDependency(Dependency):
                 field_file.delete(save=False)
 
     def contribute_to_model(self, model):
+        """
+        Contribute the model to the model.
+
+        Args:
+            self: (todo): write your description
+            model: (todo): write your description
+        """
         super(FileDependency, self).contribute_to_model(model)
         if self._dependee is None:
             # mimic normal django behavior, while using dependency instance instead of 
@@ -296,6 +550,14 @@ class FileDependency(Dependency):
                 "FileDependency can not set file like attributes on non file like fields."
 
     def post_init(self, instance, value, *args, **kwargs):
+        """
+        Do some setup after initialisation.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (str): write your description
+        """
         if self._dependee is None and self._processor and \
             value not in get_empty_values(self.field) and isinstance(value, files.FieldFile):
             # regenerate the dependent filename and reattach it.
@@ -306,12 +568,25 @@ class FileDependency(Dependency):
             super(FileDependency, self).post_init(instance, value, *args, **kwargs)
 
     def get_directory_name(self):
+        """
+        Returns the directory name.
+
+        Args:
+            self: (todo): write your description
+        """
         if self.upload_to:
             return os.path.normpath(
                 force_text(datetime.datetime.now().strftime(force_str(self.upload_to))))
         return ""
 
     def get_filename(self, filename):
+        """
+        Get the filename.
+
+        Args:
+            self: (str): write your description
+            filename: (str): write your description
+        """
         name, ext = os.path.splitext(filename)
         if self._processor and hasattr(self._processor, 'get_ext'):
             new_ext = self._processor.get_ext(**self._processor_params)
@@ -324,6 +599,14 @@ class FileDependency(Dependency):
         return "%s%s" % (name, ext)
 
     def generate_filename(self, instance, filename):
+        """
+        Generate filename for a valid upload.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            filename: (str): write your description
+        """
         if callable(self.upload_to):
             directory_name, filename = os.path.split(self.upload_to(instance, filename))
             filename = self.storage.get_valid_name(filename)
@@ -331,6 +614,15 @@ class FileDependency(Dependency):
         return os.path.join(self.get_directory_name(), self.get_filename(filename))
 
     def set_value(self, instance, value, is_default=False):
+        """
+        Sets the value of the field.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            value: (todo): write your description
+            is_default: (bool): write your description
+        """
         if not value:
             super(FileDependency, self).set_value(instance, value, is_default=is_default)
             return

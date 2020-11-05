@@ -14,6 +14,12 @@ class UploadingTestCase(FileBaseTestCase):
     fixtures = ['users.json']
 
     def test_async_uploading(self):
+        """
+        Make uploadsync to the upload
+
+        Args:
+            self: (todo): write your description
+        """
         # this test is a comprehensive one, it tests:
         # * uploading using default FileUploadView,
         # * asynchronous processing,

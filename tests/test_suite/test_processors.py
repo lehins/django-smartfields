@@ -5,6 +5,12 @@ from smartfields.processors import ImageProcessor, ImageFormat
 class ImageProcessorsTestCase(TestCase):
 
     def test_dimensions_scaling(self):
+        """
+        Test if the dimensions of the image.
+
+        Args:
+            self: (todo): write your description
+        """
         p = ImageProcessor()
         # scaling up: hard set dims
         self.assertEqual(p.get_dimensions(200, 100, width=100), (100, 50))
@@ -43,6 +49,12 @@ class ImageProcessorsTestCase(TestCase):
             200, 100, height=500, min_width=300, max_width=400, preserve=False), (300, 500))
 
     def test_dimensions_checking(self):
+        """
+        Test the dimensions of the image.
+
+        Args:
+            self: (todo): write your description
+        """
         p = ImageProcessor()
         # ones that totally don't make sense
         self.assertRaises(AssertionError, p._check_scale_params, width=100, min_width=50)
@@ -61,6 +73,12 @@ class ImageProcessorsTestCase(TestCase):
         self.assertRaises(AssertionError, p._check_scale_params, max_width=100, min_height=50)
 
     def test_misc(self):
+        """
+        Test if the image hashed.
+
+        Args:
+            self: (todo): write your description
+        """
         f1 = ImageFormat('BMP', ext='dib')
         f2 = ImageFormat('BMP')
         f3 = ImageFormat('PSD')

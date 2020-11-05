@@ -11,6 +11,12 @@ class FileField(Field):
     template = "%s/filefield.html" % TEMPLATE_PACK
 
     def __init__(self, *args, **kwargs): # pylint: disable=E1002
+        """
+        Initialize a new settings.
+
+        Args:
+            self: (todo): write your description
+        """
         options = PLUPLOAD_OPTIONS.copy()
         options.update(kwargs.pop('plupload_options', {}))
         options['multi_selection'] = False
@@ -26,6 +32,12 @@ class ImageField(FileField):
     template = "%s/imagefield.html" % TEMPLATE_PACK
 
     def __init__(self, *args, **kwargs): # pylint: disable=E1002
+        """
+        Initialize field values to default values.
+
+        Args:
+            self: (todo): write your description
+        """
         kwargs['wrapper_class'] = kwargs.get('wrapper_class', '') + ' smartfields-mediafield'
         super(ImageField, self).__init__(*args, **kwargs)
 
@@ -42,6 +54,14 @@ class LimitedField(Field):
     attrs = None
 
     def __init__(self, field, feedback_text=None, *args, **kwargs): # pylint: disable=E1002
+        """
+        Initialize a new fields.
+
+        Args:
+            self: (todo): write your description
+            field: (todo): write your description
+            feedback_text: (str): write your description
+        """
         self.field = field
         self.attrs = self.attrs or {}
         kwargs['wrapper_class'] = kwargs.get('wrapper_class', '') + ' smartfields-limitedfield'
@@ -53,6 +73,15 @@ class LimitedField(Field):
 
 
     def render(self, form, form_style, context, **kwargs):
+        """
+        Renders a form.
+
+        Args:
+            self: (todo): write your description
+            form: (todo): write your description
+            form_style: (todo): write your description
+            context: (dict): write your description
+        """
         try:
             feedback_text = ''
             maximum, minimum = self.maximum, self.minimum

@@ -9,6 +9,12 @@ import smartfields
 import os, sys
 
 def read(fname):
+    """
+    Read file.
+
+    Args:
+        fname: (str): write your description
+    """
     path = os.path.join(os.path.dirname(__file__), fname)
     if sys.version < '3':
         return open(path).read()

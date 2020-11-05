@@ -21,6 +21,12 @@ class TextTestingForm(forms.ModelForm):
         fields = ('title',)
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize layout
+
+        Args:
+            self: (todo): write your description
+        """
         super(TextTestingForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper(self)
         self.helper.layout = Layout(LimitedField('title'))
@@ -33,6 +39,12 @@ class ImageTestingForm(forms.ModelForm):
         fields = ('image_2',)
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize layout.
+
+        Args:
+            self: (todo): write your description
+        """
         super(ImageTestingForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper(self)
         self.helper.layout = Layout(
@@ -56,6 +68,12 @@ class VideoTestingForm(forms.ModelForm):
         fields = ('video_1',)
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize the upload metrics.
+
+        Args:
+            self: (todo): write your description
+        """
         super(VideoTestingForm, self).__init__(*args, **kwargs)
         self.helper = FormHelper(self)
         self.helper.layout = Layout(

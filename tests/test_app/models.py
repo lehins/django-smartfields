@@ -11,12 +11,24 @@ from smartfields.utils import UploadTo
 # PRE PROCESSING
 
 def _decimal_pre_processor(value):
+    """
+    Returns a decimal value.
+
+    Args:
+        value: (todo): write your description
+    """
     try:
         return Decimal(value)
     except (TypeError, InvalidOperation):
         return Decimal('0')
 
 def _incrementer(value):
+    """
+    Increment the given value.
+
+    Args:
+        value: (todo): write your description
+    """
     try:
         return value+1
     except (TypeError, ValueError): pass
@@ -38,18 +50,39 @@ class PreProcessorTesting(models.Model):
 # TEXT PROCESSING TESTING
 
 def _title_getter(value, instance, **kwargs):
+    """
+    Returns the title of the given value.
+
+    Args:
+        value: (todo): write your description
+        instance: (todo): write your description
+    """
     return instance.title
 
 
 class ToUpperProcessor(processors.BaseProcessor):
 
     def process(self, value, **kwargs):
+        """
+        Processes : meth : query.
+
+        Args:
+            self: (todo): write your description
+            value: (str): write your description
+        """
         return value.upper()
 
 
 class LoopbackProcessor(processors.BaseProcessor):
 
     def process(self, value, **kwargs):
+        """
+        Processes the process.
+
+        Args:
+            self: (todo): write your description
+            value: (todo): write your description
+        """
         return kwargs['stashed_value']
 
 
@@ -83,9 +116,23 @@ class TextTesting(models.Model):
 
 
 def _get_foo(value, instance, field, **kwargs):
+    """
+    Returns the raw instance of the field.
+
+    Args:
+        value: (str): write your description
+        instance: (todo): write your description
+        field: (str): write your description
+    """
     return instance.field_1_foo
 
 def _file_to_lower(f):
+    """
+    Convert a lowercase file - like object f.
+
+    Args:
+        f: (todo): write your description
+    """
     pos = f.tell()
     f.seek(0)
     new_f = ContentFile(f.read().lower())
@@ -179,6 +226,13 @@ class DependencyTesting(models.Model):
 
 
 def _name_getter(name, instance):
+    """
+    Returns the name of a name
+
+    Args:
+        name: (str): write your description
+        instance: (todo): write your description
+    """
     return instance.label
 
 class RenameFileTesting(models.Model):
@@ -216,5 +270,13 @@ class VideoTesting(models.Model):
         ])
 
     def has_upload_permission(self, user, field_name=None):
+        """
+        Returns true if the user has the given a user.
+
+        Args:
+            self: (todo): write your description
+            user: (todo): write your description
+            field_name: (str): write your description
+        """
         is_auth = user.is_authenticated if django.VERSION >= (1, 10) else user.is_authenticated()
         return (field_name == 'video_1' and is_auth and user.username == 'test_user')

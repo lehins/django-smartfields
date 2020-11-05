@@ -11,9 +11,22 @@ from test_suite.test_files import add_base
 class TextTestCase(TestCase):
 
     def strip(self, text):
+        """
+        Strips the given by text.
+
+        Args:
+            self: (todo): write your description
+            text: (str): write your description
+        """
         return re.sub('( +|\t+|\n+)', ' ', text).strip()
 
     def setUp(self):
+        """
+        Parses the summary.
+
+        Args:
+            self: (todo): write your description
+        """
         descr = open(add_base("static/defaults/snatch.html"), 'r')
         TextTesting.objects.create(title='Snatch', summary=descr.read())
         descr.close()
@@ -22,12 +35,24 @@ class TextTestCase(TestCase):
         descr.close()
 
     def test_model_setup(self):
+        """
+        Set up the model fields exist.
+
+        Args:
+            self: (todo): write your description
+        """
         instance = TextTesting()
         self.assertIsInstance(instance, SmartfieldsModelMixin)
         self.assertIsNotNone(getattr(instance, '_smartfields_managers', None))
         self.assertTrue(getattr(instance, 'smartfields_managers', None))
 
     def test_manual_processing(self):
+        """
+        Test for summary of the summary
+
+        Args:
+            self: (todo): write your description
+        """
         instance = TextTesting(title='Snatch')
         descr_file = open(add_base("static/defaults/snatch.html"), 'r')
         descr = descr_file.read()
@@ -53,6 +78,12 @@ class TextTestCase(TestCase):
                          {'state': 'ready'})
 
     def test_html(self):
+        """
+        Parse html report.
+
+        Args:
+            self: (todo): write your description
+        """
         instance = TextTesting.objects.get(title='Snatch')
         descr_plain = open(add_base("static/defaults/snatch.txt"), 'r')
         self.assertEqual(self.strip(instance.summary_plain), self.strip(descr_plain.read()))
@@ -63,6 +94,12 @@ class TextTestCase(TestCase):
         descr_plain.close()
 
     def test_cropping(self):
+        """
+        Test if the text summary.
+
+        Args:
+            self: (todo): write your description
+        """
         instance = TextTesting.objects.get(title='Snatch')
         self.assertEqual(len(instance.summary_beginning), 100)
         self.assertEqual(instance.summary_beginning, instance.summary_plain[:100])
@@ -71,6 +108,12 @@ class TextTestCase(TestCase):
         self.assertEqual(instance.summary_beginning, instance.summary_plain[:100])
 
     def test_slug(self):
+        """
+        Test if the slug is in the database.
+
+        Args:
+            self: (todo): write your description
+        """
         # make sure slug is in lower case and cropped
         instance = TextTesting.objects.get(title='Snatch')
         #self.assertEqual(instance.slug, 'snatch')
@@ -78,6 +121,12 @@ class TextTestCase(TestCase):
         self.assertEqual(instance.slug, 'lord-of-w')
 
     def test_unique(self):
+        """
+        * create a unique title *
+
+        Args:
+            self: (todo): write your description
+        """
         instance = TextTesting.objects.create(title='Snatch')
         self.assertRegexpMatches(instance.title, re.compile(r'Snatch\d{1,5}'))
         self.assertRegexpMatches(instance.slug, re.compile(r'snatch-\d{1,2}'))
@@ -92,6 +141,12 @@ class TextTestCase(TestCase):
         self.assertRaises(IntegrityError, TextTesting.objects.create, title='Lord of War')
 
     def test_stashed_value(self):
+        """
+        Set the default loopbackback.
+
+        Args:
+            self: (todo): write your description
+        """
         instance = TextTesting.objects.create(loopback='foo')
         self.assertEqual(instance.loopback_foo, '')
         self.assertEqual(instance.loopback, '')
@@ -101,12 +156,24 @@ class TextTestCase(TestCase):
         self.assertEqual(instance.loopback, '')
 
     def test_blank_chained_processors(self):
+        """
+        Test if the blank blank.
+
+        Args:
+            self: (todo): write your description
+        """
         instance = TextTesting.objects.get(title='Snatch')
         instance.html = ""
         instance.save()
         self.assertEqual(instance.html_plain, "")
 
     def test_chained_processors(self):
+        """
+        Save the test test test process.
+
+        Args:
+            self: (todo): write your description
+        """
         instance = TextTesting.objects.get(title='Snatch')
         instance.html = "<h1>foo</h1>"
         instance.save()

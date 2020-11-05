@@ -18,8 +18,23 @@ except ImportError:
     class BackwardsApps(object):
         ready = True
         def is_installed(self, app_name):
+            """
+            Returns true if the app is installed.
+
+            Args:
+                self: (todo): write your description
+                app_name: (str): write your description
+            """
             return app_name in settings.INSTALLED_APPS
         def get_model(self, app_label, model_name=None):
+            """
+            Get model.
+
+            Args:
+                self: (todo): write your description
+                app_label: (str): write your description
+                model_name: (str): write your description
+            """
             if model_name is None:
                 app_label, model_name = app_label.split('.')
             return models.get_model(app_label, model_name)
@@ -32,10 +47,22 @@ __all__ = [
 ]
 
 def get_model_name(instance):
+    """
+    Get the name
+
+    Args:
+        instance: (todo): write your description
+    """
     return getattr(instance._meta, 'model_name',
                    instance._meta.object_name.lower())
 
 def get_empty_values(field):
+    """
+    Returns a list of empty values.
+
+    Args:
+        field: (str): write your description
+    """
     return getattr(field, 'empty_values', list(validators.EMPTY_VALUES))
 
 
@@ -54,6 +81,12 @@ class NamedTemporaryFile(base.File):
 
     """
     def __init__(self, **kwargs):
+        """
+        Initialize a temporary file.
+
+        Args:
+            self: (todo): write your description
+        """
         file = temp.NamedTemporaryFile(**kwargs)
         super(NamedTemporaryFile, self).__init__(file)
 
@@ -64,6 +97,12 @@ class NamedTemporaryFile(base.File):
         return self.file.name
 
     def close(self):
+        """
+        Close the file.
+
+        Args:
+            self: (todo): write your description
+        """
         # make sure the size is recorded before closing the file
         _ = self.size
         try:
@@ -117,6 +156,23 @@ class UploadTo(object):
     def __init__(self, basefolder=None, subfolder=None, filename=None, name=None, ext=None,
                  app_label=None, model_name=None, parent_field_name=None, field_name=None,
                  add_pk=True, generator=None):
+        """
+        Initialize a new model.
+
+        Args:
+            self: (todo): write your description
+            basefolder: (str): write your description
+            subfolder: (todo): write your description
+            filename: (str): write your description
+            name: (str): write your description
+            ext: (str): write your description
+            app_label: (str): write your description
+            model_name: (str): write your description
+            parent_field_name: (str): write your description
+            field_name: (str): write your description
+            add_pk: (str): write your description
+            generator: (todo): write your description
+        """
         assert filename is None or name is None, \
             "Cannot have 'filename' and 'name' specified at the same time."
         assert generator is None or (filename is None and name is None), \
@@ -136,6 +192,13 @@ class UploadTo(object):
         self.generator = uuid.uuid1 if generator is True else generator
 
     def __eq__(self, other):
+        """
+        Return true if other has a subfolder
+
+        Args:
+            self: (todo): write your description
+            other: (todo): write your description
+        """
         return (type(self) is type(other) and
                 self.basefolder == other.basefolder and
                 self.subfolder == other.subfolder and
@@ -150,6 +213,14 @@ class UploadTo(object):
                 self.generator is other.generator)
 
     def __call__(self, instance, filename):
+        """
+        Calls the app_name.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+            filename: (str): write your description
+        """
         structure = []
         if self.basefolder is not None:
             structure.append(self.basefolder)
@@ -174,6 +245,14 @@ class UploadTo(object):
         return os.path.join(*structure)
 
     def get_filename(self, filename, instance):
+        """
+        Return the filename.
+
+        Args:
+            self: (todo): write your description
+            filename: (str): write your description
+            instance: (str): write your description
+        """
         if self.filename is not None:
             filename = self.filename
         else:
@@ -196,6 +275,13 @@ class UploadTo(object):
         return filename
 
     def get_parent_pk(self, instance):
+        """
+        Get the parent of the parent field.
+
+        Args:
+            self: (todo): write your description
+            instance: (todo): write your description
+        """
         parent_field_name = None
         if self.parent_field_name is None:
             parent_field_name = getattr(instance, 'parent_field_name', None)
@@ -216,6 +302,14 @@ class AsynchronousFileReader(threading.Thread):
     '''
 
     def __init__(self, fd, queue):
+        """
+        Initialize the queue.
+
+        Args:
+            self: (todo): write your description
+            fd: (int): write your description
+            queue: (todo): write your description
+        """
         assert isinstance(queue, six_queue.Queue)
         assert callable(fd.readline)
         super(AsynchronousFileReader, self).__init__()
