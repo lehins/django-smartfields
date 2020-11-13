@@ -1,9 +1,14 @@
 import os, datetime, inspect
 from django.core.files.base import File
 from django.core.files.storage import default_storage
-from django.db.models.fields import files, NOT_PROVIDED, FieldDoesNotExist
+from django.db.models.fields import files, NOT_PROVIDED
 from django.utils.encoding import force_text, force_str
 import six
+
+try:  # django>=3.1
+    from django.core.exceptions import FieldDoesNotExist
+except ImportError:  # django<3.1
+    from django.db.models import FieldDoesNotExist
 
 from smartfields.fields import FieldFile, FileField
 from smartfields.settings import KEEP_ORPHANS
