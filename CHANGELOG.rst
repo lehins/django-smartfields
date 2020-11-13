@@ -1,10 +1,15 @@
 Changelog
 =========
 
+1.1.2
+-----
+
+* Support for Django=3.1.*
+
 1.1.1
 -----
 
-* Support for Django=3.x
+* Support for Django=3.0.*
 
 1.1.0
 -----
