@@ -1,4 +1,3 @@
-from django.conf.global_settings import *
 import os
 
 BASE_PATH = os.path.dirname(__file__)
