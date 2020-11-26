@@ -1,5 +1,6 @@
 import subprocess, time
 from six.moves import queue
+from django.conf import settings
 
 from smartfields.utils import NamedTemporaryFile, AsynchronousFileReader, \
     ProcessingError, deconstructible, get_model_name
@@ -88,7 +89,10 @@ class ExternalFileProcessor(BaseFileProcessor):
             self.cmd_template == other.cmd_template
 
     def get_input_path(self, in_file):
-        return in_file.path
+        if settings.DEFAULT_FILE_STORAGE == 'django.core.files.storage.FileSystemStorage':
+            return in_file.path
+        else:
+            return in_file.instance.file.url
 
     def get_output_path(self, out_file):
         return out_file.name
