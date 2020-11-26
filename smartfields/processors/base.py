@@ -76,11 +76,15 @@ class ExternalFileProcessor(BaseFileProcessor):
     # then be handled by stdout handler. If it is callable same as above.
     stderr_handler = True
 
-    def __init__(self, cmd_template=None, sleep_time=1, **kwargs):
+    custom_input_path_getter = None
+    # if it is callable it will be used instead of self.get_input_path()
+
+    def __init__(self, cmd_template=None, sleep_time=1, custom_input_path_getter=None, **kwargs):
         self.cmd_template = cmd_template or self.cmd_template
         if self.cmd_template is None:
             raise ValueError('"cmd_template" is a required argument')
         self.sleep_time = sleep_time
+        self.custom_input_path_getter = custom_input_path_getter
         super(ExternalFileProcessor, self).__init__(**kwargs)
 
     def __eq__(self, other):
@@ -88,13 +92,16 @@ class ExternalFileProcessor(BaseFileProcessor):
             self.cmd_template == other.cmd_template
 
     def get_input_path(self, in_file):
-        return in_file.path
+        if callable(self.custom_input_path_getter):
+            return self.custom_input_path_getter(in_file)
+        else:
+            return in_file.path
 
     def get_output_path(self, out_file):
         return out_file.name
 
     def get_output_file(self, in_file, instance, field, **kwargs):
-        """Creates a temporary file. With regular `FileSystemStorage` it does not 
+        """Creates a temporary file. With regular `FileSystemStorage` it does not
         need to be deleted, instaed file is safely moved over. With other cloud
         based storage it is a good idea to set `delete=True`."""
         return NamedTemporaryFile(mode='rb', suffix='_%s_%s%s' % (

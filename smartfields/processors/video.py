@@ -15,7 +15,7 @@ class FFMPEGProcessor(ExternalFileProcessor):
     cmd_template = "ffmpeg -i {input} -y -codec:v {vcodec} -b:v {vbitrate} " \
                    "-maxrate {maxrate} -bufsize {bufsize} -vf " \
                    "scale={width}:{height} -threads {threads} -c:a {acodec} {output}"
-    
+
     def stdout_handler(self, line, duration=None):
         if duration is None:
             duration_time = self.duration_re.search(line)
