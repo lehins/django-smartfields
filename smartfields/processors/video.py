@@ -3,9 +3,10 @@ import six
 
 from smartfields.processors.base import ExternalFileProcessor
 from smartfields.utils import ProcessingError
+from smartfields.processors.mixin import CloudExternalFileProcessorMixin
 
 __all__ = [
-    'FFMPEGProcessor'
+    'FFMPEGProcessor', 'CloudFFMEGPRocessor'
 ]
 
 class FFMPEGProcessor(ExternalFileProcessor):
@@ -42,3 +43,6 @@ class FFMPEGProcessor(ExternalFileProcessor):
             elif key == 'hours':
                 seconds+= int(t)*3600
         return seconds
+
+class CloudFFMEGPRocessor(CloudExternalFileProcessorMixin, FFMPEGProcessor):
+  pass

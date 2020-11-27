@@ -38,7 +38,7 @@ Processors
     .. method:: process(value, **kwargs)
 
 
-Here is an examlple of how to convert a video to MP4 format. In this example
+Here is an example of how to convert a video to MP4 format. In this example
 every time ``MediaModel`` is instantiated
 :class:`~smartfields.dependencies.FileDependency` will automatically attach
 another field like attribute to the model ``video_mp4``. Moreover, whenever a
@@ -67,3 +67,39 @@ set progress between 0.0 and 1.0, which can be retrieved from field's status.
                format = 'mp4', 
                vcodec = 'libx264', 
                acodec = 'libfdk_aac'))])            
+
+
+.. class:: smartfields.processors.CloudFFMEGPRocessor
+
+    .. method:: __init__()
+
+    .. method:: process(value, **kwargs)
+
+Here is an example of how to upload file in custom storage use `django-storages`.
+Each storage backend has its own unique settings you will need to add to your `settings.py` file.
+
+
+.. code-block:: python
+
+   DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+   STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+
+.. code-block:: python
+
+   from django.db import models
+   from smartfields import fields, dependencies
+   from smartfields.processors import CloudFFMEGPRocessor
+
+   class MediaModel(models.Model):
+       video = fields.FileField(dependencies=[
+           dependencies.FileDependency(suffix='mp4', processor=CloudFFMEGPRocessor(
+               vbitrate = '1M', 
+               maxrate = '1M',
+               bufsize = '2M', 
+               width = 'trunc(oh*a/2)*2', # http://ffmpeg.org/ffmpeg-all.html#scale
+               height = 720,
+               threads = 0, # use all cores 
+               abitrate = '96k',
+               format = 'mp4', 
+               vcodec = 'libx264', 
+               acodec = 'libfdk_aac'))])     
