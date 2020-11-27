@@ -6,6 +6,7 @@ import six
 from smartfields.fields import ImageFieldFile
 from smartfields.processors.base import BaseFileProcessor
 from smartfields.utils import ProcessingError
+from smartfields.processors.mixin import CloudExternalFileProcessorMixin
 
 try:
     from PIL import Image
@@ -17,7 +18,7 @@ except ImportError:
     WandImage = None
 
 __all__ = [
-    'ImageProcessor', 'ImageFormat', 'supported_formats', 'WandImageProcessor'
+    'ImageProcessor', 'ImageFormat', 'supported_formats', 'WandImageProcessor', 'CloudImageProcessor'
 ]
 
 PILLOW_MODES = [
@@ -326,3 +327,6 @@ class WandImageProcessor(ImageProcessor):
     def get_image(self, stream, **kwargs):
         return WandImage(file=stream)
         
+
+class CloudImageProcessor(CloudExternalFileProcessorMixin, ImageProcessor):
+  pass
