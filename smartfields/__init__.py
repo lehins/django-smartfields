@@ -1,7 +1,7 @@
 
 # Major, minor, revision
 
-VERSION = (1, 1, 2)
+VERSION = (1, 1, 3)
 
 def get_version():
     return "%s.%s.%s" % VERSION

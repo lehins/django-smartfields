@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.1.3
+-----
+
+* Addition of `CloudImageProcessor` and `CloudFFMEGPRocessor`
+
 1.1.2
 -----
 
