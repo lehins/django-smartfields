@@ -1,4 +1,9 @@
-from django.conf.urls import url
+try:
+    # for django >=4.0
+    from django.urls import re_path as url
+except:
+    # for django <4.0
+    from django.conf.urls import url
 
 from smartfields.views import FileUploadView
 
