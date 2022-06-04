@@ -2,7 +2,15 @@ import os, datetime, inspect
 from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.db.models.fields import files, NOT_PROVIDED
-from django.utils.encoding import force_text, force_str
+try:
+    # for django >=4.0
+    import django
+    from django.utils.encoding import force_str
+    django.utils.encoding.force_text = force_str
+except:
+    raise
+    # for django <4.0
+    from django.utils.encoding import force_text, force_str
 import six
 
 try:  # django>=3.1
@@ -139,12 +147,12 @@ class Dependency(object):
 
     def has_default(self):
         return self._default is not NOT_PROVIDED
-        
+
     def get_default(self, instance, value):
         if self.has_default():
             if callable(self._default):
                 return self._default(
-                    value, instance=instance, field=self.field, 
+                    value, instance=instance, field=self.field,
                     dependee=self._dependee, **self._processor_params
                 )
             return self._default
@@ -201,7 +209,7 @@ class Dependency(object):
             if self.set_default(instance, value) and self.has_processor():
                 value = self.get_value(instance)
                 field = self._dependee
-        if self.has_processor():  
+        if self.has_processor():
             if self.async_:
                 self._processor.progress_setter = progress_setter
                 progress_setter(self._processor, 0)
@@ -226,7 +234,7 @@ class Dependency(object):
         if self.has_pre_processor():
             if isinstance(self._pre_processor, BaseProcessor):
                 new_value = self._pre_processor(
-                    value, instance=instance, field=self.field, 
+                    value, instance=instance, field=self.field,
                     dependee=self._dependee, **self._processor_params
                 )
             else:
@@ -254,11 +262,11 @@ class FileDependency(Dependency):
         super(FileDependency, self).__init__(**kwargs)
 
     def __eq__(self, other):
-        return (super(FileDependency, self).__eq__(other) and 
+        return (super(FileDependency, self).__eq__(other) and
                 self.storage is other.storage and
                 self.upload_to == other.upload_to and
                 self.keep_orphans == other.keep_orphans)
-        
+
     def cleanup_stash(self):
         if self.has_stashed_value and self._stashed_value:
             if isinstance(self._stashed_value, FieldFile):
@@ -267,7 +275,7 @@ class FileDependency(Dependency):
                     self._stashed_value.delete(instance_update=False)
             elif isinstance(self._stashed_value, files.FieldFile) and \
                  self._stashed_value._committed and not self.keep_orphans:
-                stashed_value = FieldFile(self._stashed_value.instance, 
+                stashed_value = FieldFile(self._stashed_value.instance,
                                           self._stashed_value.field,
                                           self._stashed_value.name)
                 self._stashed_value.close()
@@ -282,7 +290,7 @@ class FileDependency(Dependency):
             elif isinstance(field_file, files.FieldFile):
                 field_file.delete(save=False)
         super(FileDependency, self).restore_stash(instance)
-            
+
     def cleanup(self, instance):
         # do not cleanup self dependency, it will be cleaned up by the manager
         if self._dependee is not self.field:
@@ -293,7 +301,7 @@ class FileDependency(Dependency):
     def contribute_to_model(self, model):
         super(FileDependency, self).contribute_to_model(model)
         if self._dependee is None:
-            # mimic normal django behavior, while using dependency instance instead of 
+            # mimic normal django behavior, while using dependency instance instead of
             # creating a new field for the descriptor.
             setattr(model, self.name, self.descriptor_class(self))
         else:
@@ -349,9 +357,9 @@ class FileDependency(Dependency):
                and value.field is not dependee:
                 # if it is a file from another FileField, we'll need to copy that file
                 value = value.file
-            # try to figure out a name for the file 
+            # try to figure out a name for the file
             if isinstance(self.field, FileField) and self.field.value_from_object(instance):
-                # if original value comes from a FileField will use it's file's 
+                # if original value comes from a FileField will use it's file's
                 # name as a base for a new name, of course if one is present
                 field_file = self.field.value_from_object(instance)
                 name = field_file.name
@@ -365,7 +373,7 @@ class FileDependency(Dependency):
                 # otherwise create a bogus name from dependency's name
                 name = self.name
             if dependee is None:
-                # if dependee is not a field, create a FieldFile using 
+                # if dependee is not a field, create a FieldFile using
                 # this dependency instead of a field
                 field_file = field_file_class(instance, self, name)
             else:

@@ -3,7 +3,15 @@ import os, errno, uuid, threading
 from django.conf import settings
 from django.core import validators
 from django.core.files import base, temp
-from django.utils.encoding import force_text
+try:
+    # for django >=4.0
+    import django
+    from django.utils.encoding import force_str
+    django.utils.encoding.force_text = force_str
+except:
+    raise
+    # for django <4.0
+    from django.utils.encoding import force_text
 from six.moves import queue as six_queue
 try:
     from django.utils.deconstruct import deconstructible
